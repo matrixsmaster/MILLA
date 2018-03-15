@@ -77,6 +77,7 @@ void MViewer::on_actionOpen_triggered()
     connect(ui->listView->selectionModel(), &QItemSelectionModel::selectionChanged, [this] {
         current_l = ui->listView->selectionModel()->selectedIndexes().first();
         scaleImage(ui->scrollArea,ui->label,&current_l,1);
+        //reinterpret_cast<ThumbnailModel*>(ui->listView->model())->GC();
         qDebug() << "selChanged";
     });
     connect(ui->listView, &QListView::customContextMenuRequested, this, [this] {
@@ -98,11 +99,13 @@ void MViewer::scaleImage(QScrollArea* scrl, QLabel* lbl, QModelIndex *idx, doubl
     scrl->updateGeometry();
     scrl->setWidgetResizable(true);
 
+    reinterpret_cast<ThumbnailModel*>(ui->listView->model())->LoadUp(idx->row());
+    QPixmap map = idx->data(ThumbnailModel::LargePixmapRole).value<QPixmap>();
+
     if (ui->actionFit->isChecked())
-        lbl->setPixmap(idx->data(ThumbnailModel::LargePixmapRole).value<QPixmap>().scaled(lbl->size(),Qt::KeepAspectRatio,Qt::SmoothTransformation));
+        lbl->setPixmap(map.scaled(lbl->size(),Qt::KeepAspectRatio,Qt::SmoothTransformation));
 
     else {
-        QPixmap map = idx->data(ThumbnailModel::LargePixmapRole).value<QPixmap>();
         QSize nsz = map.size() * scaleFactor;
         lbl->setPixmap(map.scaled(nsz,Qt::KeepAspectRatio,Qt::SmoothTransformation));
     }

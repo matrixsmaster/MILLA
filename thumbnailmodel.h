@@ -1,7 +1,9 @@
 #ifndef THUMBNAILMODEL_H
 #define THUMBNAILMODEL_H
 
+#include <ctime>
 #include <list>
+#include <map>
 #include <initializer_list>
 #include <QAbstractListModel>
 #include <QPixmap>
@@ -15,15 +17,16 @@
 #include <QImageWriter>
 
 #define THUMBNAILSIZE 100
+#define MAXPICSBYTES 1024*1024*1024
 
-struct PixmapPair
-{
+struct PixmapPair {
     QString filename;
     QString fnshort;
     QPixmap thumb;
     QPixmap picture;
     bool loaded;
     bool modified;
+    time_t touched;
 };
 
 class ThumbnailModel : public QAbstractListModel
@@ -50,10 +53,14 @@ public:
     QVariant data(const QModelIndex &index, int role) const;
     // ========================================================
 
+    void LoadUp(int idx);
+    void GC(int skip = -1);
+
 private:
     QList<PixmapPair*> images;
+    size_t ram_footprint;
 
-    void LoadUp(int idx) const;
+    size_t ItemSizeInBytes(int idx);
 };
 
 #endif // THUMBNAILMODEL_H

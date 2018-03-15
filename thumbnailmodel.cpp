@@ -3,6 +3,7 @@
 ThumbnailModel::ThumbnailModel(std::list<QString> files, QObject *parent)
     : QAbstractListModel(parent)
 {
+    ram_footprint = 0;
     QSqlDatabase db = QSqlDatabase::database();
     QSqlQuery q;
     bool ok = q.exec("SELECT * FROM thumbs");
@@ -30,7 +31,11 @@ ThumbnailModel::ThumbnailModel(std::list<QString> files, QObject *parent)
                 pair->modified = false;
             }
         }
-        if (pair->modified) pair->thumb = QPixmap(THUMBNAILSIZE,THUMBNAILSIZE);
+
+        if (pair->modified) {
+            pair->thumb = QPixmap(THUMBNAILSIZE,THUMBNAILSIZE);
+            pair->thumb.fill(Qt::black);
+        }
 
         QFileInfo fi(i);
         pair->fnshort = fi.fileName();
@@ -71,7 +76,8 @@ QVariant ThumbnailModel::data(const QModelIndex &index, int role) const
         case LargePixmapRole:
             // This is a custom role, it will help us getting the pixmap more
             // easily later.
-            LoadUp(index.row());
+            //LoadUp(index.row());
+            images[index.row()]->touched = time(NULL); //we're inside a const method, wtf?!
             return images.value(index.row())->picture;
 
         case FullPathRole:
@@ -85,15 +91,20 @@ QVariant ThumbnailModel::data(const QModelIndex &index, int role) const
     return QVariant();
 }
 
-void ThumbnailModel::LoadUp(int idx) const
+void ThumbnailModel::LoadUp(int idx) //const
 {
     if (images.at(idx)->loaded) return;
     images[idx]->picture = QPixmap(images[idx]->filename);
     if (images.at(idx)->picture.isNull()) return;
 
+    //qDebug() << "depth = " << images.at(idx)->picture.depth();
+    ram_footprint += ItemSizeInBytes(idx);
+    GC(idx);
+
     images[idx]->thumb = images[idx]->picture.scaled(THUMBNAILSIZE,THUMBNAILSIZE,Qt::KeepAspectRatio,Qt::SmoothTransformation);
     images[idx]->loaded = true;
     images[idx]->modified = true;
+    images[idx]->touched = time(NULL);
 
     QByteArray arr;
     QBuffer dat(&arr);
@@ -124,5 +135,37 @@ void ThumbnailModel::LoadUp(int idx) const
         qDebug() << "[db] " << act << " record for " << images.at(idx)->fnshort << ": " << ok;
         if (ok) images[idx]->modified = false;
         else qDebug() << q.lastError();
+    }
+}
+
+size_t ThumbnailModel::ItemSizeInBytes(int idx)
+{
+    return (images.at(idx)->picture.depth() / 8) * images.at(idx)->picture.size().width() * images.at(idx)->picture.size().height();
+}
+
+void ThumbnailModel::GC(int skip)
+{
+    qDebug() << "[GC] Current RAM footprint: " << (ram_footprint/1024/1024) << " MiB";
+    if (ram_footprint < MAXPICSBYTES) return;
+
+    std::map<time_t,int> allocated;
+    for (int i = 0; i < images.size(); i++) {
+        if ((i == skip) || !images.at(i)->loaded) continue;
+        allocated[images.at(i)->touched] = i;
+    }
+    qDebug() << "[GC] Time map populated: " << allocated.size() << " entries";
+    if (allocated.empty()) return;
+
+    for (auto it = allocated.begin(); it != allocated.end(); ++it) {
+        size_t csz = ItemSizeInBytes(it->second);
+        qDebug() << "[GC] Deleting " << images.at(it->second)->fnshort << " Timestamp " << it->first << "; size = " << csz;
+        images[it->second]->picture = QPixmap();
+        images[it->second]->loaded = false;
+        ram_footprint -= csz;
+
+        if (ram_footprint < MAXPICSBYTES) {
+            qDebug() << "[GC] Goal reached, ram footprint now is " << ram_footprint;
+            break;
+        }
     }
 }
