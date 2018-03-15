@@ -56,7 +56,8 @@ void MViewer::on_actionOpen_triggered()
         QModelIndex selectedIndex = ui->listView->selectionModel()->selectedIndexes().first();
         // We use our custom role here to retrieve the large image using the selected index.
         ui->label->setPixmap(selectedIndex.data(ThumbnailModel::LargePixmapRole).value<QPixmap>());
-        //ui->label->adjustSize();
-        ui->label->resize(ui->label->pixmap()->size());
+        //ui->label->setText(selectedIndex.data(ThumbnailModel::FullPathRole).value<QString>());
+        ui->label->adjustSize();
+        //ui->listView->adjustSize();
     });
 }

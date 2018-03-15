@@ -10,10 +10,11 @@
 
 struct PixmapPair
 {
-        QString _file;
-        QString _short;
-        QPixmap _small;
-        QPixmap _large;
+    QString filename;
+    QString fnshort;
+    QPixmap thumb;
+    QPixmap picture;
+    bool loaded;
 };
 
 class ThumbnailModel : public QAbstractListModel
@@ -26,7 +27,8 @@ public:
     // All numbers below this one are reserved for Qt internals.
     enum Roles
     {
-        LargePixmapRole = Qt::UserRole + 1
+        LargePixmapRole = Qt::UserRole + 1,
+        FullPathRole
     };
 
     explicit ThumbnailModel(std::list<QString> files, QObject *parent = 0);
@@ -40,7 +42,9 @@ public:
     // ========================================================
 
 private:
-    QList<PixmapPair*> _data;
+    QList<PixmapPair*> images;
+
+    void LoadUp(int idx) const;
 };
 
 #endif // THUMBNAILMODEL_H
