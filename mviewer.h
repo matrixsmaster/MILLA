@@ -7,6 +7,7 @@
 #include <QFileDialog>
 #include <QDirIterator>
 #include <QFileInfo>
+#include <QtSql/QSqlDatabase>
 #include <thumbnailmodel.h>
 
 namespace Ui {

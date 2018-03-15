@@ -3,17 +3,36 @@
 ThumbnailModel::ThumbnailModel(std::list<QString> files, QObject *parent)
     : QAbstractListModel(parent)
 {
-    for (auto iter = files.begin(); iter != files.end(); ++iter)
-    {
-        //QPixmap large(*iter);
-        PixmapPair *pair = new PixmapPair();
-        pair->filename = *iter;
-        //pair->_large = large;
-        //pair->_small = large.scaled(100, 100, Qt::KeepAspectRatio, Qt::SmoothTransformation);
-        pair->thumb = QPixmap(100,100);
-        pair->loaded = false;
+    QSqlDatabase db = QSqlDatabase::database();
+    QSqlQuery q;
+    bool ok = q.exec("SELECT * FROM thumbs");
+    qDebug() << "INITIAL OPEN: " << ok;
+    if (!ok) {
+        QSqlQuery qq;
+        ok = qq.exec("CREATE TABLE thumbs (file TEXT, thumb BLOB)");
+        qDebug() << "CREATE: " << ok;
+    }
 
-        QFileInfo fi(*iter);
+    for (auto &i : files) {
+        PixmapPair *pair = new PixmapPair();
+        pair->filename = i;
+        pair->loaded = false;
+        pair->modified = true;
+
+        if (ok) {
+            QSqlQuery qq;
+            qq.prepare("SELECT thumb FROM thumbs WHERE file = (:fn)");
+            qq.bindValue(":fn",i);
+
+            if (qq.exec() && qq.next() && qq.value(0).canConvert(QVariant::ByteArray)) {
+                qDebug() << "Loaded thumbnail for " << i;
+                pair->thumb.loadFromData(qq.value(0).toByteArray());
+                pair->modified = false;
+            }
+        }
+        if (pair->modified) pair->thumb = QPixmap(THUMBNAILSIZE,THUMBNAILSIZE);
+
+        QFileInfo fi(i);
         pair->fnshort = fi.fileName();
 
         images.append(pair);
@@ -23,6 +42,23 @@ ThumbnailModel::ThumbnailModel(std::list<QString> files, QObject *parent)
 ThumbnailModel::~ThumbnailModel()
 {
     qDebug() << "Deleting ThumbnailModel";
+    QSqlDatabase db = QSqlDatabase::database();
+    for (auto &i : images) {
+        if (!i->loaded) continue;
+        if (!i->modified) continue;
+
+        QByteArray arr;
+        QBuffer dat(&arr);
+        dat.open(QBuffer::WriteOnly);
+        bool ok = i->thumb.save(&dat,"png");
+        qDebug() << "Compressing " << i->fnshort << ok;
+
+        QSqlQuery q;
+        q.prepare("INSERT INTO thumbs (file, thumb) VALUES (:fn, :thm)");
+        q.bindValue(":fn",i->filename);
+        q.bindValue(":thm",arr);
+        qDebug() << i->fnshort << " --> " << q.exec();
+    }
     qDeleteAll(images);
 }
 
@@ -34,18 +70,13 @@ int ThumbnailModel::rowCount(const QModelIndex &parent) const
     // doesn't have child nodes so we return 0
     // By convention an invalid parent means the topmost level of a tree. In our case
     // we return the number of elements contained in our images store.
-    if (parent.isValid())
-        return 0;
-    else
-        return images.count();
+    return parent.isValid()? 0 : images.count();
 }
 
 QVariant ThumbnailModel::data(const QModelIndex &index, int role) const
 {
-    if (index.isValid())
-    {
-        switch (role)
-        {
+    if (index.isValid()) {
+        switch (role) {
         case Qt::DecorationRole:
             // DecorationRole = Icon show for a list
             return images.value(index.row())->thumb;
@@ -75,6 +106,7 @@ void ThumbnailModel::LoadUp(int idx) const
 {
     if (images.at(idx)->loaded) return;
     images[idx]->picture = QPixmap(images[idx]->filename);
-    images[idx]->thumb = images[idx]->picture.scaled(100, 100, Qt::KeepAspectRatio, Qt::SmoothTransformation);
+    images[idx]->thumb = images[idx]->picture.scaled(THUMBNAILSIZE, THUMBNAILSIZE, Qt::KeepAspectRatio, Qt::SmoothTransformation);
     images[idx]->loaded = true;
+    images[idx]->modified = true;
 }

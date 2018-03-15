@@ -6,7 +6,14 @@
 #include <QAbstractListModel>
 #include <QPixmap>
 #include <QFileInfo>
+#include <QtSql/QSqlDatabase>
+#include <QtSql/QSqlQuery>
 #include <QDebug>
+#include <QByteArray>
+#include <QBuffer>
+#include <QImageWriter>
+
+#define THUMBNAILSIZE 100
 
 struct PixmapPair
 {
@@ -15,6 +22,7 @@ struct PixmapPair
     QPixmap thumb;
     QPixmap picture;
     bool loaded;
+    bool modified;
 };
 
 class ThumbnailModel : public QAbstractListModel

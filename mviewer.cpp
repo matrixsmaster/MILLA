@@ -6,10 +6,19 @@ MViewer::MViewer(QWidget *parent) :
     ui(new Ui::MViewer)
 {
     ui->setupUi(this);
+    QSqlDatabase db = QSqlDatabase::addDatabase("QSQLITE");
+    QString fn = QDir::homePath() + "/.milla/storage.db";
+    qDebug() << "Storage database filename: " << fn;
+    db.setHostName("localhost");
+    db.setDatabaseName(fn);
+    db.setUserName("user");
+    bool ok = db.open();
+    qDebug() << "DB open:  " << ok;
 }
 
 MViewer::~MViewer()
 {
+    QSqlDatabase::database().close();
     delete ui;
 }
 
