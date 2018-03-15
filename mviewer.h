@@ -8,6 +8,7 @@
 #include <QScrollBar>
 #include <QDirIterator>
 #include <QFileInfo>
+#include <QScrollArea>
 #include <QtSql/QSqlDatabase>
 #include <thumbnailmodel.h>
 
@@ -30,16 +31,12 @@ private slots:
 
     void on_actionFit_triggered();
 
-    void on_actionReisable_triggered();
-
 private:
     Ui::MViewer *ui;
     double scaleFactor;
-    QModelIndex current;
+    QModelIndex current_l, current_r;
 
-    void scaleImage(double factor);
-    void adjustScrollBar(QScrollBar *scrollBar, double factor);
-    void normalSize();
+    void scaleImage(QScrollArea* scrl, QLabel* lbl, QModelIndex* idx, double factor);
 };
 
 #endif // MVIEWER_H

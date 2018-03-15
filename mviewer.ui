@@ -135,7 +135,7 @@
                  <item>
                   <widget class="QLabel" name="label">
                    <property name="text">
-                    <string>TextLabel</string>
+                    <string>Left Image</string>
                    </property>
                    <property name="alignment">
                     <set>Qt::AlignCenter</set>
@@ -162,7 +162,7 @@
                  <item>
                   <widget class="QLabel" name="label_2">
                    <property name="text">
-                    <string>TextLabel</string>
+                    <string>Right Image</string>
                    </property>
                    <property name="alignment">
                     <set>Qt::AlignCenter</set>
@@ -494,7 +494,6 @@
     <property name="title">
      <string>Edit</string>
     </property>
-    <addaction name="actionReisable"/>
    </widget>
    <widget class="QMenu" name="menuView">
     <property name="title">
@@ -540,18 +539,10 @@
     <bool>true</bool>
    </property>
    <property name="text">
-    <string>Fit</string>
+    <string>Fit to viewport</string>
    </property>
    <property name="shortcut">
     <string>F</string>
-   </property>
-  </action>
-  <action name="actionReisable">
-   <property name="checkable">
-    <bool>true</bool>
-   </property>
-   <property name="text">
-    <string>reisable</string>
    </property>
   </action>
  </widget>
