@@ -6,11 +6,11 @@ ThumbnailModel::ThumbnailModel(std::list<QString> files, QObject *parent)
     QSqlDatabase db = QSqlDatabase::database();
     QSqlQuery q;
     bool ok = q.exec("SELECT * FROM thumbs");
-    qDebug() << "INITIAL OPEN: " << ok;
+    qDebug() << "[db] Read thumbs table: " << ok;
     if (!ok) {
         QSqlQuery qq;
         ok = qq.exec("CREATE TABLE thumbs (file TEXT, thumb BLOB)");
-        qDebug() << "CREATE: " << ok;
+        qDebug() << "[db] Create new thumbs table: " << ok;
     }
 
     for (auto &i : files) {
@@ -42,23 +42,6 @@ ThumbnailModel::ThumbnailModel(std::list<QString> files, QObject *parent)
 ThumbnailModel::~ThumbnailModel()
 {
     qDebug() << "Deleting ThumbnailModel";
-    QSqlDatabase db = QSqlDatabase::database();
-    for (auto &i : images) {
-        if (!i->loaded) continue;
-        if (!i->modified) continue;
-
-        QByteArray arr;
-        QBuffer dat(&arr);
-        dat.open(QBuffer::WriteOnly);
-        bool ok = i->thumb.save(&dat,"png");
-        qDebug() << "Compressing " << i->fnshort << ok;
-
-        QSqlQuery q;
-        q.prepare("INSERT INTO thumbs (file, thumb) VALUES (:fn, :thm)");
-        q.bindValue(":fn",i->filename);
-        q.bindValue(":thm",arr);
-        qDebug() << i->fnshort << " --> " << q.exec();
-    }
     qDeleteAll(images);
 }
 
@@ -106,7 +89,40 @@ void ThumbnailModel::LoadUp(int idx) const
 {
     if (images.at(idx)->loaded) return;
     images[idx]->picture = QPixmap(images[idx]->filename);
-    images[idx]->thumb = images[idx]->picture.scaled(THUMBNAILSIZE, THUMBNAILSIZE, Qt::KeepAspectRatio, Qt::SmoothTransformation);
+    if (images.at(idx)->picture.isNull()) return;
+
+    images[idx]->thumb = images[idx]->picture.scaled(THUMBNAILSIZE,THUMBNAILSIZE,Qt::KeepAspectRatio,Qt::SmoothTransformation);
     images[idx]->loaded = true;
     images[idx]->modified = true;
+
+    QByteArray arr;
+    QBuffer dat(&arr);
+    dat.open(QBuffer::WriteOnly);
+    bool ok = images.at(idx)->thumb.save(&dat,"png");
+
+    QSqlQuery qq;
+    qq.prepare("SELECT thumb FROM thumbs WHERE file = (:fn)");
+    qq.bindValue(":fn",images.at(idx)->filename);
+    bool mod = qq.exec() && qq.next();
+
+    if (ok) {
+        QSqlQuery q;
+        QString act;
+        ok = false;
+
+        if (!mod) {
+            q.prepare("INSERT INTO thumbs (file, thumb) VALUES (:fn, :thm)");
+            act = "Inserting";
+        } else {
+            q.prepare("UPDATE thumbs SET thumb = :thm WHERE file = :fn");
+            act = "Updating";
+        }
+        q.bindValue(":fn",images.at(idx)->filename);
+        q.bindValue(":thm",arr);
+        ok = q.exec();
+
+        qDebug() << "[db] " << act << " record for " << images.at(idx)->fnshort << ": " << ok;
+        if (ok) images[idx]->modified = false;
+        else qDebug() << q.lastError();
+    }
 }

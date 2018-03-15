@@ -8,6 +8,7 @@
 #include <QFileInfo>
 #include <QtSql/QSqlDatabase>
 #include <QtSql/QSqlQuery>
+#include <QtSql/QSqlError>
 #include <QDebug>
 #include <QByteArray>
 #include <QBuffer>

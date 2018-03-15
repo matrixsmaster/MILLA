@@ -5,6 +5,7 @@
 #include <QMainWindow>
 #include <QMessageBox>
 #include <QFileDialog>
+#include <QScrollBar>
 #include <QDirIterator>
 #include <QFileInfo>
 #include <QtSql/QSqlDatabase>
@@ -27,8 +28,18 @@ private slots:
 
     void on_actionOpen_triggered();
 
+    void on_actionFit_triggered();
+
+    void on_actionReisable_triggered();
+
 private:
     Ui::MViewer *ui;
+    double scaleFactor;
+    QModelIndex current;
+
+    void scaleImage(double factor);
+    void adjustScrollBar(QScrollBar *scrollBar, double factor);
+    void normalSize();
 };
 
 #endif // MVIEWER_H
