@@ -14,6 +14,7 @@
 #include <opencv2/opencv.hpp>
 #include <opencv2/nonfree/nonfree.hpp>
 #include <opencv2/features2d/features2d.hpp>
+#include <opencv2/highgui/highgui.hpp>
 
 #define FLATS_MINHESSIAN 400
 
@@ -38,13 +39,15 @@ private slots:
 
     void on_actionMatch_triggered();
 
+    void on_actionTest_triggered();
+
 private:
     Ui::MViewer *ui;
     double scaleFactor;
     QModelIndex current_l, current_r;
 
     void scaleImage(QScrollArea* scrl, QLabel* lbl, QModelIndex* idx, double factor);
-    cv::Mat quickConvert(QImage &in);
+    cv::Mat quickConvert(QImage const &in);
 };
 
 #endif // MVIEWER_H

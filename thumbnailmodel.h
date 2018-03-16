@@ -19,7 +19,7 @@
 #define THUMBNAILSIZE 100
 #define MAXPICSBYTES 1024*1024*1024
 
-struct PixmapPair {
+struct ThumbnailRec {
     QString filename;
     QString fnshort;
     QPixmap thumb;
@@ -55,10 +55,10 @@ public:
 
     void LoadUp(int idx);
     void GC(int skip = -1);
-    QList<PixmapPair*>& GetAllImages() { return images; }
+    QList<ThumbnailRec*>& GetAllImages() { return images; }
 
 private:
-    QList<PixmapPair*> images;
+    QList<ThumbnailRec*> images;
     size_t ram_footprint;
 
     size_t ItemSizeInBytes(int idx);

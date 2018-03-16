@@ -124,13 +124,36 @@ void MViewer::on_actionFit_triggered()
     scaleImage(ui->scrollArea_2,ui->label_2,&current_r,1);
 }
 
-cv::Mat MViewer::quickConvert(QImage &in)
+cv::Mat MViewer::quickConvert(QImage const &in)
 {
+#if 0
     if (in.format() != QImage::Format_RGB888) {
         in = in.convertToFormat(QImage::Format_RGB888);
         qDebug() << "converting";
     }
-    return cv::Mat(in.size().width(),in.size().height(),CV_8UC3,in.bits());
+    return cv::Mat(in.size().height(),in.size().width(),CV_8UC3,in.bits());
+#else
+    using namespace cv;
+
+    QImage n;
+    if (in.format() != QImage::Format_RGB888) {
+        qDebug() << "converting";
+        n = in.convertToFormat(QImage::Format_RGB888);
+    } else
+        n = in;
+
+    Mat r(n.size().height(),n.size().width(),CV_8UC3);
+//    uchar* ptr = n.bits();
+    for (int j,i = 0; i < r.rows; i++) {
+        uchar* ptr = n.scanLine(i);
+        for (j = 0; j < r.cols; j++) {
+            r.at<Vec3b>(Point(j,i)) = Vec3b(*(ptr+2),*(ptr+1),*(ptr));
+            ptr += 3;
+        }
+    }
+
+    return r;
+#endif
 }
 
 void MViewer::on_actionMatch_triggered()
@@ -149,6 +172,8 @@ void MViewer::on_actionMatch_triggered()
     FlannBasedMatcher matcher;
     vector<DMatch> matches;
 
+    imshow("INPUT",in); //FIXME: debug only
+
     try {
         det.detect(in,kp);
         extr.compute(in,kp,dsc);
@@ -156,12 +181,16 @@ void MViewer::on_actionMatch_triggered()
         qDebug() << "Unable to extract features from original file";
         return;
     }
+    if (kp.empty()) return;
 
     ThumbnailModel* ptm = dynamic_cast<ThumbnailModel*>(ui->listView->model());
     if (!ptm) return;
 
-    int j,maxgoods = 0;
-    PixmapPair* winner = nullptr;
+    int j;
+    size_t maxgoods = 0;
+    ThumbnailRec* winner = nullptr;
+    Mat img_matches; //FIXME: debug only
+    std::vector<DMatch> good_matches,win_matches;
     QString we = current_l.data(ThumbnailModel::FullPathRole).value<QString>();
     for (auto &i : ptm->GetAllImages()) {
         if (we == i->filename) continue;
@@ -180,6 +209,7 @@ void MViewer::on_actionMatch_triggered()
         kpv.clear();
         desc.release();
         matches.clear();
+        good_matches.clear();
 
         try {
             det.detect(cc,kpv);
@@ -188,35 +218,54 @@ void MViewer::on_actionMatch_triggered()
         } catch (...) {
             qDebug() << "Detect/match error on " << i->fnshort;
         }
-        cc.release();
+        //cc.release();
 
         qDebug() << i->fnshort << ": Matches: " << matches.size();
 
         double dist,max_dist = 0;
         double min_dist = 100;
-        int ttl = 0;
 
         //calculate distance max && min
-        for (j = 0; j < desc.rows; j++) {
+        for (j = 0; j < dsc.rows; j++) {
             dist = matches[j].distance;
             if (dist < min_dist) min_dist = dist;
             if (dist > max_dist) max_dist = dist;
         }
 
         //matches filtering
-        for (j = 0; j < desc.rows; j++)
-            if (matches[j].distance < 3 * min_dist) {
-                ttl++;
+        for (j = 0; j < dsc.rows; j++)
+            if (matches[j].distance <= max(2*min_dist,0.02)) {
+                good_matches.push_back(matches[j]);
             }
-        qDebug() << "Total " << ttl << " good matches for " << i->fnshort;
+        qDebug() << "Total " << good_matches.size() << " good matches for " << i->fnshort;
 
-        if (ttl > maxgoods) {
-            maxgoods = ttl;
+        if (good_matches.size() > maxgoods && !kpv.empty()) {
+            maxgoods = good_matches.size();
             winner = i;
+
+            //FIXME: debug only
+            try {
+            drawMatches( cc, kpv, in, kp,
+                         good_matches, img_matches );
+                         //Scalar::all(-1), Scalar::all(-1), vector<char>(), DrawMatchesFlags::NOT_DRAW_SINGLE_POINTS );
+            } catch (...) {
+                qDebug() << "drawMatches error";
+            }
         }
     }
 
     if (winner) {
         ui->label_2->setPixmap(winner->picture);
+
+        //-- Show detected matches
+        imshow( "Good Matches", img_matches );
     }
+}
+
+void MViewer::on_actionTest_triggered()
+{
+    if (!current_l.isValid() || !ui->listView->model()) return;
+    QImage i(current_l.data(ThumbnailModel::LargePixmapRole).value<QPixmap>().toImage());
+    cv::Mat m(quickConvert(i));
+    cv::imshow("TEST",m);
 }

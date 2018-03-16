@@ -506,6 +506,7 @@
      <string>Tools</string>
     </property>
     <addaction name="actionMatch"/>
+    <addaction name="actionTest"/>
    </widget>
    <widget class="QMenu" name="menuHelp">
     <property name="title">
@@ -549,6 +550,11 @@
   <action name="actionMatch">
    <property name="text">
     <string>Match</string>
+   </property>
+  </action>
+  <action name="actionTest">
+   <property name="text">
+    <string>Test</string>
    </property>
   </action>
  </widget>

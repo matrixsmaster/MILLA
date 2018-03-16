@@ -15,7 +15,7 @@ ThumbnailModel::ThumbnailModel(std::list<QString> files, QObject *parent)
     }
 
     for (auto &i : files) {
-        PixmapPair *pair = new PixmapPair();
+        ThumbnailRec *pair = new ThumbnailRec();
         pair->filename = i;
         pair->loaded = false;
         pair->modified = true;

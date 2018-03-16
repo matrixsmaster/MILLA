@@ -23,4 +23,4 @@ FORMS    += mviewer.ui
 
 CONFIG   += c++11
 
-LIBS     += -lopencv_core -lopencv_features2d -lopencv_flann -lopencv_nonfree
+LIBS     += -lopencv_core -lopencv_features2d -lopencv_flann -lopencv_nonfree -lopencv_highgui
