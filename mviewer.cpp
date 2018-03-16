@@ -89,9 +89,11 @@ void MViewer::on_actionOpen_triggered()
 
 void MViewer::scaleImage(QScrollArea* scrl, QLabel* lbl, QModelIndex *idx, double factor)
 {
-    if (!idx->isValid()) return;
+    if (!idx->isValid() || !ui->listView->model()) return;
 
     scaleFactor *= factor;
+    if (scaleFactor <= FLT_EPSILON) scaleFactor = 1;
+
     scrl->setWidgetResizable(false);
     lbl->setPixmap(QPixmap());
     lbl->setText("");
@@ -99,7 +101,10 @@ void MViewer::scaleImage(QScrollArea* scrl, QLabel* lbl, QModelIndex *idx, doubl
     scrl->updateGeometry();
     scrl->setWidgetResizable(true);
 
-    reinterpret_cast<ThumbnailModel*>(ui->listView->model())->LoadUp(idx->row());
+    ThumbnailModel* ptm = dynamic_cast<ThumbnailModel*>(ui->listView->model());
+    if (ptm) ptm->LoadUp(idx->row());
+    else return;
+
     QPixmap map = idx->data(ThumbnailModel::LargePixmapRole).value<QPixmap>();
 
     if (ui->actionFit->isChecked())
@@ -117,4 +122,101 @@ void MViewer::on_actionFit_triggered()
     if (!ui->actionFit->isChecked()) scaleFactor = 1;
     scaleImage(ui->scrollArea,ui->label,&current_l,1);
     scaleImage(ui->scrollArea_2,ui->label_2,&current_r,1);
+}
+
+cv::Mat MViewer::quickConvert(QImage &in)
+{
+    if (in.format() != QImage::Format_RGB888) {
+        in = in.convertToFormat(QImage::Format_RGB888);
+        qDebug() << "converting";
+    }
+    return cv::Mat(in.size().width(),in.size().height(),CV_8UC3,in.bits());
+}
+
+void MViewer::on_actionMatch_triggered()
+{
+    using namespace cv;
+
+    if (!current_l.isValid() || !ui->listView->model()) return;
+
+    QImage org(ui->label->pixmap()->toImage());
+    if (org.isNull()) return;
+
+    SurfFeatureDetector det(FLATS_MINHESSIAN);
+    SurfDescriptorExtractor extr;
+    vector<KeyPoint> kp,kpv;
+    Mat dsc,desc,H,in = quickConvert(org);
+    FlannBasedMatcher matcher;
+    vector<DMatch> matches;
+
+    try {
+        det.detect(in,kp);
+        extr.compute(in,kp,dsc);
+    } catch (...) {
+        qDebug() << "Unable to extract features from original file";
+        return;
+    }
+
+    ThumbnailModel* ptm = dynamic_cast<ThumbnailModel*>(ui->listView->model());
+    if (!ptm) return;
+
+    int j,maxgoods = 0;
+    PixmapPair* winner = nullptr;
+    QString we = current_l.data(ThumbnailModel::FullPathRole).value<QString>();
+    for (auto &i : ptm->GetAllImages()) {
+        if (we == i->filename) continue;
+
+        if (!i->loaded) continue; //FIXME: debug only
+
+        QPixmap m;
+        if (i->loaded) m = i->picture;
+        else m.load(i->filename);
+        if (m.isNull()) continue;
+
+        QImage cur(m.toImage());
+        if (cur.isNull()) continue;
+        Mat cc(quickConvert(cur));
+
+        kpv.clear();
+        desc.release();
+        matches.clear();
+
+        try {
+            det.detect(cc,kpv);
+            extr.compute(cc,kpv,desc);
+            matcher.match(dsc,desc,matches);
+        } catch (...) {
+            qDebug() << "Detect/match error on " << i->fnshort;
+        }
+        cc.release();
+
+        qDebug() << i->fnshort << ": Matches: " << matches.size();
+
+        double dist,max_dist = 0;
+        double min_dist = 100;
+        int ttl = 0;
+
+        //calculate distance max && min
+        for (j = 0; j < desc.rows; j++) {
+            dist = matches[j].distance;
+            if (dist < min_dist) min_dist = dist;
+            if (dist > max_dist) max_dist = dist;
+        }
+
+        //matches filtering
+        for (j = 0; j < desc.rows; j++)
+            if (matches[j].distance < 3 * min_dist) {
+                ttl++;
+            }
+        qDebug() << "Total " << ttl << " good matches for " << i->fnshort;
+
+        if (ttl > maxgoods) {
+            maxgoods = ttl;
+            winner = i;
+        }
+    }
+
+    if (winner) {
+        ui->label_2->setPixmap(winner->picture);
+    }
 }

@@ -22,3 +22,5 @@ HEADERS  += mviewer.h \
 FORMS    += mviewer.ui
 
 CONFIG   += c++11
+
+LIBS     += -lopencv_core -lopencv_features2d -lopencv_flann -lopencv_nonfree

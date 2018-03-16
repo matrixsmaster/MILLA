@@ -55,6 +55,7 @@ public:
 
     void LoadUp(int idx);
     void GC(int skip = -1);
+    QList<PixmapPair*>& GetAllImages() { return images; }
 
 private:
     QList<PixmapPair*> images;

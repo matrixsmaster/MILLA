@@ -127,7 +127,7 @@
                  <rect>
                   <x>0</x>
                   <y>0</y>
-                  <width>213</width>
+                  <width>202</width>
                   <height>275</height>
                  </rect>
                 </property>
@@ -154,7 +154,7 @@
                  <rect>
                   <x>0</x>
                   <y>0</y>
-                  <width>212</width>
+                  <width>223</width>
                   <height>275</height>
                  </rect>
                 </property>
@@ -505,6 +505,7 @@
     <property name="title">
      <string>Tools</string>
     </property>
+    <addaction name="actionMatch"/>
    </widget>
    <widget class="QMenu" name="menuHelp">
     <property name="title">
@@ -543,6 +544,11 @@
    </property>
    <property name="shortcut">
     <string>F</string>
+   </property>
+  </action>
+  <action name="actionMatch">
+   <property name="text">
+    <string>Match</string>
    </property>
   </action>
  </widget>
