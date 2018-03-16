@@ -15,18 +15,16 @@
 #include <QByteArray>
 #include <QBuffer>
 #include <QImageWriter>
+#include <QDateTime>
 
 #define THUMBNAILSIZE 100
 #define MAXPICSBYTES 1024*1024*1024
 
 struct ThumbnailRec {
-    QString filename;
-    QString fnshort;
-    QPixmap thumb;
-    QPixmap picture;
-    bool loaded;
-    bool modified;
-    time_t touched;
+    QString filename, fnshort;
+    QPixmap thumb, picture;
+    bool loaded, modified;
+    time_t touched, filechanged;
 };
 
 class ThumbnailModel : public QAbstractListModel

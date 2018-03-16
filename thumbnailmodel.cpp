@@ -10,7 +10,7 @@ ThumbnailModel::ThumbnailModel(std::list<QString> files, QObject *parent)
     qDebug() << "[db] Read thumbs table: " << ok;
     if (!ok) {
         QSqlQuery qq;
-        ok = qq.exec("CREATE TABLE thumbs (file TEXT, thumb BLOB)");
+        ok = qq.exec("CREATE TABLE thumbs (file TEXT, mtime UNSIGNED INT, thumb BLOB)");
         qDebug() << "[db] Create new thumbs table: " << ok;
     }
 
@@ -19,15 +19,17 @@ ThumbnailModel::ThumbnailModel(std::list<QString> files, QObject *parent)
         pair->filename = i;
         pair->loaded = false;
         pair->modified = true;
+        pair->filechanged = 0;
 
         if (ok) {
             QSqlQuery qq;
-            qq.prepare("SELECT thumb FROM thumbs WHERE file = (:fn)");
+            qq.prepare("SELECT thumb, mtime FROM thumbs WHERE file = (:fn)");
             qq.bindValue(":fn",i);
 
-            if (qq.exec() && qq.next() && qq.value(0).canConvert(QVariant::ByteArray)) {
+            if (qq.exec() && qq.next() && qq.value(0).canConvert(QVariant::ByteArray) && qq.value(1).canConvert(QVariant::UInt)) {
                 qDebug() << "Loaded thumbnail for " << i;
                 pair->thumb.loadFromData(qq.value(0).toByteArray());
+                pair->filechanged = qq.value(1).toUInt();
                 pair->modified = false;
             }
         }
@@ -96,15 +98,19 @@ void ThumbnailModel::LoadUp(int idx) //const
     if (images.at(idx)->loaded) return;
     images[idx]->picture = QPixmap(images[idx]->filename);
     if (images.at(idx)->picture.isNull()) return;
+    images[idx]->loaded = true;
 
     //qDebug() << "depth = " << images.at(idx)->picture.depth();
     ram_footprint += ItemSizeInBytes(idx);
     GC(idx);
 
+    QFileInfo fi(images.at(idx)->filename);
+    if (fi.lastModified().toTime_t() == images.at(idx)->filechanged) return;
+
     images[idx]->thumb = images[idx]->picture.scaled(THUMBNAILSIZE,THUMBNAILSIZE,Qt::KeepAspectRatio,Qt::SmoothTransformation);
-    images[idx]->loaded = true;
     images[idx]->modified = true;
     images[idx]->touched = time(NULL);
+    images[idx]->filechanged = fi.lastModified().toTime_t();
 
     QByteArray arr;
     QBuffer dat(&arr);
@@ -122,13 +128,14 @@ void ThumbnailModel::LoadUp(int idx) //const
         ok = false;
 
         if (!mod) {
-            q.prepare("INSERT INTO thumbs (file, thumb) VALUES (:fn, :thm)");
+            q.prepare("INSERT INTO thumbs (file, mtime, thumb) VALUES (:fn, :mtm, :thm)");
             act = "Inserting";
         } else {
-            q.prepare("UPDATE thumbs SET thumb = :thm WHERE file = :fn");
+            q.prepare("UPDATE thumbs SET thumb = :thm, mtime = :mtm WHERE file = :fn");
             act = "Updating";
         }
         q.bindValue(":fn",images.at(idx)->filename);
+        q.bindValue(":mtm",fi.lastModified().toTime_t());
         q.bindValue(":thm",arr);
         ok = q.exec();
 
