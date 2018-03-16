@@ -127,8 +127,8 @@
                  <rect>
                   <x>0</x>
                   <y>0</y>
-                  <width>202</width>
-                  <height>275</height>
+                  <width>200</width>
+                  <height>272</height>
                  </rect>
                 </property>
                 <layout class="QHBoxLayout" name="horizontalLayout_11">
@@ -154,8 +154,8 @@
                  <rect>
                   <x>0</x>
                   <y>0</y>
-                  <width>223</width>
-                  <height>275</height>
+                  <width>219</width>
+                  <height>272</height>
                  </rect>
                 </property>
                 <layout class="QHBoxLayout" name="horizontalLayout_12">
@@ -507,6 +507,7 @@
     </property>
     <addaction name="actionMatch"/>
     <addaction name="actionTest"/>
+    <addaction name="actionLoad_all_known"/>
    </widget>
    <widget class="QMenu" name="menuHelp">
     <property name="title">
@@ -555,6 +556,11 @@
   <action name="actionTest">
    <property name="text">
     <string>Test</string>
+   </property>
+  </action>
+  <action name="actionLoad_all_known">
+   <property name="text">
+    <string>Load all known</string>
    </property>
   </action>
  </widget>

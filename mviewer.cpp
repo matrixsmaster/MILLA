@@ -169,6 +169,8 @@ void MViewer::on_actionMatch_triggered()
 
     MMatcherCacheRec orig = getMatchCacheLine(current_l.data(ThumbnailModel::FullPathRole).value<QString>());
     if (!orig.valid) return;
+    QSize orig_size = current_l.data(ThumbnailModel::LargePixmapRole).value<QPixmap>().size();
+    double orig_area = orig_size.width() * orig_size.height();
 
     FlannBasedMatcher matcher;
     size_t maxgoods = 0;
@@ -179,6 +181,9 @@ void MViewer::on_actionMatch_triggered()
         if (we == i->filename) continue;
 
         if (!i->loaded) continue; //FIXME: debug only
+
+        double cur_area = i->picture.size().width() * i->picture.size().height();
+        if (orig_area / cur_area > 2 || cur_area / orig_area > 2) continue;
 
         MMatcherCacheRec cur = getMatchCacheLine(i->filename);
         if (!cur.valid) continue;
@@ -277,4 +282,16 @@ MMatcherCacheRec MViewer::getMatchCacheLine(QString const &fn)
     res.valid = true;
     match_cache[fn] = res;
     return res;
+}
+
+void MViewer::on_actionLoad_all_known_triggered()
+{
+    ThumbnailModel* ptm = dynamic_cast<ThumbnailModel*>(ui->listView->model());
+    if (!ptm) return;
+
+    size_t x = 0;
+    for (auto &i : ptm->GetAllImages()) {
+        if (!i->modified && i->picture.isNull()) ptm->LoadUp(x);
+        x++;
+    }
 }

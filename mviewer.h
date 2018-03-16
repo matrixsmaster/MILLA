@@ -48,6 +48,8 @@ private slots:
 
     void on_actionTest_triggered();
 
+    void on_actionLoad_all_known_triggered();
+
 private:
     Ui::MViewer *ui;
     double scaleFactor;
