@@ -18,6 +18,13 @@
 
 #define FLATS_MINHESSIAN 400
 
+struct MMatcherCacheRec {
+    std::vector<cv::KeyPoint> kpv;
+    cv::Mat desc;
+    bool valid = false;
+    cv::Mat tmp_img;
+};
+
 namespace Ui {
 class MViewer;
 }
@@ -45,9 +52,11 @@ private:
     Ui::MViewer *ui;
     double scaleFactor;
     QModelIndex current_l, current_r;
+    std::map<QString,MMatcherCacheRec> match_cache;
 
     void scaleImage(QScrollArea* scrl, QLabel* lbl, QModelIndex* idx, double factor);
     cv::Mat quickConvert(QImage const &in);
+    MMatcherCacheRec getMatchCacheLine(QString const &fn);
 };
 
 #endif // MVIEWER_H

@@ -46,6 +46,8 @@ void MViewer::on_actionOpen_triggered()
     if (fileName.isEmpty()) return;
     qDebug() << fileName;
 
+    match_cache.clear();
+
     QFileInfo bpf(fileName);
     QString bpath = bpf.canonicalPath();
     if (bpath.isEmpty()) return;
@@ -162,90 +164,56 @@ void MViewer::on_actionMatch_triggered()
 
     if (!current_l.isValid() || !ui->listView->model()) return;
 
-    QImage org(ui->label->pixmap()->toImage());
-    if (org.isNull()) return;
-
-    SurfFeatureDetector det(FLATS_MINHESSIAN);
-    SurfDescriptorExtractor extr;
-    vector<KeyPoint> kp,kpv;
-    Mat dsc,desc,H,in = quickConvert(org);
-    FlannBasedMatcher matcher;
-    vector<DMatch> matches;
-
-    imshow("INPUT",in); //FIXME: debug only
-
-    try {
-        det.detect(in,kp);
-        extr.compute(in,kp,dsc);
-    } catch (...) {
-        qDebug() << "Unable to extract features from original file";
-        return;
-    }
-    if (kp.empty()) return;
-
     ThumbnailModel* ptm = dynamic_cast<ThumbnailModel*>(ui->listView->model());
     if (!ptm) return;
 
-    int j;
+    MMatcherCacheRec orig = getMatchCacheLine(current_l.data(ThumbnailModel::FullPathRole).value<QString>());
+    if (!orig.valid) return;
+
+    FlannBasedMatcher matcher;
     size_t maxgoods = 0;
     ThumbnailRec* winner = nullptr;
     Mat img_matches; //FIXME: debug only
-    std::vector<DMatch> good_matches,win_matches;
     QString we = current_l.data(ThumbnailModel::FullPathRole).value<QString>();
     for (auto &i : ptm->GetAllImages()) {
         if (we == i->filename) continue;
 
         if (!i->loaded) continue; //FIXME: debug only
 
-        QPixmap m;
-        if (i->loaded) m = i->picture;
-        else m.load(i->filename);
-        if (m.isNull()) continue;
-
-        QImage cur(m.toImage());
-        if (cur.isNull()) continue;
-        Mat cc(quickConvert(cur));
-
-        kpv.clear();
-        desc.release();
-        matches.clear();
-        good_matches.clear();
-
+        MMatcherCacheRec cur = getMatchCacheLine(i->filename);
+        if (!cur.valid) continue;
+        vector<DMatch> matches;
         try {
-            det.detect(cc,kpv);
-            extr.compute(cc,kpv,desc);
-            matcher.match(dsc,desc,matches);
+            matcher.match(orig.desc,cur.desc,matches);
         } catch (...) {
-            qDebug() << "Detect/match error on " << i->fnshort;
+            qDebug() << "Matching error on " << i->fnshort;
         }
-        //cc.release();
-
-        qDebug() << i->fnshort << ": Matches: " << matches.size();
 
         double dist,max_dist = 0;
         double min_dist = 100;
 
         //calculate distance max && min
-        for (j = 0; j < dsc.rows; j++) {
+        for (int j = 0; j < orig.desc.rows; j++) {
             dist = matches[j].distance;
             if (dist < min_dist) min_dist = dist;
             if (dist > max_dist) max_dist = dist;
         }
 
         //matches filtering
-        for (j = 0; j < dsc.rows; j++)
+        std::vector<DMatch> good_matches;
+        for (int j = 0; j < orig.desc.rows; j++)
             if (matches[j].distance <= max(2*min_dist,0.02)) {
                 good_matches.push_back(matches[j]);
             }
         qDebug() << "Total " << good_matches.size() << " good matches for " << i->fnshort;
 
-        if (good_matches.size() > maxgoods && !kpv.empty()) {
+        if (good_matches.size() > maxgoods && !cur.kpv.empty()) {
             maxgoods = good_matches.size();
             winner = i;
 
             //FIXME: debug only
             try {
-            drawMatches( cc, kpv, in, kp,
+                drawMatches( orig.tmp_img, orig.kpv, cur.tmp_img, cur.kpv,
                          good_matches, img_matches );
                          //Scalar::all(-1), Scalar::all(-1), vector<char>(), DrawMatchesFlags::NOT_DRAW_SINGLE_POINTS );
             } catch (...) {
@@ -268,4 +236,45 @@ void MViewer::on_actionTest_triggered()
     QImage i(current_l.data(ThumbnailModel::LargePixmapRole).value<QPixmap>().toImage());
     cv::Mat m(quickConvert(i));
     cv::imshow("TEST",m);
+}
+
+MMatcherCacheRec MViewer::getMatchCacheLine(QString const &fn)
+{
+    using namespace cv;
+
+    if (match_cache.count(fn))
+        return match_cache[fn];
+
+    MMatcherCacheRec res;
+    ThumbnailModel* ptm = dynamic_cast<ThumbnailModel*>(ui->listView->model());
+    if (!ptm) return res;
+
+    QPixmap org;
+    for (auto &i : ptm->GetAllImages())
+        if (i->filename == fn) {
+            if (i->loaded) org = i->picture;
+            else org.load(i->filename);
+            break;
+        }
+    if (org.isNull()) return res;
+
+    QImage orgm(org.toImage());
+    if (orgm.isNull()) return res;
+    Mat in = quickConvert(orgm);
+
+    SurfFeatureDetector det(FLATS_MINHESSIAN);
+    SurfDescriptorExtractor extr;
+
+    try {
+        det.detect(in,res.kpv);
+        extr.compute(in,res.kpv,res.desc);
+    } catch (...) {
+        qDebug() << "Unable to extract features from " << fn;
+        return res;
+    }
+
+    res.tmp_img = in; //FIXME: debug only
+    res.valid = true;
+    match_cache[fn] = res;
+    return res;
 }
