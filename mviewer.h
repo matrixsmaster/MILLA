@@ -22,6 +22,7 @@ struct MMatcherCacheRec {
     std::vector<cv::KeyPoint> kpv;
     cv::Mat desc;
     bool valid = false;
+    cv::MatND hist;
     cv::Mat tmp_img;
 };
 

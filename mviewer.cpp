@@ -176,6 +176,7 @@ void MViewer::on_actionMatch_triggered()
     size_t maxgoods = 0;
     ThumbnailRec* winner = nullptr;
     Mat img_matches; //FIXME: debug only
+    double cormax = -1; //FIXME: debug only
     QString we = current_l.data(ThumbnailModel::FullPathRole).value<QString>();
     for (auto &i : ptm->GetAllImages()) {
         if (we == i->filename) continue;
@@ -187,6 +188,12 @@ void MViewer::on_actionMatch_triggered()
 
         MMatcherCacheRec cur = getMatchCacheLine(i->filename);
         if (!cur.valid) continue;
+
+        double corr = compareHist(orig.hist,cur.hist,CV_COMP_CORREL);
+        qDebug() << "Correlation with " << i->filename << ":  " << corr;
+        //if (corr < 0.04) continue;
+
+#if 0
         vector<DMatch> matches;
         try {
             matcher.match(orig.desc,cur.desc,matches);
@@ -211,19 +218,21 @@ void MViewer::on_actionMatch_triggered()
                 good_matches.push_back(matches[j]);
             }
         qDebug() << "Total " << good_matches.size() << " good matches for " << i->fnshort;
-
-        if (good_matches.size() > maxgoods && !cur.kpv.empty()) {
-            maxgoods = good_matches.size();
+#endif
+        //if (good_matches.size() > maxgoods && !cur.kpv.empty()) {
+        if (corr > cormax) {
+            //maxgoods = good_matches.size();
             winner = i;
+            cormax = corr;
 
             //FIXME: debug only
-            try {
+            /*try {
                 drawMatches( orig.tmp_img, orig.kpv, cur.tmp_img, cur.kpv,
                          good_matches, img_matches );
                          //Scalar::all(-1), Scalar::all(-1), vector<char>(), DrawMatchesFlags::NOT_DRAW_SINGLE_POINTS );
             } catch (...) {
                 qDebug() << "drawMatches error";
-            }
+            }*/
         }
     }
 
@@ -231,7 +240,8 @@ void MViewer::on_actionMatch_triggered()
         ui->label_2->setPixmap(winner->picture);
 
         //-- Show detected matches
-        imshow( "Good Matches", img_matches );
+        //imshow( "Good Matches", img_matches );
+        qDebug() << "Winning compare: " << cormax;
     }
 }
 
@@ -267,6 +277,13 @@ MMatcherCacheRec MViewer::getMatchCacheLine(QString const &fn)
     if (orgm.isNull()) return res;
     Mat in = quickConvert(orgm);
 
+    int histSize[] = {64, 64, 64};
+    float rranges[] = {0, 256};
+    const float* ranges[] = {rranges, rranges, rranges};
+    int channels[] = {0, 1, 2};
+    calcHist(&in,1,channels,Mat(),res.hist,3,histSize,ranges,true,false);
+
+#if 0
     SurfFeatureDetector det(FLATS_MINHESSIAN);
     SurfDescriptorExtractor extr;
 
@@ -279,6 +296,7 @@ MMatcherCacheRec MViewer::getMatchCacheLine(QString const &fn)
     }
 
     res.tmp_img = in; //FIXME: debug only
+#endif
     res.valid = true;
     match_cache[fn] = res;
     return res;
