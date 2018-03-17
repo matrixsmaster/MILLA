@@ -56,6 +56,8 @@ private slots:
 
     void on_actionDetect_body_triggered();
 
+    void on_actionDetect_face_profile_triggered();
+
 private:
     Ui::MViewer *ui;
     double scaleFactor;
@@ -65,7 +67,7 @@ private:
     void scaleImage(QScrollArea* scrl, QLabel* lbl, QModelIndex* idx, double factor);
     cv::Mat quickConvert(QImage const &in);
     MMatcherCacheRec getMatchCacheLine(QString const &fn);
-    void Recognize(const QPixmap &in, QString classifier);
+    void Recognize(const QPixmap &in, QString classifier, bool use_hog);
 };
 
 #endif // MVIEWER_H

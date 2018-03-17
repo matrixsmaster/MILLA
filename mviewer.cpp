@@ -314,12 +314,13 @@ MMatcherCacheRec MViewer::getMatchCacheLine(QString const &fn)
     return res;
 }
 
-void MViewer::Recognize(const QPixmap &in, QString classifier)
+void MViewer::Recognize(const QPixmap &in, QString classifier, bool use_hog)
 {
     using namespace cv;
 
     CascadeClassifier cascade;
-    if (!cascade.load(classifier.toStdString())) {
+    HOGDescriptor hog;
+    if (!use_hog && !cascade.load(classifier.toStdString())) {
         qDebug() << "Unable to load cascade from " << classifier;
         return;
     }
@@ -328,9 +329,20 @@ void MViewer::Recognize(const QPixmap &in, QString classifier)
     std::vector<Rect> items;
     Mat work,inp = quickConvert(inq);
     cvtColor(inp,work,CV_BGR2GRAY);
-    equalizeHist(work,work);
 
-    cascade.detectMultiScale(work,items,1.1,3,0,Size(32,32));
+    try {
+        if (!use_hog) {
+            equalizeHist(work,work);
+            cascade.detectMultiScale(work,items,1.1,3,0,Size(32,32));
+        } else {
+            hog.setSVMDetector(HOGDescriptor::getDefaultPeopleDetector());
+            hog.detectMultiScale(work,items,0,Size(8,8),Size(32,32),1.05,2);
+        }
+    } catch (...) {
+        qDebug() << "Error";
+        return;
+    }
+
     qDebug() << items.size() << " items detected";
 
     QPainter painter(&inq);
@@ -361,11 +373,17 @@ void MViewer::on_actionLoad_all_known_triggered()
 void MViewer::on_actionDetect_face_triggered()
 {
     if (!current_l.isValid()) return;
-    Recognize(current_l.data(ThumbnailModel::LargePixmapRole).value<QPixmap>(),"/usr/share/opencv/haarcascades/haarcascade_frontalface_alt.xml"); //OK
+    Recognize(current_l.data(ThumbnailModel::LargePixmapRole).value<QPixmap>(),"/usr/share/opencv/haarcascades/haarcascade_frontalface_alt.xml",false); //OK
 }
 
 void MViewer::on_actionDetect_body_triggered()
 {
     if (!current_l.isValid()) return;
-    Recognize(current_l.data(ThumbnailModel::LargePixmapRole).value<QPixmap>(),"/usr/share/opencv/haarcascades/haarcascade_fullbody.xml");
+    Recognize(current_l.data(ThumbnailModel::LargePixmapRole).value<QPixmap>(),"/usr/share/opencv/haarcascades/haarcascade_upperbody.xml",false);
+}
+
+void MViewer::on_actionDetect_face_profile_triggered()
+{
+    if (!current_l.isValid()) return;
+    Recognize(current_l.data(ThumbnailModel::LargePixmapRole).value<QPixmap>(),"/usr/share/opencv/haarcascades/haarcascade_profileface.xml",false);
 }

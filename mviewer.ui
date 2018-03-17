@@ -510,6 +510,7 @@
     <addaction name="actionLoad_all_known"/>
     <addaction name="actionDetect_face"/>
     <addaction name="actionDetect_body"/>
+    <addaction name="actionDetect_face_profile"/>
    </widget>
    <widget class="QMenu" name="menuHelp">
     <property name="title">
@@ -573,6 +574,11 @@
   <action name="actionDetect_body">
    <property name="text">
     <string>Detect body</string>
+   </property>
+  </action>
+  <action name="actionDetect_face_profile">
+   <property name="text">
+    <string>Detect face profile</string>
    </property>
   </action>
  </widget>
