@@ -69,11 +69,15 @@ void MViewer::on_actionOpen_triggered()
         ui->listView->model()->deleteLater();
     }
 
+    bool purelist = false;
+
     ui->listView->setModel(new ThumbnailModel(lst,ui->listView));
-    ui->listView->setViewMode(QListView::ListMode);
-    ui->listView->setFlow(QListView::LeftToRight);
+    ui->listView->setViewMode(purelist? QListView::ListMode : QListView::IconMode);
+    ui->listView->setFlow(purelist? QListView::TopToBottom : QListView::LeftToRight);
+    ui->listView->setWrapping(!purelist);
+    ui->listView->setSpacing(purelist? 0:10);
+    ui->listView->setResizeMode(QListView::Adjust);
     ui->listView->setSelectionMode(QListView::SingleSelection);
-    ui->listView->setWrapping(true);
     ui->listView->setContextMenuPolicy(Qt::CustomContextMenu);
 
     connect(ui->listView->selectionModel(), &QItemSelectionModel::selectionChanged, [this] {

@@ -19,12 +19,28 @@
 
 #define FLATS_MINHESSIAN 400
 
+enum MROIType {
+    MROI_GENERIC = 0,
+    MROI_FACE_FRONTAL,
+    MROI_INVALID // terminator
+};
+
+struct MROI {
+    MROIType kind = MROI_GENERIC;
+    int x = 0, y = 0, w = 0, h = 0;
+};
+
 struct MMatcherCacheRec {
     std::vector<cv::KeyPoint> kpv;
     cv::Mat desc;
     bool valid = false;
     cv::MatND hist;
     cv::Mat tmp_img;
+};
+
+struct MImageExtras {
+    std::vector<MROI> rois;
+    cv::Mat hist;
 };
 
 namespace Ui {

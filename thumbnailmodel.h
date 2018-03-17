@@ -46,8 +46,8 @@ public:
 
     // QAbstractItemModel interface ===========================
 public:
-    int columnCount(const QModelIndex /*&parent*/) const { return 1; }
-    int rowCount(const QModelIndex &parent) const;
+    int columnCount(const QModelIndex &) const { return 1; }
+    int rowCount(const QModelIndex &) const { return images.size(); }
     QVariant data(const QModelIndex &index, int role) const;
     // ========================================================
 

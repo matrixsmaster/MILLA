@@ -52,17 +52,6 @@ ThumbnailModel::~ThumbnailModel()
     qDeleteAll(images);
 }
 
-int ThumbnailModel::rowCount(const QModelIndex &parent) const
-{
-    // This function should return the number of rows contained in the parent
-    // parameter, the parent parameter is used for trees in order to retrieve the
-    // number of rows contained in each node. Since we are doing a list each element
-    // doesn't have child nodes so we return 0
-    // By convention an invalid parent means the topmost level of a tree. In our case
-    // we return the number of elements contained in our images store.
-    return parent.isValid()? 0 : images.count();
-}
-
 QVariant ThumbnailModel::data(const QModelIndex &index, int role) const
 {
     if (index.isValid()) {
