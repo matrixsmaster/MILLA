@@ -14,6 +14,7 @@
 #include <opencv2/opencv.hpp>
 #include <opencv2/nonfree/nonfree.hpp>
 #include <opencv2/features2d/features2d.hpp>
+#include <opencv2/objdetect/objdetect.hpp>
 #include <opencv2/highgui/highgui.hpp>
 
 #define FLATS_MINHESSIAN 400
@@ -51,6 +52,10 @@ private slots:
 
     void on_actionLoad_all_known_triggered();
 
+    void on_actionDetect_face_triggered();
+
+    void on_actionDetect_body_triggered();
+
 private:
     Ui::MViewer *ui;
     double scaleFactor;
@@ -60,6 +65,7 @@ private:
     void scaleImage(QScrollArea* scrl, QLabel* lbl, QModelIndex* idx, double factor);
     cv::Mat quickConvert(QImage const &in);
     MMatcherCacheRec getMatchCacheLine(QString const &fn);
+    void Recognize(const QPixmap &in, QString classifier);
 };
 
 #endif // MVIEWER_H

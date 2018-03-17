@@ -508,6 +508,8 @@
     <addaction name="actionMatch"/>
     <addaction name="actionTest"/>
     <addaction name="actionLoad_all_known"/>
+    <addaction name="actionDetect_face"/>
+    <addaction name="actionDetect_body"/>
    </widget>
    <widget class="QMenu" name="menuHelp">
     <property name="title">
@@ -561,6 +563,16 @@
   <action name="actionLoad_all_known">
    <property name="text">
     <string>Load all known</string>
+   </property>
+  </action>
+  <action name="actionDetect_face">
+   <property name="text">
+    <string>Detect face</string>
+   </property>
+  </action>
+  <action name="actionDetect_body">
+   <property name="text">
+    <string>Detect body</string>
    </property>
   </action>
  </widget>

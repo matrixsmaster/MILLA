@@ -175,9 +175,11 @@ void MViewer::on_actionMatch_triggered()
     FlannBasedMatcher matcher;
     size_t maxgoods = 0;
     ThumbnailRec* winner = nullptr;
+    MMatcherCacheRec cur;
     Mat img_matches; //FIXME: debug only
-    double cormax = -1; //FIXME: debug only
+    std::map<double,ThumbnailRec*> targets;
     QString we = current_l.data(ThumbnailModel::FullPathRole).value<QString>();
+
     for (auto &i : ptm->GetAllImages()) {
         if (we == i->filename) continue;
 
@@ -186,19 +188,31 @@ void MViewer::on_actionMatch_triggered()
         double cur_area = i->picture.size().width() * i->picture.size().height();
         if (orig_area / cur_area > 2 || cur_area / orig_area > 2) continue;
 
-        MMatcherCacheRec cur = getMatchCacheLine(i->filename);
+        cur = getMatchCacheLine(i->filename);
         if (!cur.valid) continue;
 
         double corr = compareHist(orig.hist,cur.hist,CV_COMP_CORREL);
         qDebug() << "Correlation with " << i->filename << ":  " << corr;
-        //if (corr < 0.04) continue;
 
-#if 0
+        if (corr > 0) targets[corr] = i;
+    }
+
+    if (!targets.empty())
+        qDebug() << "Total targets: " << targets.size();
+    else
+        return;
+
+#if 1
+    int n = 0;
+    for (auto i = targets.rbegin(); i != targets.rend() && n < 5; ++i,n++) {
+        cur = getMatchCacheLine(i->second->filename);
+        if (!cur.valid) continue;
+
         vector<DMatch> matches;
         try {
             matcher.match(orig.desc,cur.desc,matches);
         } catch (...) {
-            qDebug() << "Matching error on " << i->fnshort;
+            qDebug() << "Matching error on " << i->second->fnshort;
         }
 
         double dist,max_dist = 0;
@@ -217,31 +231,29 @@ void MViewer::on_actionMatch_triggered()
             if (matches[j].distance <= max(2*min_dist,0.02)) {
                 good_matches.push_back(matches[j]);
             }
-        qDebug() << "Total " << good_matches.size() << " good matches for " << i->fnshort;
-#endif
-        //if (good_matches.size() > maxgoods && !cur.kpv.empty()) {
-        if (corr > cormax) {
-            //maxgoods = good_matches.size();
-            winner = i;
-            cormax = corr;
+        qDebug() << "Total " << good_matches.size() << " good matches for " << i->second->fnshort;
+
+        if (good_matches.size() > maxgoods && !cur.kpv.empty()) {
+            maxgoods = good_matches.size();
+            winner = i->second;
 
             //FIXME: debug only
-            /*try {
+            try {
                 drawMatches( orig.tmp_img, orig.kpv, cur.tmp_img, cur.kpv,
                          good_matches, img_matches );
                          //Scalar::all(-1), Scalar::all(-1), vector<char>(), DrawMatchesFlags::NOT_DRAW_SINGLE_POINTS );
             } catch (...) {
                 qDebug() << "drawMatches error";
-            }*/
+            }
         }
     }
+#endif
 
     if (winner) {
         ui->label_2->setPixmap(winner->picture);
 
         //-- Show detected matches
-        //imshow( "Good Matches", img_matches );
-        qDebug() << "Winning compare: " << cormax;
+        imshow( "Good Matches", img_matches );
     }
 }
 
@@ -283,7 +295,7 @@ MMatcherCacheRec MViewer::getMatchCacheLine(QString const &fn)
     int channels[] = {0, 1, 2};
     calcHist(&in,1,channels,Mat(),res.hist,3,histSize,ranges,true,false);
 
-#if 0
+#if 1
     SurfFeatureDetector det(FLATS_MINHESSIAN);
     SurfDescriptorExtractor extr;
 
@@ -302,6 +314,38 @@ MMatcherCacheRec MViewer::getMatchCacheLine(QString const &fn)
     return res;
 }
 
+void MViewer::Recognize(const QPixmap &in, QString classifier)
+{
+    using namespace cv;
+
+    CascadeClassifier cascade;
+    if (!cascade.load(classifier.toStdString())) {
+        qDebug() << "Unable to load cascade from " << classifier;
+        return;
+    }
+
+    QImage inq = in.toImage();
+    std::vector<Rect> items;
+    Mat work,inp = quickConvert(inq);
+    cvtColor(inp,work,CV_BGR2GRAY);
+    equalizeHist(work,work);
+
+    cascade.detectMultiScale(work,items,1.1,3,0,Size(32,32));
+    qDebug() << items.size() << " items detected";
+
+    QPainter painter(&inq);
+    QPen paintpen(Qt::red);
+    paintpen.setWidth(2);
+    painter.setPen(paintpen);
+
+    for (auto &i : items) {
+        painter.drawRect(QRect(i.x,i.y,i.width,i.height));
+    }
+
+    ui->label_2->setPixmap(QPixmap::fromImage(inq));
+    return;
+}
+
 void MViewer::on_actionLoad_all_known_triggered()
 {
     ThumbnailModel* ptm = dynamic_cast<ThumbnailModel*>(ui->listView->model());
@@ -312,4 +356,16 @@ void MViewer::on_actionLoad_all_known_triggered()
         if (!i->modified && i->picture.isNull()) ptm->LoadUp(x);
         x++;
     }
+}
+
+void MViewer::on_actionDetect_face_triggered()
+{
+    if (!current_l.isValid()) return;
+    Recognize(current_l.data(ThumbnailModel::LargePixmapRole).value<QPixmap>(),"/usr/share/opencv/haarcascades/haarcascade_frontalface_alt.xml"); //OK
+}
+
+void MViewer::on_actionDetect_body_triggered()
+{
+    if (!current_l.isValid()) return;
+    Recognize(current_l.data(ThumbnailModel::LargePixmapRole).value<QPixmap>(),"/usr/share/opencv/haarcascades/haarcascade_fullbody.xml");
 }
