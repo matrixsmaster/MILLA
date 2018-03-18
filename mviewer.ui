@@ -197,7 +197,7 @@
               </property>
               <widget class="QWidget" name="tab">
                <attribute name="title">
-                <string>Tab 1</string>
+                <string>Notes</string>
                </attribute>
                <layout class="QHBoxLayout" name="horizontalLayout_13">
                 <item>
@@ -207,11 +207,11 @@
               </widget>
               <widget class="QWidget" name="tab_2">
                <attribute name="title">
-                <string>Tab 2</string>
+                <string>Results</string>
                </attribute>
                <layout class="QHBoxLayout" name="horizontalLayout_14">
                 <item>
-                 <widget class="QListWidget" name="listWidget_2"/>
+                 <widget class="QListView" name="listView_2"/>
                 </item>
                </layout>
               </widget>
@@ -520,8 +520,6 @@
     <addaction name="actionTest"/>
     <addaction name="actionLoad_all_known"/>
     <addaction name="actionDetect_face"/>
-    <addaction name="actionDetect_body"/>
-    <addaction name="actionDetect_face_profile"/>
    </widget>
    <widget class="QMenu" name="menuHelp">
     <property name="title">
@@ -580,16 +578,6 @@
   <action name="actionDetect_face">
    <property name="text">
     <string>Detect face</string>
-   </property>
-  </action>
-  <action name="actionDetect_body">
-   <property name="text">
-    <string>Detect body</string>
-   </property>
-  </action>
-  <action name="actionDetect_face_profile">
-   <property name="text">
-    <string>Detect face profile</string>
    </property>
   </action>
  </widget>

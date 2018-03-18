@@ -18,6 +18,7 @@
 #include <opencv2/highgui/highgui.hpp>
 
 #define FLATS_MINHESSIAN 400
+#define FACE_CASCADE_FILE "/tmp/face_cascade.xml"
 
 enum MROIType {
     MROI_GENERIC = 0,
@@ -30,15 +31,8 @@ struct MROI {
     int x = 0, y = 0, w = 0, h = 0;
 };
 
-struct MMatcherCacheRec {
-    std::vector<cv::KeyPoint> kpv;
-    cv::Mat desc;
-    bool valid = false;
-    cv::MatND hist;
-    cv::Mat tmp_img;
-};
-
 struct MImageExtras {
+    bool valid = false;
     std::vector<MROI> rois;
     cv::Mat hist;
 };
@@ -70,20 +64,17 @@ private slots:
 
     void on_actionDetect_face_triggered();
 
-    void on_actionDetect_body_triggered();
-
-    void on_actionDetect_face_profile_triggered();
-
 private:
     Ui::MViewer *ui;
     double scaleFactor;
     QModelIndex current_l, current_r;
-    std::map<QString,MMatcherCacheRec> match_cache;
+    cv::CascadeClassifier* face_cascade;
+    std::map<QString,MImageExtras> extra_cache;
 
     void scaleImage(QScrollArea* scrl, QLabel* lbl, QModelIndex* idx, double factor);
     cv::Mat quickConvert(QImage const &in);
-    MMatcherCacheRec getMatchCacheLine(QString const &fn);
-    void Recognize(const QPixmap &in, QString classifier, bool use_hog);
+    MImageExtras getExtraCacheLine(QString const &fn);
+    void DetectFaces(const QPixmap &in);
 };
 
 #endif // MVIEWER_H

@@ -24,3 +24,5 @@ FORMS    += mviewer.ui
 CONFIG   += c++11
 
 LIBS     += -lopencv_core -lopencv_imgproc -lopencv_features2d -lopencv_flann -lopencv_objdetect -lopencv_nonfree -lopencv_highgui
+
+RESOURCES+= milla-view.qrc
