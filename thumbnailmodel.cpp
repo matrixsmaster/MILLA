@@ -6,7 +6,7 @@ ThumbnailModel::ThumbnailModel(std::list<QString> files, QObject *parent)
     ram_footprint = 0;
     QSqlDatabase db = QSqlDatabase::database();
     QSqlQuery q;
-    bool ok = q.exec("SELECT * FROM thumbs");
+    bool ok = q.exec("SELECT * FROM thumbs LIMIT 1");
     qDebug() << "[db] Read thumbs table: " << ok;
     if (!ok) {
         QSqlQuery qq;

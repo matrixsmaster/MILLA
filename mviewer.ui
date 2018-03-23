@@ -127,8 +127,8 @@
                  <rect>
                   <x>0</x>
                   <y>0</y>
-                  <width>200</width>
-                  <height>269</height>
+                  <width>206</width>
+                  <height>251</height>
                  </rect>
                 </property>
                 <layout class="QHBoxLayout" name="horizontalLayout_11">
@@ -154,8 +154,8 @@
                  <rect>
                   <x>0</x>
                   <y>0</y>
-                  <width>219</width>
-                  <height>269</height>
+                  <width>227</width>
+                  <height>251</height>
                  </rect>
                 </property>
                 <layout class="QHBoxLayout" name="horizontalLayout_12">
@@ -511,13 +511,13 @@
      <string>View</string>
     </property>
     <addaction name="actionFit"/>
+    <addaction name="actionShow_faces"/>
    </widget>
    <widget class="QMenu" name="menuTools">
     <property name="title">
      <string>Tools</string>
     </property>
     <addaction name="actionMatch"/>
-    <addaction name="actionTest"/>
     <addaction name="actionLoad_all_known"/>
     <addaction name="actionDetect_face"/>
    </widget>
@@ -565,11 +565,6 @@
     <string>Match</string>
    </property>
   </action>
-  <action name="actionTest">
-   <property name="text">
-    <string>Test</string>
-   </property>
-  </action>
   <action name="actionLoad_all_known">
    <property name="text">
     <string>Load all known</string>
@@ -578,6 +573,14 @@
   <action name="actionDetect_face">
    <property name="text">
     <string>Detect face</string>
+   </property>
+  </action>
+  <action name="actionShow_faces">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Show faces</string>
    </property>
   </action>
  </widget>

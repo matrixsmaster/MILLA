@@ -14,15 +14,17 @@ TEMPLATE = app
 
 SOURCES += main.cpp\
         mviewer.cpp \
-    thumbnailmodel.cpp
+    thumbnailmodel.cpp \
+    sresultmodel.cpp
 
 HEADERS  += mviewer.h \
-    thumbnailmodel.h
+    thumbnailmodel.h \
+    sresultmodel.h
 
 FORMS    += mviewer.ui
 
 CONFIG   += c++11
 
-LIBS     += -lopencv_core -lopencv_imgproc -lopencv_features2d -lopencv_flann -lopencv_objdetect -lopencv_nonfree -lopencv_highgui
+LIBS     += -lopencv_core -lopencv_imgproc -lopencv_features2d -lopencv_flann -lopencv_objdetect -lopencv_highgui
 
 RESOURCES+= milla-view.qrc

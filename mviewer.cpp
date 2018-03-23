@@ -19,14 +19,41 @@ MViewer::MViewer(QWidget *parent) :
 
     if (ok) {
         QSqlQuery q;
-        ok = q.exec("SELECT * FROM stats");
+        ok = q.exec("SELECT * FROM meta");
+        qDebug() << "[db] Read meta table: " << ok;
+        if (!ok) {
+            QSqlQuery qq;
+            ok = qq.exec("CREATE TABLE meta (version INT)");
+            qDebug() << "[db] Create new meta table: " << ok;
+            qq.clear();
+            qq.prepare("INSERT INTO meta (version) VALUES (:ver)");
+            qq.bindValue(":ver",INTERNAL_DB_VERSION);
+            ok = qq.exec();
+            qDebug() << "[db] Inserting current DB version tag " << INTERNAL_DB_VERSION << ": " << ok;
+        }
+
+        q.clear();
+        ok = q.exec("SELECT * FROM stats LIMIT 1");
         qDebug() << "[db] Read stats table: " << ok;
         if (!ok) {
             QSqlQuery qq;
             ok = qq.exec("CREATE TABLE stats (file TEXT, views UNSIGNED BIGINT, rating TINYINT, tags TEXT, notes TEXT)");
             qDebug() << "[db] Create new stats table: " << ok;
         }
+
+        q.clear();
+        ok = q.exec("SELECT tag FROM tags LIMIT 1");
+        qDebug() << "[db] Read tags table: " << ok;
+        if (!ok) {
+            QSqlQuery qq;
+            ok = qq.exec("CREATE TABLE tags (key UNSIGNED INT, tag TEXT, rating UNSIGNED BIGINT)");
+            qDebug() << "[db] Create new tags table: " << ok;
+
+        } else
+            updateTags();
+
     }
+    if (!ok) qDebug() << "[ALERT] DB operations aren't finished";
 
     using namespace cv;
 
@@ -51,9 +78,52 @@ MViewer::~MViewer()
     delete ui;
 }
 
+void MViewer::addTag(QString const &tg, bool check)
+{
+    ui->listWidget->addItem(tg);
+    QListWidgetItem* i = ui->listWidget->item(ui->listWidget->count()-1);
+    if (!i) return;
+    i->setFlags(i->flags() | Qt::ItemIsUserCheckable);
+    i->setCheckState(check? Qt::Checked : Qt::Unchecked);
+}
+
+void MViewer::updateTags()
+{
+    QSqlQuery q;
+    bool ok = q.exec("SELECT tag FROM tags ORDER BY rating DESC");
+    qDebug() << "[db] Read whole tags table: " << ok;
+    if (ok) {
+        while (q.next()) addTag(q.value(0).toString());
+    }
+}
+
 void MViewer::on_pushButton_clicked()
 {
-    //TODO
+    if (ui->lineEdit->text().isEmpty()) return;
+
+    QSqlQuery q;
+    q.prepare("SELECT * FROM tags WHERE tag = (:tg)");
+    q.bindValue(":tg",ui->lineEdit->text());
+    if (q.exec() && q.next()) {
+        qDebug() << "[db] tag is already defined";
+        return;
+    }
+
+    q.clear();
+    if (!q.exec("SELECT MAX(key) FROM tags") || !q.next()) {
+        qDebug() << "[db] ERROR: unable to get max key value from tags table";
+        return;
+    }
+    unsigned key = q.value(0).toUInt() + 1;
+
+    q.clear();
+    q.prepare("INSERT INTO tags (key, tag, rating) VALUES (:k, :tg, 1)");
+    q.bindValue(":k",key);
+    q.bindValue(":tg",ui->lineEdit->text());
+    bool ok = q.exec();
+
+    qDebug() << "[db] Inserting tag " << ui->lineEdit->text() << ": " << ok;
+    if (ok) addTag(ui->lineEdit->text());
 }
 
 void MViewer::on_actionOpen_triggered()
@@ -85,7 +155,7 @@ void MViewer::on_actionOpen_triggered()
         ui->listView->model()->deleteLater();
     }
 
-    bool purelist = false;
+    bool purelist = false; //TODO: move it to user settings
 
     ui->listView->setModel(new ThumbnailModel(lst,ui->listView));
     ui->listView->setViewMode(purelist? QListView::ListMode : QListView::IconMode);
@@ -99,7 +169,6 @@ void MViewer::on_actionOpen_triggered()
     connect(ui->listView->selectionModel(), &QItemSelectionModel::selectionChanged, [this] {
         current_l = ui->listView->selectionModel()->selectedIndexes().first();
         scaleImage(ui->scrollArea,ui->label,&current_l,1);
-        //reinterpret_cast<ThumbnailModel*>(ui->listView->model())->GC();
         qDebug() << "selChanged";
     });
     connect(ui->listView, &QListView::customContextMenuRequested, this, [this] {
@@ -146,15 +215,17 @@ void MViewer::on_actionFit_triggered()
     scaleImage(ui->scrollArea_2,ui->label_2,&current_r,1);
 }
 
-cv::Mat MViewer::quickConvert(QImage const &in)
+cv::Mat MViewer::quickConvert(QImage &in) //FIXME: not always working
 {
-#if 0
     if (in.format() != QImage::Format_RGB888) {
         in = in.convertToFormat(QImage::Format_RGB888);
         qDebug() << "converting";
     }
     return cv::Mat(in.size().height(),in.size().width(),CV_8UC3,in.bits());
-#else
+}
+
+cv::Mat MViewer::slowConvert(QImage const &in)
+{
     using namespace cv;
 
     QImage n;
@@ -165,7 +236,6 @@ cv::Mat MViewer::quickConvert(QImage const &in)
         n = in;
 
     Mat r(n.size().height(),n.size().width(),CV_8UC3);
-//    uchar* ptr = n.bits();
     for (int j,i = 0; i < r.rows; i++) {
         uchar* ptr = n.scanLine(i);
         for (j = 0; j < r.cols; j++) {
@@ -175,7 +245,6 @@ cv::Mat MViewer::quickConvert(QImage const &in)
     }
 
     return r;
-#endif
 }
 
 void MViewer::on_actionMatch_triggered()
@@ -214,14 +283,6 @@ void MViewer::on_actionMatch_triggered()
     }
 }
 
-void MViewer::on_actionTest_triggered()
-{
-    if (!current_l.isValid() || !ui->listView->model()) return;
-    QImage i(current_l.data(ThumbnailModel::LargePixmapRole).value<QPixmap>().toImage());
-    cv::Mat m(quickConvert(i));
-    cv::imshow("TEST",m);
-}
-
 MImageExtras MViewer::getExtraCacheLine(QString const &fn)
 {
     using namespace cv;
@@ -244,7 +305,7 @@ MImageExtras MViewer::getExtraCacheLine(QString const &fn)
 
     QImage orgm(org.toImage());
     if (orgm.isNull()) return res;
-    Mat in = quickConvert(orgm);
+    Mat in = slowConvert(orgm);
 
     int histSize[] = {64, 64, 64};
     float rranges[] = {0, 256};
@@ -264,7 +325,7 @@ void MViewer::DetectFaces(const QPixmap &in)
 
     QImage inq = in.toImage();
     std::vector<Rect> items;
-    Mat work,inp = quickConvert(inq);
+    Mat work,inp = slowConvert(inq);
 
     try {
         cvtColor(inp,work,CV_BGR2GRAY);

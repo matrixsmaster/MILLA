@@ -12,12 +12,11 @@
 #include <QtSql/QSqlDatabase>
 #include <thumbnailmodel.h>
 #include <opencv2/opencv.hpp>
-#include <opencv2/nonfree/nonfree.hpp>
 #include <opencv2/features2d/features2d.hpp>
 #include <opencv2/objdetect/objdetect.hpp>
 #include <opencv2/highgui/highgui.hpp>
 
-#define FLATS_MINHESSIAN 400
+#define INTERNAL_DB_VERSION 1
 #define FACE_CASCADE_FILE "/tmp/face_cascade.xml"
 
 enum MROIType {
@@ -58,8 +57,6 @@ private slots:
 
     void on_actionMatch_triggered();
 
-    void on_actionTest_triggered();
-
     void on_actionLoad_all_known_triggered();
 
     void on_actionDetect_face_triggered();
@@ -71,9 +68,18 @@ private:
     cv::CascadeClassifier* face_cascade;
     std::map<QString,MImageExtras> extra_cache;
 
+    void addTag(QString const &tg, bool check = false);
+
+    void updateTags();
+
     void scaleImage(QScrollArea* scrl, QLabel* lbl, QModelIndex* idx, double factor);
-    cv::Mat quickConvert(QImage const &in);
+
+    cv::Mat quickConvert(QImage &in);
+
+    cv::Mat slowConvert(QImage const &in);
+
     MImageExtras getExtraCacheLine(QString const &fn);
+
     void DetectFaces(const QPixmap &in);
 };
 
