@@ -74,6 +74,7 @@ MViewer::MViewer(QWidget *parent) :
 MViewer::~MViewer()
 {
     if (face_cascade) delete face_cascade;
+    if (view_timer) delete view_timer;
     QSqlDatabase::database().close();
     delete ui;
 }
@@ -93,6 +94,7 @@ void MViewer::updateTags()
     bool ok = q.exec("SELECT tag FROM tags ORDER BY rating DESC");
     qDebug() << "[db] Read whole tags table: " << ok;
     if (ok) {
+        ui->listWidget->clear();
         while (q.next()) addTag(q.value(0).toString());
     }
 }
@@ -123,7 +125,28 @@ void MViewer::on_pushButton_clicked()
     bool ok = q.exec();
 
     qDebug() << "[db] Inserting tag " << ui->lineEdit->text() << ": " << ok;
-    if (ok) addTag(ui->lineEdit->text());
+    if (ok) {
+        addTag(ui->lineEdit->text());
+        ui->lineEdit->clear();
+    }
+}
+
+void MViewer::showNextImage()
+{
+    current_l = ui->listView->selectionModel()->selectedIndexes().first();
+    scaleImage(ui->scrollArea,ui->label,&current_l,1);
+    ui->progressBar->setValue(0);
+    if (view_timer) view_timer->start(50);
+    else {
+        view_timer = new QTimer();
+        connect(view_timer,&QTimer::timeout,this,[this] {
+            if (ui->progressBar->value() < 100)
+                ui->progressBar->setValue(ui->progressBar->value()+1);
+            else
+                view_timer->stop();
+        });
+    }
+    qDebug() << "selChanged";
 }
 
 void MViewer::on_actionOpen_triggered()
@@ -155,7 +178,7 @@ void MViewer::on_actionOpen_triggered()
         ui->listView->model()->deleteLater();
     }
 
-    bool purelist = false; //TODO: move it to user settings
+    bool purelist = true; //TODO: move it to user settings
 
     ui->listView->setModel(new ThumbnailModel(lst,ui->listView));
     ui->listView->setViewMode(purelist? QListView::ListMode : QListView::IconMode);
@@ -166,12 +189,8 @@ void MViewer::on_actionOpen_triggered()
     ui->listView->setSelectionMode(QListView::SingleSelection);
     ui->listView->setContextMenuPolicy(Qt::CustomContextMenu);
 
-    connect(ui->listView->selectionModel(), &QItemSelectionModel::selectionChanged, [this] {
-        current_l = ui->listView->selectionModel()->selectedIndexes().first();
-        scaleImage(ui->scrollArea,ui->label,&current_l,1);
-        qDebug() << "selChanged";
-    });
-    connect(ui->listView, &QListView::customContextMenuRequested, this, [this] {
+    connect(ui->listView->selectionModel(),&QItemSelectionModel::selectionChanged,[this] { showNextImage(); });
+    connect(ui->listView,&QListView::customContextMenuRequested,this,[this] {
         current_r = ui->listView->selectionModel()->selectedIndexes().first();
         scaleImage(ui->scrollArea_2,ui->label_2,&current_r,1);
         qDebug() << "rightClick";
@@ -366,4 +385,9 @@ void MViewer::on_actionDetect_face_triggered()
 {
     if (!current_l.isValid()) return;
     DetectFaces(current_l.data(ThumbnailModel::LargePixmapRole).value<QPixmap>());
+}
+
+void MViewer::on_listWidget_itemClicked(QListWidgetItem *item)
+{
+    qDebug() << "on_listWidget_itemClicked" << item->text();
 }

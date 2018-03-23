@@ -9,6 +9,8 @@
 #include <QDirIterator>
 #include <QFileInfo>
 #include <QScrollArea>
+#include <QListWidget>
+#include <QTimer>
 #include <QtSql/QSqlDatabase>
 #include <thumbnailmodel.h>
 #include <opencv2/opencv.hpp>
@@ -61,12 +63,17 @@ private slots:
 
     void on_actionDetect_face_triggered();
 
+    void on_listWidget_itemClicked(QListWidgetItem *item);
+
 private:
     Ui::MViewer *ui;
     double scaleFactor;
     QModelIndex current_l, current_r;
     cv::CascadeClassifier* face_cascade;
     std::map<QString,MImageExtras> extra_cache;
+    QTimer* view_timer = NULL;
+
+    void showNextImage();
 
     void addTag(QString const &tg, bool check = false);
 
