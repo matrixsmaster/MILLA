@@ -34,6 +34,7 @@ struct MROI {
 
 struct MImageExtras {
     bool valid = false;
+    QSize picsize;
     std::vector<MROI> rois;
     cv::Mat hist;
 };
@@ -61,8 +62,6 @@ private slots:
 
     void on_actionLoad_all_known_triggered();
 
-    void on_actionDetect_face_triggered();
-
     void on_listWidget_itemClicked(QListWidgetItem *item);
 
 private:
@@ -79,15 +78,23 @@ private:
 
     void updateTags();
 
+    void createStatRecord(QString fn);
+
+    unsigned incViews(bool left = true);
+
     void scaleImage(QScrollArea* scrl, QLabel* lbl, QModelIndex* idx, double factor);
 
     cv::Mat quickConvert(QImage &in);
 
     cv::Mat slowConvert(QImage const &in);
 
+    QByteArray storeMat(cv::Mat const &in);
+
+    cv::Mat loadMat(QByteArray const &arr);
+
     MImageExtras getExtraCacheLine(QString const &fn);
 
-    void DetectFaces(const QPixmap &in);
+    void detectFaces(const cv::Mat &inp, bool show, std::vector<cv::Rect> *store);
 };
 
 #endif // MVIEWER_H

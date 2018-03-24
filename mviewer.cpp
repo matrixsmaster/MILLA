@@ -37,7 +37,8 @@ MViewer::MViewer(QWidget *parent) :
         qDebug() << "[db] Read stats table: " << ok;
         if (!ok) {
             QSqlQuery qq;
-            ok = qq.exec("CREATE TABLE stats (file TEXT, views UNSIGNED BIGINT, rating TINYINT, tags TEXT, notes TEXT)");
+            ok = qq.exec("CREATE TABLE stats (file TEXT, views UNSIGNED BIGINT, lastview UNSIGNED INT, rating TINYINT, ntags INT, tags TEXT, notes TEXT, "
+                         "sizex UNSIGNED INT, sizey UNSIGNED INT, grayscale TINYINT, faces INT, facerects TEXT, hist BLOB)");
             qDebug() << "[db] Create new stats table: " << ok;
         }
 
@@ -131,19 +132,110 @@ void MViewer::on_pushButton_clicked()
     }
 }
 
+static std::string type2str(int type)
+{
+    std::string r;
+
+    uchar depth = type & CV_MAT_DEPTH_MASK;
+    uchar chans = 1 + (type >> CV_CN_SHIFT);
+
+    switch ( depth ) {
+    case CV_8U:  r = "8U"; break;
+    case CV_8S:  r = "8S"; break;
+    case CV_16U: r = "16U"; break;
+    case CV_16S: r = "16S"; break;
+    case CV_32S: r = "32S"; break;
+    case CV_32F: r = "32F"; break;
+    case CV_64F: r = "64F"; break;
+    default:     r = "User"; break;
+    }
+
+    r += "C";
+    r += (chans+'0');
+
+    return r;
+}
+
+void MViewer::createStatRecord(QString fn)
+{
+    MImageExtras ext = getExtraCacheLine(fn);
+    if (!ext.valid) qDebug() << "[ALERT] INVALID EXTRA DATA RETURNED FOR " << fn;
+
+    int fcn = 0;
+    QString fcdat;
+    for (auto &i : ext.rois)
+        if (i.kind == MROI_FACE_FRONTAL) {
+            fcn++;
+            fcdat += QString::asprintf("[%d, %d, %d, %d], ",i.x,i.y,i.w,i.h);
+        }
+
+    QByteArray harr = storeMat(ext.hist);
+
+    QSqlQuery q;
+    q.prepare("INSERT INTO stats (file, views, lastview, rating, ntags, tags, notes, sizex, sizey, grayscale, faces, facerects, hist) VALUES "
+              "(:fn, 0, :tm, 0, 0, \"\", \"\", :sx, :sy, -1, :fcn, :fcr, :hst)");
+    q.bindValue(":fn",fn);
+    q.bindValue(":tm",(uint)time(NULL));
+    q.bindValue(":sx",ext.picsize.width());
+    q.bindValue(":sy",ext.picsize.height());
+    q.bindValue(":fcn",fcn);
+    q.bindValue(":fcr",fcdat);
+    q.bindValue(":hst",harr);
+
+    bool ok = q.exec();
+    qDebug() << "[db] Creating new statistics record: " << ok;
+}
+
+unsigned MViewer::incViews(bool left)
+{
+    if ((left && !current_l.isValid()) || (!left && !current_r.isValid())) return 0;
+    QString fn = (left? current_l : current_r).data(ThumbnailModel::FullPathRole).value<QString>();
+    qDebug() << "Incrementing views counter for " << fn;
+
+    QSqlQuery q;
+    q.prepare("SELECT views FROM stats WHERE file = (:fn)");
+    q.bindValue(":fn",fn);
+
+    unsigned v = 0;
+    if (q.exec() && q.next()) v = q.value(0).toUInt();
+    else createStatRecord(fn);
+    v++;
+
+    q.clear();
+    q.prepare("UPDATE stats SET views = :v, lastview = :tm WHERE file = :fn");
+    q.bindValue(":v",v);
+    q.bindValue(":tm",(uint)time(NULL));
+    q.bindValue(":fn",fn);
+    bool ok = q.exec();
+    qDebug() << "[db] Updating views: " << ok;
+
+    return v;
+}
+
 void MViewer::showNextImage()
 {
     current_l = ui->listView->selectionModel()->selectedIndexes().first();
     scaleImage(ui->scrollArea,ui->label,&current_l,1);
     ui->progressBar->setValue(0);
-    if (view_timer) view_timer->start(50);
+
+    QSqlQuery q;
+    q.prepare("SELECT views FROM stats WHERE file = (:fn)");
+    q.bindValue(":fn",current_l.data(ThumbnailModel::FullPathRole).value<QString>());
+    if (q.exec() && q.next())
+        ui->lcdNumber->display((double)q.value(0).toUInt());
+    else
+        ui->lcdNumber->display(0);
+
+    if (view_timer) view_timer->start(20);
     else {
         view_timer = new QTimer();
         connect(view_timer,&QTimer::timeout,this,[this] {
             if (ui->progressBar->value() < 100)
                 ui->progressBar->setValue(ui->progressBar->value()+1);
-            else
+            else {
                 view_timer->stop();
+                ui->lcdNumber->display((double)incViews());
+            }
         });
     }
     qDebug() << "selChanged";
@@ -193,6 +285,7 @@ void MViewer::on_actionOpen_triggered()
     connect(ui->listView,&QListView::customContextMenuRequested,this,[this] {
         current_r = ui->listView->selectionModel()->selectedIndexes().first();
         scaleImage(ui->scrollArea_2,ui->label_2,&current_r,1);
+        incViews(false);
         qDebug() << "rightClick";
     });
 }
@@ -266,6 +359,40 @@ cv::Mat MViewer::slowConvert(QImage const &in)
     return r;
 }
 
+QByteArray MViewer::storeMat(cv::Mat const &in)
+{
+    QByteArray harr;
+    harr.append((char*)&(in.cols),sizeof(in.cols));
+    harr.append((char*)&(in.rows),sizeof(in.rows));
+    harr.append((char*)&(in.dims),sizeof(in.dims));
+
+    for (int i = 0; i < in.dims; i++)
+        harr.append((char*)&(in.size[i]),sizeof(in.size[i]));
+
+    size_t tmp = in.elemSize();
+    harr.append((char*)&tmp,sizeof(tmp));
+    tmp = in.type();
+    harr.append((char*)&tmp,sizeof(tmp));
+    tmp = in.elemSize() * in.total();
+    harr.append((char*)in.ptr(),tmp);
+
+    qDebug() << "[db] Size of harr = " << harr.size() << "; cols, rows, dims = " << in.cols << in.rows << in.dims;
+    qDebug() << tmp;
+    qDebug() << in.elemSize() << " <- " << type2str(in.type()).c_str();
+
+    return harr;
+}
+
+cv::Mat MViewer::loadMat(QByteArray const &arr)
+{
+    cv::Mat res;
+    const char* ptr = arr.constData();
+    const size_t* uptr;
+    const int* iptr;
+
+    return res;
+}
+
 void MViewer::on_actionMatch_triggered()
 {
     using namespace cv;
@@ -326,25 +453,39 @@ MImageExtras MViewer::getExtraCacheLine(QString const &fn)
     if (orgm.isNull()) return res;
     Mat in = slowConvert(orgm);
 
+    res.picsize = org.size();
+
     int histSize[] = {64, 64, 64};
     float rranges[] = {0, 256};
     const float* ranges[] = {rranges, rranges, rranges};
     int channels[] = {0, 1, 2};
     calcHist(&in,1,channels,Mat(),res.hist,3,histSize,ranges,true,false);
 
+    std::vector<cv::Rect> faces;
+    detectFaces(in,false,&faces);
+    for (auto &i : faces) {
+        MROI roi;
+        roi.kind = MROI_FACE_FRONTAL;
+        roi.x = i.x;
+        roi.y = i.y;
+        roi.w = i.width;
+        roi.h = i.height;
+        res.rois.push_back(roi);
+    }
+
+    res.valid = true;
     extra_cache[fn] = res;
     return res;
 }
 
-void MViewer::DetectFaces(const QPixmap &in)
+void MViewer::detectFaces(const cv::Mat &inp, bool show, std::vector<cv::Rect>* store)
 {
     using namespace cv;
 
     if (!face_cascade) return;
 
-    QImage inq = in.toImage();
     std::vector<Rect> items;
-    Mat work,inp = slowConvert(inq);
+    Mat work;
 
     try {
         cvtColor(inp,work,CV_BGR2GRAY);
@@ -354,18 +495,23 @@ void MViewer::DetectFaces(const QPixmap &in)
         qDebug() << "Error";
         return;
     }
-    qDebug() << items.size() << " items detected";
+    qDebug() << items.size() << " faces detected";
 
-    QPainter painter(&inq);
-    QPen paintpen(Qt::red);
-    paintpen.setWidth(2);
-    painter.setPen(paintpen);
+    /*if (show) {
+        QPainter painter(&inq);
+        QPen paintpen(Qt::red);
+        paintpen.setWidth(2);
+        painter.setPen(paintpen);
 
-    for (auto &i : items) {
-        painter.drawRect(QRect(i.x,i.y,i.width,i.height));
-    }
+        for (auto &i : items) {
+            painter.drawRect(QRect(i.x,i.y,i.width,i.height));
+        }
 
-    ui->label_2->setPixmap(QPixmap::fromImage(inq));
+        ui->label_2->setPixmap(QPixmap::fromImage(inq));
+    }*/
+
+    if (store) store->insert(store->begin(),items.begin(),items.end());
+
     return;
 }
 
@@ -379,12 +525,6 @@ void MViewer::on_actionLoad_all_known_triggered()
         if (!i->modified && i->picture.isNull()) ptm->LoadUp(x);
         x++;
     }
-}
-
-void MViewer::on_actionDetect_face_triggered()
-{
-    if (!current_l.isValid()) return;
-    DetectFaces(current_l.data(ThumbnailModel::LargePixmapRole).value<QPixmap>());
 }
 
 void MViewer::on_listWidget_itemClicked(QListWidgetItem *item)
