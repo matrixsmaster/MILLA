@@ -366,14 +366,14 @@ QByteArray MViewer::storeMat(cv::Mat const &in)
     harr.append((char*)&(in.rows),sizeof(in.rows));
     harr.append((char*)&(in.dims),sizeof(in.dims));
 
+    int typ = in.type();
+    harr.append((char*)&(typ),sizeof(typ));
+
     for (int i = 0; i < in.dims; i++)
         harr.append((char*)&(in.size[i]),sizeof(in.size[i]));
 
-    size_t tmp = in.elemSize();
+    size_t tmp = in.elemSize() * in.total();
     harr.append((char*)&tmp,sizeof(tmp));
-    tmp = in.type();
-    harr.append((char*)&tmp,sizeof(tmp));
-    tmp = in.elemSize() * in.total();
     harr.append((char*)in.ptr(),tmp);
 
     qDebug() << "[db] Size of harr = " << harr.size() << "; cols, rows, dims = " << in.cols << in.rows << in.dims;
@@ -387,8 +387,34 @@ cv::Mat MViewer::loadMat(QByteArray const &arr)
 {
     cv::Mat res;
     const char* ptr = arr.constData();
+    const int* iptr = (const int*)ptr;
     const size_t* uptr;
-    const int* iptr;
+
+    int cols = *iptr++;
+    int rows = *iptr++;
+    int dims = *iptr++;
+    int type = *iptr++;
+
+    if (rows < 0 && cols < 0) {
+        res.create(dims,iptr,type);
+        iptr += dims;
+    } else
+        res.create(rows,cols,type);
+
+    uptr = (const size_t*)iptr;
+    size_t tot = *uptr;
+    if (tot != res.elemSize() * res.total()) {
+        qDebug() << "[db] ALERT: matrix size invalid";
+        return res;
+    }
+    uptr++;
+
+    ptr = (const char*)uptr;
+    memcpy(res.ptr(),ptr,tot);
+
+    qDebug() << "[db] Size of arr = " << arr.size() << "; cols, rows, dims = " << res.cols << res.rows << res.dims;
+    qDebug() << tot;
+    qDebug() << res.elemSize() << " <- " << type2str(res.type()).c_str();
 
     return res;
 }
@@ -414,7 +440,7 @@ void MViewer::on_actionMatch_triggered()
     for (auto &i : ptm->GetAllImages()) {
         if (we == i->filename) continue;
 
-        if (!i->loaded) continue; //FIXME: debug only
+        //if (!i->loaded) continue; //FIXME: debug only
 
         double cur_area = i->picture.size().width() * i->picture.size().height();
         if (orig_area / cur_area > 2 || cur_area / orig_area > 2) continue;
@@ -440,37 +466,48 @@ MImageExtras MViewer::getExtraCacheLine(QString const &fn)
     ThumbnailModel* ptm = dynamic_cast<ThumbnailModel*>(ui->listView->model());
     if (!ptm) return res;
 
-    QPixmap org;
-    for (auto &i : ptm->GetAllImages())
-        if (i->filename == fn) {
-            if (i->loaded) org = i->picture;
-            else org.load(i->filename);
-            break;
+    QSqlQuery q;
+    q.prepare("SELECT sizex, sizey, grayscale, faces, facerects, hist FROM stats WHERE file = (:fn)");
+    q.bindValue(":fn",fn);;
+    if (q.exec() && q.next()) {
+        res.picsize = QSize(q.value(0).toUInt(), q.value(1).toUInt());
+        if (q.value(5).canConvert(QVariant::ByteArray))
+            res.hist = loadMat(q.value(5).toByteArray());
+
+    } else {
+
+        QPixmap org;
+        for (auto &i : ptm->GetAllImages())
+            if (i->filename == fn) {
+                if (i->loaded) org = i->picture;
+                //else org.load(i->filename);
+                break;
+            }
+        if (org.isNull()) return res;
+
+        QImage orgm(org.toImage());
+        if (orgm.isNull()) return res;
+        Mat in = slowConvert(orgm);
+
+        res.picsize = org.size();
+
+        int histSize[] = {64, 64, 64};
+        float rranges[] = {0, 256};
+        const float* ranges[] = {rranges, rranges, rranges};
+        int channels[] = {0, 1, 2};
+        calcHist(&in,1,channels,Mat(),res.hist,3,histSize,ranges,true,false);
+
+        std::vector<cv::Rect> faces;
+        detectFaces(in,false,&faces);
+        for (auto &i : faces) {
+            MROI roi;
+            roi.kind = MROI_FACE_FRONTAL;
+            roi.x = i.x;
+            roi.y = i.y;
+            roi.w = i.width;
+            roi.h = i.height;
+            res.rois.push_back(roi);
         }
-    if (org.isNull()) return res;
-
-    QImage orgm(org.toImage());
-    if (orgm.isNull()) return res;
-    Mat in = slowConvert(orgm);
-
-    res.picsize = org.size();
-
-    int histSize[] = {64, 64, 64};
-    float rranges[] = {0, 256};
-    const float* ranges[] = {rranges, rranges, rranges};
-    int channels[] = {0, 1, 2};
-    calcHist(&in,1,channels,Mat(),res.hist,3,histSize,ranges,true,false);
-
-    std::vector<cv::Rect> faces;
-    detectFaces(in,false,&faces);
-    for (auto &i : faces) {
-        MROI roi;
-        roi.kind = MROI_FACE_FRONTAL;
-        roi.x = i.x;
-        roi.y = i.y;
-        roi.w = i.width;
-        roi.h = i.height;
-        res.rois.push_back(roi);
     }
 
     res.valid = true;
