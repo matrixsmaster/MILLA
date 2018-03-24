@@ -1369,6 +1369,7 @@
     </property>
     <addaction name="actionMatch"/>
     <addaction name="actionLoad_all_known"/>
+    <addaction name="actionLoad_everything_slow"/>
    </widget>
    <widget class="QMenu" name="menuHelp">
     <property name="title">
@@ -1415,6 +1416,9 @@
    </property>
   </action>
   <action name="actionLoad_all_known">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
    <property name="text">
     <string>Load all known</string>
    </property>
@@ -1435,6 +1439,11 @@
   <action name="actionRotate_90_CCW">
    <property name="text">
     <string>Rotate 90 CCW</string>
+   </property>
+  </action>
+  <action name="actionLoad_everything_slow">
+   <property name="text">
+    <string>Load everything (slow)</string>
    </property>
   </action>
  </widget>

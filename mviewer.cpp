@@ -158,7 +158,15 @@ static std::string type2str(int type)
 
 void MViewer::createStatRecord(QString fn)
 {
-    MImageExtras ext = getExtraCacheLine(fn);
+    QSqlQuery qa;
+    qa.prepare("SELECT views FROM stats WHERE file = (:fn)");
+    qa.bindValue(":fn",fn);
+    if (qa.exec() && qa.next()) {
+        qDebug() << "[db] createStatRecord() called for known record " << fn;
+        return;
+    }
+
+    MImageExtras ext = getExtraCacheLine(fn,true);
     if (!ext.valid) qDebug() << "[ALERT] INVALID EXTRA DATA RETURNED FOR " << fn;
 
     int fcn = 0;
@@ -169,7 +177,8 @@ void MViewer::createStatRecord(QString fn)
             fcdat += QString::asprintf("[%d, %d, %d, %d], ",i.x,i.y,i.w,i.h);
         }
 
-    QByteArray harr = storeMat(ext.hist);
+    QByteArray harr = qCompress(storeMat(ext.hist));
+    qDebug() << "[db] Final harr length =" << harr.size();
 
     QSqlQuery q;
     q.prepare("INSERT INTO stats (file, views, lastview, rating, ntags, tags, notes, sizex, sizey, grayscale, faces, facerects, hist) VALUES "
@@ -440,13 +449,11 @@ void MViewer::on_actionMatch_triggered()
     for (auto &i : ptm->GetAllImages()) {
         if (we == i->filename) continue;
 
-        //if (!i->loaded) continue; //FIXME: debug only
-
-        double cur_area = i->picture.size().width() * i->picture.size().height();
-        if (orig_area / cur_area > 2 || cur_area / orig_area > 2) continue;
-
         cur = getExtraCacheLine(i->filename);
         if (!cur.valid) continue;
+
+        double cur_area = cur.picsize.width() * cur.picsize.height();
+        if (orig_area / cur_area > 2 || cur_area / orig_area > 2) continue;
 
         double corr = compareHist(orig.hist,cur.hist,CV_COMP_CORREL);
         qDebug() << "Correlation with " << i->filename << ":  " << corr;
@@ -455,7 +462,7 @@ void MViewer::on_actionMatch_triggered()
     }
 }
 
-MImageExtras MViewer::getExtraCacheLine(QString const &fn)
+MImageExtras MViewer::getExtraCacheLine(QString const &fn, bool forceload)
 {
     using namespace cv;
 
@@ -472,17 +479,20 @@ MImageExtras MViewer::getExtraCacheLine(QString const &fn)
     if (q.exec() && q.next()) {
         res.picsize = QSize(q.value(0).toUInt(), q.value(1).toUInt());
         if (q.value(5).canConvert(QVariant::ByteArray))
-            res.hist = loadMat(q.value(5).toByteArray());
+            res.hist = loadMat(qUncompress(q.value(5).toByteArray()));
 
     } else {
 
         QPixmap org;
-        for (auto &i : ptm->GetAllImages())
+        size_t idx = 0;
+        for (auto &i : ptm->GetAllImages()) {
             if (i->filename == fn) {
+                if (forceload) ptm->LoadUp(idx);
                 if (i->loaded) org = i->picture;
-                //else org.load(i->filename);
                 break;
             }
+            idx++;
+        }
         if (org.isNull()) return res;
 
         QImage orgm(org.toImage());
@@ -562,6 +572,23 @@ void MViewer::on_actionLoad_all_known_triggered()
         if (!i->modified && i->picture.isNull()) ptm->LoadUp(x);
         x++;
     }
+}
+
+void MViewer::on_actionLoad_everything_slow_triggered()
+{
+    ThumbnailModel* ptm = dynamic_cast<ThumbnailModel*>(ui->listView->model());
+    if (!ptm) return;
+
+    QList<ThumbnailRec*> &imgs = ptm->GetAllImages();
+    double prg = 0, dp = 100.f / (double)(imgs.size());
+
+    for (auto &i : ptm->GetAllImages()) {
+        createStatRecord(i->filename);
+        prg += dp;
+        ui->progressBar->setValue(floor(prg));
+        QCoreApplication::processEvents();
+    }
+    ui->progressBar->setValue(100);
 }
 
 void MViewer::on_listWidget_itemClicked(QListWidgetItem *item)

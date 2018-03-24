@@ -64,6 +64,8 @@ private slots:
 
     void on_listWidget_itemClicked(QListWidgetItem *item);
 
+    void on_actionLoad_everything_slow_triggered();
+
 private:
     Ui::MViewer *ui;
     double scaleFactor;
@@ -92,7 +94,7 @@ private:
 
     cv::Mat loadMat(QByteArray const &arr);
 
-    MImageExtras getExtraCacheLine(QString const &fn);
+    MImageExtras getExtraCacheLine(QString const &fn, bool forceload = false);
 
     void detectFaces(const cv::Mat &inp, bool show, std::vector<cv::Rect> *store);
 };
