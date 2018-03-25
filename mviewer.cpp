@@ -135,7 +135,7 @@ void MViewer::on_pushButton_clicked()
     unsigned key = q.value(0).toUInt() + 1;
 
     q.clear();
-    q.prepare("INSERT INTO tags (key, tag, rating) VALUES (:k, :tg, 1)");
+    q.prepare("INSERT INTO tags (key, tag, rating) VALUES (:k, :tg, 0)");
     q.bindValue(":k",key);
     q.bindValue(":tg",ui->lineEdit->text());
     bool ok = q.exec();
@@ -273,7 +273,6 @@ void MViewer::on_actionOpen_triggered()
 {
     QString fileName = QFileDialog::getOpenFileName(this, tr("Open Image"), "", tr("Image Files (*.png *.jpg *.jpeg *.bmp)"));
     if (fileName.isEmpty()) return;
-    qDebug() << fileName;
 
     extra_cache.clear();
 
@@ -285,12 +284,9 @@ void MViewer::on_actionOpen_triggered()
     std::list<QString> lst;
     while (it.hasNext()) {
         QFileInfo cfn(it.next());
-        //qDebug() << cfn.fileName() << " -> " << cfn.suffix();
         QString ext(cfn.suffix().toLower());
-        if (ext == "png" || ext == "jpg" || ext == "jpeg" || ext == "bmp") {
-            //qDebug() << "OK";
+        if (ext == "png" || ext == "jpg" || ext == "jpeg" || ext == "bmp")
             lst.push_back(cfn.canonicalFilePath());
-        }
     }
 
     if (ui->listView->model()) {
@@ -305,8 +301,6 @@ void MViewer::on_actionOpen_triggered()
     ui->listView->setFlow(purelist? QListView::TopToBottom : QListView::LeftToRight);
     ui->listView->setWrapping(!purelist);
     ui->listView->setSpacing(purelist? 0:10);
-    ui->listView->setResizeMode(QListView::Adjust);
-    ui->listView->setSelectionMode(QListView::SingleSelection);
     ui->listView->setContextMenuPolicy(Qt::CustomContextMenu);
 
     connect(ui->listView->selectionModel(),&QItemSelectionModel::selectionChanged,[this] { showNextImage(); });
@@ -496,6 +490,14 @@ void MViewer::on_actionMatch_triggered()
 
         if (corr > 0) targets[corr] = i;
     }
+
+    QList<QString> lst;
+    int k = 0;
+    for (auto i = targets.rbegin(); i != targets.rend() && k < 10; ++i,k++) { //TODO: move k into settings
+        lst.push_back(i->second->filename);
+    }
+
+    searchResults(lst);
 }
 
 MImageExtras MViewer::getExtraCacheLine(QString const &fn, bool forceload)
@@ -634,6 +636,13 @@ void MViewer::on_listWidget_itemClicked(QListWidgetItem *item)
     bool was = tags_cache[item->text()].second;
     bool now = item->checkState() == Qt::Checked;
     if (was == now) return;
+
+    if (ui->radio_search->isChecked()) {
+        //search by tag instead of change tags
+        tags_cache[item->text()].second = now;
+        return;
+    }
+
     if (!current_l.isValid()) {
         //revert change
         item->setCheckState(was? Qt::Checked : Qt::Unchecked);
@@ -681,4 +690,57 @@ void MViewer::updateCurrentTags()
     q.bindValue(":fn",current_l.data(ThumbnailModel::FullPathRole).toString());
     bool ok = q.exec();
     qDebug() << "[db] Updating tags: " << ok;
+}
+
+void MViewer::on_radio_search_toggled(bool checked)
+{
+    if (checked) updateTags();
+}
+
+void MViewer::on_radio_settags_toggled(bool checked)
+{
+    if (checked) {
+        if (current_l.isValid()) updateTags(current_l.data(ThumbnailModel::FullPathRole).toString());
+        else updateTags();
+    }
+}
+
+void MViewer::searchResults(QList<QString> lst)
+{
+    if (lst.isEmpty()) return;
+    ThumbnailModel* ptm = dynamic_cast<ThumbnailModel*>(ui->listView->model());
+    if (!ptm) return;
+
+    if (ui->listView_2->model()) {
+        qDebug() << "Old model scheduled for removal";
+        ui->listView_2->model()->deleteLater();
+    }
+
+    QList<SResultRecord> out;
+    QList<ThumbnailRec*> &imgs = ptm->GetAllImages();
+    for (auto &i : lst) {
+        SResultRecord k;
+        k.path = i;
+        auto j = std::find_if(imgs.begin(),imgs.end(),[&] (const ThumbnailRec* a) { return (a->filename == i); });
+        if (j == imgs.end()) {
+            qDebug() << "ALERT: Unable to match filename " << i;
+            return;
+        }
+        k.shrt = (*j)->fnshort;
+        k.thumb = (*j)->thumb;
+        out.push_back(k);
+    }
+
+    ui->listView_2->setModel(new SResultModel(out,ui->listView_2));
+    ui->listView_2->setViewMode(QListView::ListMode);
+    ui->listView_2->setFlow(QListView::LeftToRight);
+    ui->listView_2->setWrapping(false);
+
+    connect(ui->listView_2->selectionModel(),&QItemSelectionModel::selectionChanged,[this] {
+        current_r = ui->listView_2->selectionModel()->selectedIndexes().first();
+        scaleImage(ui->scrollArea_2,ui->label_2,&current_r,1);
+        incViews(false);
+    });
+
+    ui->tabWidget->setCurrentIndex(1);
 }

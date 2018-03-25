@@ -64,6 +64,9 @@
             <height>100</height>
            </size>
           </property>
+          <property name="resizeMode">
+           <enum>QListView::Adjust</enum>
+          </property>
          </widget>
         </item>
        </layout>
@@ -119,6 +122,12 @@
                <enum>Qt::Horizontal</enum>
               </property>
               <widget class="QScrollArea" name="scrollArea">
+               <property name="sizePolicy">
+                <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+                 <horstretch>2</horstretch>
+                 <verstretch>0</verstretch>
+                </sizepolicy>
+               </property>
                <property name="widgetResizable">
                 <bool>true</bool>
                </property>
@@ -146,6 +155,12 @@
                </widget>
               </widget>
               <widget class="QScrollArea" name="scrollArea_2">
+               <property name="sizePolicy">
+                <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+                 <horstretch>2</horstretch>
+                 <verstretch>0</verstretch>
+                </sizepolicy>
+               </property>
                <property name="widgetResizable">
                 <bool>true</bool>
                </property>
@@ -211,7 +226,14 @@
                </attribute>
                <layout class="QHBoxLayout" name="horizontalLayout_14">
                 <item>
-                 <widget class="QListView" name="listView_2"/>
+                 <widget class="QListView" name="listView_2">
+                  <property name="resizeMode">
+                   <enum>QListView::Adjust</enum>
+                  </property>
+                  <property name="spacing">
+                   <number>10</number>
+                  </property>
+                 </widget>
                 </item>
                </layout>
               </widget>
@@ -1299,7 +1321,36 @@
           <property name="frameShadow">
            <enum>QFrame::Raised</enum>
           </property>
-          <layout class="QHBoxLayout" name="horizontalLayout_9">
+          <layout class="QVBoxLayout" name="verticalLayout_2">
+           <item>
+            <widget class="QFrame" name="frame_11">
+             <property name="frameShape">
+              <enum>QFrame::StyledPanel</enum>
+             </property>
+             <property name="frameShadow">
+              <enum>QFrame::Raised</enum>
+             </property>
+             <layout class="QHBoxLayout" name="horizontalLayout_9">
+              <item>
+               <widget class="QRadioButton" name="radio_settags">
+                <property name="text">
+                 <string>Set tags</string>
+                </property>
+                <property name="checked">
+                 <bool>true</bool>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QRadioButton" name="radio_search">
+                <property name="text">
+                 <string>Search by</string>
+                </property>
+               </widget>
+              </item>
+             </layout>
+            </widget>
+           </item>
            <item>
             <widget class="QListWidget" name="listWidget"/>
            </item>

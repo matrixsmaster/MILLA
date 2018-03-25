@@ -45,7 +45,6 @@ public:
     virtual ~ThumbnailModel();
 
     // QAbstractItemModel interface ===========================
-public:
     int columnCount(const QModelIndex &) const { return 1; }
     int rowCount(const QModelIndex &) const { return images.size(); }
     QVariant data(const QModelIndex &index, int role) const;
@@ -57,7 +56,7 @@ public:
 
 private:
     QList<ThumbnailRec*> images;
-    size_t ram_footprint;
+    size_t ram_footprint = 0;
 
     size_t ItemSizeInBytes(int idx);
 };

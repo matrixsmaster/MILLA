@@ -13,6 +13,7 @@
 #include <QTimer>
 #include <QtSql/QSqlDatabase>
 #include <thumbnailmodel.h>
+#include <sresultmodel.h>
 #include <opencv2/opencv.hpp>
 #include <opencv2/features2d/features2d.hpp>
 #include <opencv2/objdetect/objdetect.hpp>
@@ -67,6 +68,10 @@ private slots:
 
     void on_actionLoad_everything_slow_triggered();
 
+    void on_radio_search_toggled(bool checked);
+
+    void on_radio_settags_toggled(bool checked);
+
 private:
     Ui::MViewer *ui;
     double scaleFactor;
@@ -101,6 +106,8 @@ private:
     void detectFaces(const cv::Mat &inp, std::vector<cv::Rect> *store);
 
     void updateCurrentTags();
+
+    void searchResults(QList<QString> lst);
 };
 
 #endif // MVIEWER_H
