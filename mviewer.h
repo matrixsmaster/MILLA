@@ -37,6 +37,7 @@ struct MImageExtras {
     QSize picsize;
     std::vector<MROI> rois;
     cv::Mat hist;
+    std::vector<int> tags;
 };
 
 namespace Ui {
@@ -72,11 +73,12 @@ private:
     QModelIndex current_l, current_r;
     cv::CascadeClassifier* face_cascade;
     std::map<QString,MImageExtras> extra_cache;
+    std::map<int,QString> tags_cache;
     QTimer* view_timer = NULL;
 
     void showNextImage();
 
-    void addTag(QString const &tg, bool check = false);
+    void addTag(QString const &tg, int key);
 
     void updateTags();
 
@@ -96,7 +98,7 @@ private:
 
     MImageExtras getExtraCacheLine(QString const &fn, bool forceload = false);
 
-    void detectFaces(const cv::Mat &inp, bool show, std::vector<cv::Rect> *store);
+    void detectFaces(const cv::Mat &inp, std::vector<cv::Rect> *store);
 };
 
 #endif // MVIEWER_H

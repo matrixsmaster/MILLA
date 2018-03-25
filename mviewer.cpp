@@ -80,23 +80,25 @@ MViewer::~MViewer()
     delete ui;
 }
 
-void MViewer::addTag(QString const &tg, bool check)
+void MViewer::addTag(QString const &tg, int key)
 {
     ui->listWidget->addItem(tg);
     QListWidgetItem* i = ui->listWidget->item(ui->listWidget->count()-1);
     if (!i) return;
     i->setFlags(i->flags() | Qt::ItemIsUserCheckable);
-    i->setCheckState(check? Qt::Checked : Qt::Unchecked);
+    i->setCheckState(Qt::Unchecked);
+    tags_cache[key] = tg;
 }
 
 void MViewer::updateTags()
 {
     QSqlQuery q;
-    bool ok = q.exec("SELECT tag FROM tags ORDER BY rating DESC");
+    bool ok = q.exec("SELECT tag, key FROM tags ORDER BY rating DESC");
     qDebug() << "[db] Read whole tags table: " << ok;
     if (ok) {
         ui->listWidget->clear();
-        while (q.next()) addTag(q.value(0).toString());
+        tags_cache.clear();
+        while (q.next()) addTag(q.value(0).toString(),q.value(1).toInt());
     }
 }
 
@@ -127,7 +129,7 @@ void MViewer::on_pushButton_clicked()
 
     qDebug() << "[db] Inserting tag " << ui->lineEdit->text() << ": " << ok;
     if (ok) {
-        addTag(ui->lineEdit->text());
+        addTag(ui->lineEdit->text(),key);
         ui->lineEdit->clear();
     }
 }
@@ -174,7 +176,7 @@ void MViewer::createStatRecord(QString fn)
     for (auto &i : ext.rois)
         if (i.kind == MROI_FACE_FRONTAL) {
             fcn++;
-            fcdat += QString::asprintf("[%d, %d, %d, %d], ",i.x,i.y,i.w,i.h);
+            fcdat += QString::asprintf("%d,%d,%d,%d,",i.x,i.y,i.w,i.h);
         }
 
     QByteArray harr = qCompress(storeMat(ext.hist));
@@ -324,7 +326,23 @@ void MViewer::scaleImage(QScrollArea* scrl, QLabel* lbl, QModelIndex *idx, doubl
 
     else {
         QSize nsz = map.size() * scaleFactor;
-        lbl->setPixmap(map.scaled(nsz,Qt::KeepAspectRatio,Qt::SmoothTransformation));
+        MImageExtras extr = getExtraCacheLine(idx->data(ThumbnailModel::FullPathRole).value<QString>());
+
+        if (ui->actionShow_faces->isChecked() && extr.valid && !extr.rois.empty()) {
+            QImage inq(map.scaled(nsz,Qt::KeepAspectRatio,Qt::SmoothTransformation).toImage());
+            QPainter painter(&inq);
+            QPen paintpen(Qt::red);
+            paintpen.setWidth(2);
+            painter.setPen(paintpen);
+
+            for (auto &i : extr.rois) {
+                painter.drawRect(QRect(i.x,i.y,i.w,i.h));
+            }
+
+            lbl->setPixmap(QPixmap::fromImage(inq));
+
+        } else
+            lbl->setPixmap(map.scaled(nsz,Qt::KeepAspectRatio,Qt::SmoothTransformation));
     }
 
 }
@@ -478,6 +496,16 @@ MImageExtras MViewer::getExtraCacheLine(QString const &fn, bool forceload)
     q.bindValue(":fn",fn);;
     if (q.exec() && q.next()) {
         res.picsize = QSize(q.value(0).toUInt(), q.value(1).toUInt());
+        QStringList flst = q.value(4).toString().split(',',QString::SkipEmptyParts);
+        for (auto k = flst.begin(); k != flst.end();) {
+            MROI r;
+            r.kind = MROI_FACE_FRONTAL;
+            r.x = k->toInt(); k++;
+            r.y = k->toInt(); k++;
+            r.w = k->toInt(); k++;
+            r.h = k->toInt(); k++;
+            res.rois.push_back(r);
+        }
         if (q.value(5).canConvert(QVariant::ByteArray))
             res.hist = loadMat(qUncompress(q.value(5).toByteArray()));
 
@@ -508,7 +536,7 @@ MImageExtras MViewer::getExtraCacheLine(QString const &fn, bool forceload)
         calcHist(&in,1,channels,Mat(),res.hist,3,histSize,ranges,true,false);
 
         std::vector<cv::Rect> faces;
-        detectFaces(in,false,&faces);
+        detectFaces(in,&faces);
         for (auto &i : faces) {
             MROI roi;
             roi.kind = MROI_FACE_FRONTAL;
@@ -525,7 +553,7 @@ MImageExtras MViewer::getExtraCacheLine(QString const &fn, bool forceload)
     return res;
 }
 
-void MViewer::detectFaces(const cv::Mat &inp, bool show, std::vector<cv::Rect>* store)
+void MViewer::detectFaces(const cv::Mat &inp, std::vector<cv::Rect>* store)
 {
     using namespace cv;
 
@@ -543,19 +571,6 @@ void MViewer::detectFaces(const cv::Mat &inp, bool show, std::vector<cv::Rect>* 
         return;
     }
     qDebug() << items.size() << " faces detected";
-
-    /*if (show) {
-        QPainter painter(&inq);
-        QPen paintpen(Qt::red);
-        paintpen.setWidth(2);
-        painter.setPen(paintpen);
-
-        for (auto &i : items) {
-            painter.drawRect(QRect(i.x,i.y,i.width,i.height));
-        }
-
-        ui->label_2->setPixmap(QPixmap::fromImage(inq));
-    }*/
 
     if (store) store->insert(store->begin(),items.begin(),items.end());
 
