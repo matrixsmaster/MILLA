@@ -5,7 +5,7 @@
 
 struct SResultRecord {
     QString path,shrt;
-    QPixmap thumb;
+    QPixmap thumb,large;
 };
 
 class SResultModel : public QAbstractListModel

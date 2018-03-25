@@ -300,7 +300,7 @@ void MViewer::on_actionOpen_triggered()
     ui->listView->setViewMode(purelist? QListView::ListMode : QListView::IconMode);
     ui->listView->setFlow(purelist? QListView::TopToBottom : QListView::LeftToRight);
     ui->listView->setWrapping(!purelist);
-    ui->listView->setSpacing(purelist? 0:10);
+    ui->listView->setSpacing(purelist? 5:10);
     ui->listView->setContextMenuPolicy(Qt::CustomContextMenu);
 
     connect(ui->listView->selectionModel(),&QItemSelectionModel::selectionChanged,[this] { showNextImage(); });
@@ -720,14 +720,23 @@ void MViewer::searchResults(QList<QString> lst)
     QList<ThumbnailRec*> &imgs = ptm->GetAllImages();
     for (auto &i : lst) {
         SResultRecord k;
+        int idx = 0;
+
         k.path = i;
-        auto j = std::find_if(imgs.begin(),imgs.end(),[&] (const ThumbnailRec* a) { return (a->filename == i); });
-        if (j == imgs.end()) {
+        for (auto &j : imgs) {
+            if (j->filename == i) break;
+            idx++;
+        }
+        if (idx >= imgs.size()) {
             qDebug() << "ALERT: Unable to match filename " << i;
             return;
         }
-        k.shrt = (*j)->fnshort;
-        k.thumb = (*j)->thumb;
+        k.shrt = imgs.at(idx)->fnshort;
+        k.thumb = imgs.at(idx)->thumb;
+
+        ptm->LoadUp(idx);
+        k.large = imgs.at(idx)->picture;
+
         out.push_back(k);
     }
 

@@ -18,6 +18,7 @@ QVariant SResultModel::data(const QModelIndex &index, int role) const
         case Qt::DecorationRole: return images.value(index.row()).thumb;
         case Qt::DisplayRole: return images.value(index.row()).shrt;
         case ThumbnailModel::FullPathRole: return images.value(index.row()).path;
+        case ThumbnailModel::LargePixmapRole: return images.value(index.row()).large;
         }
     }
     return QVariant();
