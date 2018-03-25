@@ -80,31 +80,44 @@ MViewer::~MViewer()
     delete ui;
 }
 
-void MViewer::addTag(QString const &tg, int key)
+void MViewer::addTag(QString const &tg, int key, bool check)
 {
     ui->listWidget->addItem(tg);
     QListWidgetItem* i = ui->listWidget->item(ui->listWidget->count()-1);
     if (!i) return;
     i->setFlags(i->flags() | Qt::ItemIsUserCheckable);
-    i->setCheckState(Qt::Unchecked);
-    tags_cache[key] = tg;
+    i->setCheckState(check? Qt::Checked : Qt::Unchecked);
+    tags_cache[tg] = std::pair<int,bool>(key,check);
 }
 
-void MViewer::updateTags()
+void MViewer::updateTags(QString fn)
 {
-    QSqlQuery q;
+    QSqlQuery q,qq;
     bool ok = q.exec("SELECT tag, key FROM tags ORDER BY rating DESC");
     qDebug() << "[db] Read whole tags table: " << ok;
     if (ok) {
         ui->listWidget->clear();
         tags_cache.clear();
-        while (q.next()) addTag(q.value(0).toString(),q.value(1).toInt());
+
+        QStringList tlst;
+        if (!fn.isEmpty()) {
+            qq.prepare("SELECT tags FROM stats WHERE file = :fn");
+            qq.bindValue(":fn",fn);
+            if (qq.exec() && qq.next())
+                tlst = qq.value(0).toString().split(',',QString::SkipEmptyParts);
+        }
+
+        while (q.next()) {
+            bool c = false;
+            if (!tlst.empty() && tlst.contains(q.value(1).toString())) c = true;
+            addTag(q.value(0).toString(),q.value(1).toInt(),c);
+        }
     }
 }
 
 void MViewer::on_pushButton_clicked()
 {
-    if (ui->lineEdit->text().isEmpty()) return;
+    if (ui->lineEdit->text().isEmpty() || ui->lineEdit->text().contains(',')) return;
 
     QSqlQuery q;
     q.prepare("SELECT * FROM tags WHERE tag = (:tg)");
@@ -227,11 +240,15 @@ void MViewer::showNextImage()
 {
     current_l = ui->listView->selectionModel()->selectedIndexes().first();
     scaleImage(ui->scrollArea,ui->label,&current_l,1);
+
+    QString fn = current_l.data(ThumbnailModel::FullPathRole).toString();
+    qDebug() << fn;
+    updateTags(fn);
     ui->progressBar->setValue(0);
 
     QSqlQuery q;
-    q.prepare("SELECT views FROM stats WHERE file = (:fn)");
-    q.bindValue(":fn",current_l.data(ThumbnailModel::FullPathRole).value<QString>());
+    q.prepare("SELECT views FROM stats WHERE file = :fn");
+    q.bindValue(":fn",fn);
     if (q.exec() && q.next())
         ui->lcdNumber->display((double)q.value(0).toUInt());
     else
@@ -336,7 +353,8 @@ void MViewer::scaleImage(QScrollArea* scrl, QLabel* lbl, QModelIndex *idx, doubl
             painter.setPen(paintpen);
 
             for (auto &i : extr.rois) {
-                painter.drawRect(QRect(i.x,i.y,i.w,i.h));
+                if (i.kind == MROI_FACE_FRONTAL)
+                    painter.drawRect(QRect(i.x,i.y,i.w,i.h));
             }
 
             lbl->setPixmap(QPixmap::fromImage(inq));
@@ -608,5 +626,59 @@ void MViewer::on_actionLoad_everything_slow_triggered()
 
 void MViewer::on_listWidget_itemClicked(QListWidgetItem *item)
 {
-    qDebug() << "on_listWidget_itemClicked" << item->text();
+    if (!tags_cache.count(item->text())) {
+        qDebug() << "ALERT: unknown tag " << item->text();
+        return;
+    }
+
+    bool was = tags_cache[item->text()].second;
+    bool now = item->checkState() == Qt::Checked;
+    if (was == now) return;
+    if (!current_l.isValid()) {
+        //revert change
+        item->setCheckState(was? Qt::Checked : Qt::Unchecked);
+        return;
+    }
+
+    QSqlQuery q;
+    q.prepare("SELECT rating FROM tags WHERE tag = :tg");
+    q.bindValue(":tg",item->text());
+    if (q.exec() && q.next()) {
+        uint rat = q.value(0).toUInt();
+        if (now) rat++;
+        else if (rat) rat--;
+        tags_cache[item->text()].second = now;
+
+        q.clear();
+        q.prepare("UPDATE tags SET rating = :rat WHERE tag = :tg");
+        q.bindValue(":rat",rat);
+        q.bindValue(":tg",item->text());
+        bool ok = q.exec();
+        qDebug() << "[db] Updating rating to " << rat << " for tag " << item->text() << ":" << ok;
+
+        updateCurrentTags();
+
+    } else
+        qDebug() << "ALERT: partially known tag " << item->text();
+}
+
+void MViewer::updateCurrentTags()
+{
+    if (!current_l.isValid()) return;
+
+    QString tgs;
+    int ntg = 0;
+    for (auto &i : tags_cache)
+        if (i.second.second) {
+            tgs += QString::asprintf("%d,",i.second.first);
+            ntg++;
+        }
+
+    QSqlQuery q;
+    q.prepare("UPDATE stats SET ntags = :ntg, tags = :tgs WHERE file = :fn");
+    q.bindValue(":ntg",ntg);
+    q.bindValue(":tgs",tgs);
+    q.bindValue(":fn",current_l.data(ThumbnailModel::FullPathRole).toString());
+    bool ok = q.exec();
+    qDebug() << "[db] Updating tags: " << ok;
 }
