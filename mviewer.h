@@ -20,6 +20,7 @@
 #include <opencv2/features2d/features2d.hpp>
 #include <opencv2/objdetect/objdetect.hpp>
 #include <opencv2/highgui/highgui.hpp>
+#include <ctime>
 
 #define INTERNAL_DB_VERSION 1
 #define FACE_CASCADE_FILE "/tmp/face_cascade.xml"

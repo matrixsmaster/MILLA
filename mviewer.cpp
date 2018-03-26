@@ -545,8 +545,9 @@ MImageExtras MViewer::getExtraCacheLine(QString const &fn, bool forceload)
             res.hist = loadMat(qUncompress(q.value(5).toByteArray()));
 
     } else {
-
         QPixmap org;
+
+        //retreive image to analyze
         size_t idx = 0;
         for (auto &i : ptm->GetAllImages()) {
             if (i->filename == fn) {
@@ -558,12 +559,14 @@ MImageExtras MViewer::getExtraCacheLine(QString const &fn, bool forceload)
         }
         if (org.isNull()) return res;
 
+        //convert Pixmap into Mat
         QImage orgm(org.toImage());
         if (orgm.isNull()) return res;
         Mat in = slowConvert(orgm);
 
         res.picsize = org.size();
 
+        //image histogram (3D)
         int histSize[] = {64, 64, 64};
         float rranges[] = {0, 256};
         const float* ranges[] = {rranges, rranges, rranges};
@@ -571,6 +574,7 @@ MImageExtras MViewer::getExtraCacheLine(QString const &fn, bool forceload)
         calcHist(&in,1,channels,Mat(),res.hist,3,histSize,ranges,true,false);
 
         res.color = false;
+        //grayscale detection: fast approach
         for (int k = 0; k < res.hist.size[0]; k++) {
             float a = res.hist.at<float>(k,0,0);
             float b = res.hist.at<float>(0,k,0);
@@ -580,7 +584,20 @@ MImageExtras MViewer::getExtraCacheLine(QString const &fn, bool forceload)
                 break;
             }
         }
+        if (!res.color && in.isContinuous()) {
+            //grayscale detection: slow approach, as we're still not completely sure
+            uchar* _ptr = in.ptr();
+            for (int k = 0; k < in.rows && !res.color; k++)
+                for (int kk = 0; kk < in.cols && !res.color; kk++) {
+                    if (_ptr[0] != _ptr[1] || _ptr[1] != _ptr[2] || _ptr[2] != _ptr[0]) {
+                        res.color = true;
+                        qDebug() << "[grsdetect] Deep scan mismatch: " << _ptr[0] << _ptr[1] << _ptr[2];
+                    }
+                    _ptr += 3;
+                }
+        }
 
+        //face detector
         std::vector<cv::Rect> faces;
         detectFaces(in,&faces);
         for (auto &i : faces) {
@@ -642,6 +659,7 @@ void MViewer::on_actionLoad_everything_slow_triggered()
 
     QList<ThumbnailRec*> &imgs = ptm->GetAllImages();
     double prg = 0, dp = 100.f / (double)(imgs.size());
+    time_t pass = clock();
 
     for (auto &i : ptm->GetAllImages()) {
         createStatRecord(i->filename);
@@ -649,7 +667,10 @@ void MViewer::on_actionLoad_everything_slow_triggered()
         ui->progressBar->setValue(floor(prg));
         QCoreApplication::processEvents();
     }
+    pass = clock() - pass;
     ui->progressBar->setValue(100);
+
+    qDebug() << "[LOADER] Elapsed time: " << ((double)pass / (double)CLOCKS_PER_SEC) << " sec";
 }
 
 void MViewer::on_listWidget_itemClicked(QListWidgetItem *item)
