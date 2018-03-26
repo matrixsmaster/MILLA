@@ -20,6 +20,6 @@ void SearchForm::on_buttonBox_accepted()
     sdata.minface = ui->spinBox_3->value();
     sdata.maxface = ui->spinBox_4->value();
     sdata.grey = ui->radioButton_2->isChecked();
-    sdata.mtime_min = ui->calendarWidget->selectedDate();
-    sdata.mtime_max = ui->calendarWidget_2->selectedDate();
+    sdata.mtime_min = QDateTime(ui->calendarWidget->selectedDate()).toTime_t();
+    sdata.mtime_max = QDateTime(ui->calendarWidget_2->selectedDate()).toTime_t();
 }

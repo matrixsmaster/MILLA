@@ -307,6 +307,8 @@ void MViewer::on_actionOpen_triggered()
     if (ui->listView->model()) {
         qDebug() << "Old model scheduled for removal";
         ui->listView->model()->deleteLater();
+        current_l = QModelIndex();
+        current_r = QModelIndex();
     }
 
     bool purelist = true; //TODO: move it to user settings
@@ -759,6 +761,7 @@ void MViewer::searchResults(QList<QString> lst)
     if (ui->listView_2->model()) {
         qDebug() << "Old model scheduled for removal";
         ui->listView_2->model()->deleteLater();
+        current_r = QModelIndex();
     }
 
     if (lst.isEmpty()) return;
@@ -841,7 +844,7 @@ void MViewer::searchByTag()
             }
         if (!k) continue;
 
-        auto w = std::find_if(imgs.begin(),imgs.end(),[&] (const MImageListRecord a) { return (a.filename == i.first); });
+        auto w = std::find_if(imgs.begin(),imgs.end(),[&] (const MImageListRecord& a) { return (a.filename == i.first); });
         if (w == imgs.end()) {
             qDebug() << "File " << i.first << " isn't among currently loaded ones";
             continue;
@@ -881,7 +884,26 @@ void MViewer::on_actionRefine_search_triggered()
 {
     SearchForm frm;
     if (!frm.exec()) return;
+    SearchFormData flt = frm.getSearchData();
 
-    ThumbnailModel* ptm = dynamic_cast<ThumbnailModel*>(ui->listView->model());
+    MImageListModel* ptm = dynamic_cast<MImageListModel*>(ui->listView_2->model()? ui->listView_2->model() : ui->listView->model());
     if (!ptm) return;
+
+    QSqlQuery q;
+    QList<QString> out;
+    for (auto &i : ptm->GetAllImages()) {
+        q.clear();
+        q.prepare("SELECT rating, views, faces, grayscale FROM stats WHERE file = :fn");
+        q.bindValue(":fn",i.filename);
+        if (q.exec() && q.next()) {
+            if (q.value(0).toInt() && flt.rating > q.value(0).toInt()) continue;
+            if (flt.views > q.value(1).toUInt()) continue;
+            if (q.value(2).toInt() < flt.minface || q.value(2).toInt() > flt.maxface) continue;
+            if (flt.grey != (q.value(3).toInt()>0)) continue;
+            if (i.filechanged < flt.mtime_min || i.filechanged > flt.mtime_max) continue;
+
+            out.push_back(i.filename);
+        }
+    }
+    searchResults(out);
 }

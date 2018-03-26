@@ -10,11 +10,12 @@ class SearchForm;
 
 struct SearchFormData {
     int rating = 1;
-    int views = 0;
+    unsigned views = 0;
     int minface = 0;
     int maxface = 100;
     bool grey = false;
-    QDate mtime_min, mtime_max;
+    time_t mtime_min = 0;
+    time_t mtime_max = 0;
 };
 
 class SearchForm : public QDialog
