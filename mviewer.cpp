@@ -42,7 +42,7 @@ MViewer::MViewer(QWidget *parent) :
         qDebug() << "[db] Read stats table: " << ok;
         if (!ok) {
             QSqlQuery qq;
-            ok = qq.exec("CREATE TABLE stats (file TEXT, views UNSIGNED BIGINT, lastview UNSIGNED INT, rating TINYINT, ntags INT, tags TEXT, notes TEXT, "
+            ok = qq.exec("CREATE TABLE stats (file TEXT, views UNSIGNED BIGINT, lastview UNSIGNED INT, rating TINYINT, likes INT, ntags INT, tags TEXT, notes TEXT, "
                          "sizex UNSIGNED INT, sizey UNSIGNED INT, grayscale TINYINT, faces INT, facerects TEXT, hist BLOB, sha256 BLOB, length UNSIGNED BIGINT)");
             qDebug() << "[db] Create new stats table: " << ok;
         }
@@ -211,8 +211,8 @@ void MViewer::createStatRecord(QString fn)
     mfile.close();
 
     QSqlQuery q;
-    q.prepare("INSERT INTO stats (file, views, lastview, rating, ntags, tags, notes, sizex, sizey, grayscale, faces, facerects, hist, sha256, length) VALUES "
-              "(:fn, 0, :tm, 0, 0, \"\", \"\", :sx, :sy, :gry, :fcn, :fcr, :hst, :sha, :len)");
+    q.prepare("INSERT INTO stats (file, views, lastview, rating, likes, ntags, tags, notes, sizex, sizey, grayscale, faces, facerects, hist, sha256, length) VALUES "
+              "(:fn, 0, :tm, 0, 0, 0, \"\", \"\", :sx, :sy, :gry, :fcn, :fcr, :hst, :sha, :len)");
     q.bindValue(":fn",fn);
     q.bindValue(":tm",(uint)time(NULL));
     q.bindValue(":sx",ext.picsize.width());
@@ -774,6 +774,7 @@ void MViewer::searchResults(QList<QString> lst)
     if (ui->listView_2->model()) {
         qDebug() << "Old model scheduled for removal";
         ui->listView_2->model()->deleteLater();
+        current_l = QModelIndex();
         current_r = QModelIndex();
     }
 
@@ -919,4 +920,25 @@ void MViewer::on_actionRefine_search_triggered()
         }
     }
     searchResults(out);
+}
+
+void MViewer::on_actionSwap_images_triggered()
+{
+    QModelIndex tmp(current_l);
+    current_l = current_r;
+    current_r = tmp;
+    scaleImage(ui->scrollArea,ui->label,&current_l,1);
+    scaleImage(ui->scrollArea_2,ui->label_2,&current_r,1);
+}
+
+void MViewer::on_actionClear_results_triggered()
+{
+    if (ui->listView_2->model()) ui->listView_2->model()->deleteLater();
+    current_l = QModelIndex();
+    current_r = QModelIndex();
+}
+
+void MViewer::on_actionQuit_triggered()
+{
+    QApplication::quit();
 }

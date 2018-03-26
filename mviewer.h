@@ -80,6 +80,12 @@ private slots:
 
     void on_actionRefine_search_triggered();
 
+    void on_actionSwap_images_triggered();
+
+    void on_actionClear_results_triggered();
+
+    void on_actionQuit_triggered();
+
 private:
     Ui::MViewer *ui;
     QProgressBar* progressBar;
