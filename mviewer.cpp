@@ -1,5 +1,6 @@
 ﻿#include "mviewer.h"
 #include "ui_mviewer.h"
+#include "searchform.h"
 
 MViewer::MViewer(QWidget *parent) :
     QMainWindow(parent),
@@ -880,4 +881,12 @@ void MViewer::on_actionJump_to_triggered()
 
     current_l = ui->listView->selectionModel()->model()->index(idx,0);
     scaleImage(ui->scrollArea,ui->label,&current_l,1);
+}
+
+void MViewer::on_actionRefine_search_triggered()
+{
+    SearchForm frm;
+    if (!frm.exec()) return;
+
+    qDebug() << frm.getSearchData().rating;
 }

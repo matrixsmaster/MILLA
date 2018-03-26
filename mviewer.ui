@@ -1431,6 +1431,7 @@
     </property>
     <addaction name="actionFit"/>
     <addaction name="actionShow_faces"/>
+    <addaction name="actionRefine_search"/>
    </widget>
    <widget class="QMenu" name="menuTools">
     <property name="title">
@@ -1526,6 +1527,14 @@
    </property>
    <property name="shortcut">
     <string>Ctrl+J</string>
+   </property>
+  </action>
+  <action name="actionRefine_search">
+   <property name="text">
+    <string>Refine search</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+F</string>
    </property>
   </action>
  </widget>

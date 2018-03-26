@@ -77,6 +77,8 @@ private slots:
 
     void on_actionJump_to_triggered();
 
+    void on_actionRefine_search_triggered();
+
 private:
     Ui::MViewer *ui;
     double scaleFactor;

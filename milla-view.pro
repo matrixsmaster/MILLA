@@ -15,13 +15,16 @@ TEMPLATE = app
 SOURCES += main.cpp\
         mviewer.cpp \
     thumbnailmodel.cpp \
-    sresultmodel.cpp
+    sresultmodel.cpp \
+    searchform.cpp
 
 HEADERS  += mviewer.h \
     thumbnailmodel.h \
-    sresultmodel.h
+    sresultmodel.h \
+    searchform.h
 
-FORMS    += mviewer.ui
+FORMS    += mviewer.ui \
+    searchform.ui
 
 CONFIG   += c++11
 
