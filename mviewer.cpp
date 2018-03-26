@@ -9,6 +9,10 @@ MViewer::MViewer(QWidget *parent) :
     ui->setupUi(this);
     scaleFactor = 1;
 
+    progressBar = new QProgressBar(this);
+    progressBar->setTextVisible(false);
+    ui->statusBar->addPermanentWidget(progressBar);
+
     QSqlDatabase db = QSqlDatabase::addDatabase("QSQLITE");
     QString fn = QDir::homePath() + "/.milla/storage.db";
     qDebug() << "Storage database filename: " << fn;
@@ -258,7 +262,7 @@ void MViewer::showNextImage()
     QString fn = current_l.data(MImageListModel::FullPathRole).toString();
     qDebug() << fn;
     updateTags(fn);
-    ui->progressBar->setValue(0);
+    progressBar->setValue(0);
     ui->radio_settags->setChecked(true);
 
     QSqlQuery q;
@@ -273,8 +277,8 @@ void MViewer::showNextImage()
     else {
         view_timer = new QTimer();
         connect(view_timer,&QTimer::timeout,this,[this] {
-            if (ui->progressBar->value() < 100)
-                ui->progressBar->setValue(ui->progressBar->value()+1);
+            if (progressBar->value() < 100)
+                progressBar->setValue(progressBar->value()+1);
             else {
                 view_timer->stop();
                 ui->lcdNumber->display((double)incViews());
@@ -661,19 +665,28 @@ void MViewer::on_actionLoad_everything_slow_triggered()
     ThumbnailModel* ptm = dynamic_cast<ThumbnailModel*>(ui->listView->model());
     if (!ptm) return;
 
-    double prg = 0, dp = 100.f / (double)(ptm->GetAllImages().size());
-    time_t pass = clock();
+    double passed, spd, est, prg = 0, all = (double)(ptm->GetAllImages().size());
+    double dp = 100.f / all;
+    time_t pass, start = clock();
+    size_t k = 0;
 
     for (auto &i : ptm->GetAllImages()) {
         createStatRecord(i.filename);
+
         prg += dp;
-        ui->progressBar->setValue(floor(prg));
+        pass = clock() - start;
+        passed = (double)pass / (double)CLOCKS_PER_SEC;
+        spd = passed / (double)(k++);
+        est = (all - k) / spd;
+
+        progressBar->setValue(floor(prg));
+        ui->statusBar->showMessage(QString::asprintf("Objects: %.0f; Elapsed: %.1f sec; Speed: %.2f img/sec; Remaining: %.1f sec",all,passed,spd,est));
+
         QCoreApplication::processEvents();
     }
-    pass = clock() - pass;
-    ui->progressBar->setValue(100);
 
-    qDebug() << "[LOADER] Elapsed time: " << ((double)pass / (double)CLOCKS_PER_SEC) << " sec";
+    progressBar->setValue(100);
+    ui->statusBar->showMessage(QString::asprintf("Objects: %.0f; Elapsed: %.1f sec; Speed: %.2f img/sec",all,passed,spd));
 }
 
 void MViewer::on_listWidget_itemClicked(QListWidgetItem *item)

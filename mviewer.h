@@ -10,6 +10,7 @@
 #include <QFileInfo>
 #include <QScrollArea>
 #include <QListWidget>
+#include <QProgressBar>
 #include <QTimer>
 #include <QtSql/QSqlDatabase>
 #include <QCryptographicHash>
@@ -81,6 +82,7 @@ private slots:
 
 private:
     Ui::MViewer *ui;
+    QProgressBar* progressBar;
     double scaleFactor;
     QModelIndex current_l, current_r;
     cv::CascadeClassifier* face_cascade;
