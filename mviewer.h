@@ -108,6 +108,8 @@ private:
     void updateCurrentTags();
 
     void searchResults(QList<QString> lst);
+
+    void searchByTag();
 };
 
 #endif // MVIEWER_H

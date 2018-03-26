@@ -640,6 +640,7 @@ void MViewer::on_listWidget_itemClicked(QListWidgetItem *item)
     if (ui->radio_search->isChecked()) {
         //search by tag instead of change tags
         tags_cache[item->text()].second = now;
+        searchByTag();
         return;
     }
 
@@ -752,4 +753,28 @@ void MViewer::searchResults(QList<QString> lst)
     });
 
     ui->tabWidget->setCurrentIndex(1);
+}
+
+void MViewer::searchByTag()
+{
+    QSqlQuery q;
+
+    for (auto &i : tags_cache) {
+        if (!i.second.second) continue;
+        q.clear();
+        q.prepare("SELECT file FROM stats WHERE tags LIKE :t OR INSTR( tags, :i ) > 0");
+        q.bindValue(":t",QString::asprintf("%d,%%",i.second.first));
+        q.bindValue(":i",QString::asprintf(",%d,",i.second.first));
+        if (!q.exec()) {
+            qDebug() << "Select tag " << i.second.first << " failed";
+            continue;
+        }
+        //qDebug() << q.lastQuery();
+
+        while (q.next()) {
+            qDebug() << "TAG " << i.second.first << " FOUND: " << q.value(0).toString();
+        }
+
+    }
+
 }
