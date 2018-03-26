@@ -13,6 +13,7 @@
 #include <QTimer>
 #include <QtSql/QSqlDatabase>
 #include <QCryptographicHash>
+#include <QInputDialog>
 #include <thumbnailmodel.h>
 #include <sresultmodel.h>
 #include <opencv2/opencv.hpp>
@@ -72,6 +73,8 @@ private slots:
     void on_radio_search_toggled(bool checked);
 
     void on_radio_settags_toggled(bool checked);
+
+    void on_actionJump_to_triggered();
 
 private:
     Ui::MViewer *ui;

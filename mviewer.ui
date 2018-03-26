@@ -139,7 +139,7 @@
                  <rect>
                   <x>0</x>
                   <y>0</y>
-                  <width>239</width>
+                  <width>266</width>
                   <height>292</height>
                  </rect>
                 </property>
@@ -172,7 +172,7 @@
                  <rect>
                   <x>0</x>
                   <y>0</y>
-                  <width>263</width>
+                  <width>293</width>
                   <height>292</height>
                  </rect>
                 </property>
@@ -1416,6 +1416,7 @@
     </widget>
     <addaction name="actionOpen"/>
     <addaction name="menuExport_DB"/>
+    <addaction name="actionJump_to"/>
    </widget>
    <widget class="QMenu" name="menuEdit">
     <property name="title">
@@ -1517,6 +1518,14 @@
   <action name="actionCurrent_directory_to_CSV">
    <property name="text">
     <string>Current directory to CSV</string>
+   </property>
+  </action>
+  <action name="actionJump_to">
+   <property name="text">
+    <string>Jump to...</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+J</string>
    </property>
   </action>
  </widget>

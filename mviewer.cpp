@@ -835,3 +835,28 @@ void MViewer::searchByTag()
     }
     searchResults(found);
 }
+
+void MViewer::on_actionJump_to_triggered()
+{
+    ThumbnailModel* ptm = dynamic_cast<ThumbnailModel*>(ui->listView->model());
+    if (!ptm) return;
+
+    bool ok;
+    QString fn = QInputDialog::getText(this,tr("Jump to file"),tr("File name or full path"),QLineEdit::Normal,QString(),&ok);
+    if (!ok) return;
+    bool path = fn.contains('/');
+
+    size_t idx = 0;
+    ok = false;
+    for (auto &i : ptm->GetAllImages()) {
+        if ((path && !fn.compare(i->filename,Qt::CaseInsensitive)) || (!path && !fn.compare(i->fnshort,Qt::CaseInsensitive))) {
+            ok = true;
+            break;
+        }
+        idx++;
+    }
+    if (!ok) return;
+
+    current_l = ui->listView->selectionModel()->model()->index(idx,0);
+    scaleImage(ui->scrollArea,ui->label,&current_l,1);
+}
