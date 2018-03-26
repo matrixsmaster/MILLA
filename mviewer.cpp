@@ -245,6 +245,7 @@ void MViewer::showNextImage()
     qDebug() << fn;
     updateTags(fn);
     ui->progressBar->setValue(0);
+    ui->radio_settags->setChecked(true);
 
     QSqlQuery q;
     q.prepare("SELECT views FROM stats WHERE file = :fn");
@@ -708,14 +709,14 @@ void MViewer::on_radio_settags_toggled(bool checked)
 
 void MViewer::searchResults(QList<QString> lst)
 {
-    if (lst.isEmpty()) return;
-    ThumbnailModel* ptm = dynamic_cast<ThumbnailModel*>(ui->listView->model());
-    if (!ptm) return;
-
     if (ui->listView_2->model()) {
         qDebug() << "Old model scheduled for removal";
         ui->listView_2->model()->deleteLater();
     }
+
+    if (lst.isEmpty()) return;
+    ThumbnailModel* ptm = dynamic_cast<ThumbnailModel*>(ui->listView->model());
+    if (!ptm) return;
 
     QList<SResultRecord> out;
     QList<ThumbnailRec*> &imgs = ptm->GetAllImages();
@@ -757,12 +758,20 @@ void MViewer::searchResults(QList<QString> lst)
 
 void MViewer::searchByTag()
 {
+    ThumbnailModel* ptm = dynamic_cast<ThumbnailModel*>(ui->listView->model());
+    if (!ptm) return;
+    QList<ThumbnailRec*> &imgs = ptm->GetAllImages();
     QSqlQuery q;
+    std::map<QString,QList<int> > targ;
+    QList<int> goal;
+    QList<QString> found;
 
     for (auto &i : tags_cache) {
         if (!i.second.second) continue;
+        goal.push_back(i.second.first);
+
         q.clear();
-        q.prepare("SELECT file FROM stats WHERE tags LIKE :t OR INSTR( tags, :i ) > 0");
+        q.prepare("SELECT file,tags FROM stats WHERE tags LIKE :t OR INSTR( tags, :i ) > 0");
         q.bindValue(":t",QString::asprintf("%d,%%",i.second.first));
         q.bindValue(":i",QString::asprintf(",%d,",i.second.first));
         if (!q.exec()) {
@@ -773,8 +782,31 @@ void MViewer::searchByTag()
 
         while (q.next()) {
             qDebug() << "TAG " << i.second.first << " FOUND: " << q.value(0).toString();
+            QList<int> l;
+            QStringList _l = q.value(1).toString().split(",",QString::SkipEmptyParts);
+            for (auto &j : _l) l.push_back(j.toInt());
+            targ[q.value(0).toString()] = l;
         }
-
     }
 
+    qDebug() << "Target list size: " << targ.size();
+
+    for (auto &i : targ) {
+        bool k = true;
+        for (auto &j : goal)
+            if (!i.second.contains(j)) {
+                k = false;
+                break;
+            }
+        if (!k) continue;
+
+        auto w = std::find_if(imgs.begin(),imgs.end(),[&] (const ThumbnailRec* a) { return (a->filename == i.first); });
+        if (w == imgs.end()) {
+            qDebug() << "File " << i.first << " isn't among currently loaded ones";
+            continue;
+        }
+
+        found.push_back(i.first);
+    }
+    searchResults(found);
 }
