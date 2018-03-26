@@ -12,6 +12,7 @@
 #include <QListWidget>
 #include <QTimer>
 #include <QtSql/QSqlDatabase>
+#include <QCryptographicHash>
 #include <thumbnailmodel.h>
 #include <sresultmodel.h>
 #include <opencv2/opencv.hpp>
@@ -38,7 +39,7 @@ struct MImageExtras {
     QSize picsize;
     std::vector<MROI> rois;
     cv::Mat hist;
-    //std::vector<int> tags;
+    bool color = true;
 };
 
 namespace Ui {

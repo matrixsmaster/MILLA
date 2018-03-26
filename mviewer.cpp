@@ -38,7 +38,7 @@ MViewer::MViewer(QWidget *parent) :
         if (!ok) {
             QSqlQuery qq;
             ok = qq.exec("CREATE TABLE stats (file TEXT, views UNSIGNED BIGINT, lastview UNSIGNED INT, rating TINYINT, ntags INT, tags TEXT, notes TEXT, "
-                         "sizex UNSIGNED INT, sizey UNSIGNED INT, grayscale TINYINT, faces INT, facerects TEXT, hist BLOB)");
+                         "sizex UNSIGNED INT, sizey UNSIGNED INT, grayscale TINYINT, faces INT, facerects TEXT, hist BLOB, sha256 BLOB, length UNSIGNED BIGINT)");
             qDebug() << "[db] Create new stats table: " << ok;
         }
 
@@ -195,16 +195,29 @@ void MViewer::createStatRecord(QString fn)
     QByteArray harr = qCompress(storeMat(ext.hist));
     qDebug() << "[db] Final harr length =" << harr.size();
 
+    QCryptographicHash hash(QCryptographicHash::Sha256);
+    QByteArray shasum;
+    QFile mfile(fn);
+    mfile.open(QIODevice::ReadOnly);
+    if (hash.addData(&mfile))
+        shasum = hash.result();
+    else
+        qDebug() << "ALERT: Unable to calculate SHA256 of file " << fn;
+    mfile.close();
+
     QSqlQuery q;
-    q.prepare("INSERT INTO stats (file, views, lastview, rating, ntags, tags, notes, sizex, sizey, grayscale, faces, facerects, hist) VALUES "
-              "(:fn, 0, :tm, 0, 0, \"\", \"\", :sx, :sy, -1, :fcn, :fcr, :hst)");
+    q.prepare("INSERT INTO stats (file, views, lastview, rating, ntags, tags, notes, sizex, sizey, grayscale, faces, facerects, hist, sha256, length) VALUES "
+              "(:fn, 0, :tm, 0, 0, \"\", \"\", :sx, :sy, :gry, :fcn, :fcr, :hst, :sha, :len)");
     q.bindValue(":fn",fn);
     q.bindValue(":tm",(uint)time(NULL));
     q.bindValue(":sx",ext.picsize.width());
     q.bindValue(":sy",ext.picsize.height());
+    q.bindValue(":gry",ext.color? 0:1);
     q.bindValue(":fcn",fcn);
     q.bindValue(":fcr",fcdat);
     q.bindValue(":hst",harr);
+    q.bindValue(":sha",shasum);
+    q.bindValue(":len",mfile.size());
 
     bool ok = q.exec();
     qDebug() << "[db] Creating new statistics record: " << ok;
@@ -517,6 +530,7 @@ MImageExtras MViewer::getExtraCacheLine(QString const &fn, bool forceload)
     q.bindValue(":fn",fn);;
     if (q.exec() && q.next()) {
         res.picsize = QSize(q.value(0).toUInt(), q.value(1).toUInt());
+        res.color = !(q.value(2).toInt());
         QStringList flst = q.value(4).toString().split(',',QString::SkipEmptyParts);
         for (auto k = flst.begin(); k != flst.end();) {
             MROI r;
@@ -555,6 +569,17 @@ MImageExtras MViewer::getExtraCacheLine(QString const &fn, bool forceload)
         const float* ranges[] = {rranges, rranges, rranges};
         int channels[] = {0, 1, 2};
         calcHist(&in,1,channels,Mat(),res.hist,3,histSize,ranges,true,false);
+
+        res.color = false;
+        for (int k = 0; k < res.hist.size[0]; k++) {
+            float a = res.hist.at<float>(k,0,0);
+            float b = res.hist.at<float>(0,k,0);
+            float c = res.hist.at<float>(0,0,k);
+            if (a != b || b != c || c != a) {
+                res.color = true;
+                break;
+            }
+        }
 
         std::vector<cv::Rect> faces;
         detectFaces(in,&faces);

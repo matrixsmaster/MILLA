@@ -221,6 +221,13 @@
                 <item>
                  <widget class="QPlainTextEdit" name="plainTextEdit"/>
                 </item>
+                <item>
+                 <widget class="QPushButton" name="pushButton_2">
+                  <property name="text">
+                   <string>Save</string>
+                  </property>
+                 </widget>
+                </item>
                </layout>
               </widget>
               <widget class="QWidget" name="tab_2">
@@ -1401,7 +1408,14 @@
     <property name="title">
      <string>File</string>
     </property>
+    <widget class="QMenu" name="menuExport_DB">
+     <property name="title">
+      <string>Export DB</string>
+     </property>
+     <addaction name="actionCurrent_directory_to_CSV"/>
+    </widget>
     <addaction name="actionOpen"/>
+    <addaction name="menuExport_DB"/>
    </widget>
    <widget class="QMenu" name="menuEdit">
     <property name="title">
@@ -1498,6 +1512,11 @@
   <action name="actionLoad_everything_slow">
    <property name="text">
     <string>Load everything (slow)</string>
+   </property>
+  </action>
+  <action name="actionCurrent_directory_to_CSV">
+   <property name="text">
+    <string>Current directory to CSV</string>
    </property>
   </action>
  </widget>
