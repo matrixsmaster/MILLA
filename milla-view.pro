@@ -16,12 +16,14 @@ SOURCES += main.cpp\
         mviewer.cpp \
     thumbnailmodel.cpp \
     sresultmodel.cpp \
-    searchform.cpp
+    searchform.cpp \
+    mimagelistmodel.cpp
 
 HEADERS  += mviewer.h \
     thumbnailmodel.h \
     sresultmodel.h \
-    searchform.h
+    searchform.h \
+    mimagelistmodel.h
 
 FORMS    += mviewer.ui \
     searchform.ui

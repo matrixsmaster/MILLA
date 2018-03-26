@@ -1,7 +1,7 @@
 #include "thumbnailmodel.h"
 
-ThumbnailModel::ThumbnailModel(std::list<QString> files, QObject *parent)
-    : QAbstractListModel(parent)
+ThumbnailModel::ThumbnailModel(QList<QString> files, QObject *parent)
+    : MImageListModel(parent)
 {
     QSqlQuery q;
     bool ok = q.exec("SELECT * FROM thumbs LIMIT 1");
@@ -13,11 +13,11 @@ ThumbnailModel::ThumbnailModel(std::list<QString> files, QObject *parent)
     }
 
     for (auto &i : files) {
-        ThumbnailRec *pair = new ThumbnailRec();
-        pair->filename = i;
-        pair->loaded = false;
-        pair->modified = true;
-        pair->filechanged = 0;
+        MImageListRecord rec;
+        rec.filename = i;
+        rec.loaded = false;
+        rec.modified = true;
+        rec.filechanged = 0;
 
         if (ok) {
             QSqlQuery qq;
@@ -26,87 +26,55 @@ ThumbnailModel::ThumbnailModel(std::list<QString> files, QObject *parent)
 
             if (qq.exec() && qq.next() && qq.value(0).canConvert(QVariant::ByteArray) && qq.value(1).canConvert(QVariant::UInt)) {
                 qDebug() << "Loaded thumbnail for " << i;
-                pair->thumb.loadFromData(qq.value(0).toByteArray());
-                pair->filechanged = qq.value(1).toUInt();
-                pair->modified = false;
+                rec.thumb.loadFromData(qq.value(0).toByteArray());
+                rec.filechanged = qq.value(1).toUInt();
+                rec.modified = false;
             }
         }
 
-        if (pair->modified) {
-            pair->thumb = QPixmap(THUMBNAILSIZE,THUMBNAILSIZE);
-            pair->thumb.fill(Qt::black);
+        if (rec.modified) {
+            rec.thumb = QPixmap(THUMBNAILSIZE,THUMBNAILSIZE);
+            rec.thumb.fill(Qt::black);
         }
 
         QFileInfo fi(i);
-        pair->fnshort = fi.fileName();
+        rec.fnshort = fi.fileName();
 
-        images.append(pair);
+        images.append(rec);
     }
 }
 
 ThumbnailModel::~ThumbnailModel()
 {
     qDebug() << "Deleting ThumbnailModel";
-    qDeleteAll(images);
 }
 
-QVariant ThumbnailModel::data(const QModelIndex &index, int role) const
+void ThumbnailModel::LoadUp(int idx)
 {
-    if (index.isValid()) {
-        switch (role) {
-        case Qt::DecorationRole:
-            // DecorationRole = Icon show for a list
-            return images.value(index.row())->thumb;
+    if (images.at(idx).loaded) return;
+    images[idx].picture = QPixmap(images[idx].filename);
+    if (images.at(idx).picture.isNull()) return;
+    images[idx].loaded = true;
 
-        case Qt::DisplayRole:
-            // DisplayRole = Displayed text
-            return images.value(index.row())->fnshort;
-
-        case LargePixmapRole:
-            // This is a custom role, it will help us getting the pixmap more
-            // easily later.
-            //LoadUp(index.row());
-            images[index.row()]->touched = time(NULL); //we're inside a const method, wtf?!
-            return images.value(index.row())->picture;
-
-        case FullPathRole:
-            return images.value(index.row())->filename;
-
-        }
-    }
-
-    // returning a default constructed QVariant, will let Views knows we have nothing
-    // to do and we let the default behavior of the view do work for us.
-    return QVariant();
-}
-
-void ThumbnailModel::LoadUp(int idx) //const
-{
-    if (images.at(idx)->loaded) return;
-    images[idx]->picture = QPixmap(images[idx]->filename);
-    if (images.at(idx)->picture.isNull()) return;
-    images[idx]->loaded = true;
-
-    //qDebug() << "depth = " << images.at(idx)->picture.depth();
     ram_footprint += ItemSizeInBytes(idx);
     GC(idx);
 
-    QFileInfo fi(images.at(idx)->filename);
-    if (fi.lastModified().toTime_t() == images.at(idx)->filechanged) return;
+    QFileInfo fi(images.at(idx).filename);
+    if (fi.lastModified().toTime_t() == images.at(idx).filechanged) return;
 
-    images[idx]->thumb = images[idx]->picture.scaled(THUMBNAILSIZE,THUMBNAILSIZE,Qt::KeepAspectRatio,Qt::SmoothTransformation);
-    images[idx]->modified = true;
-    images[idx]->touched = time(NULL);
-    images[idx]->filechanged = fi.lastModified().toTime_t();
+    images[idx].thumb = images[idx].picture.scaled(THUMBNAILSIZE,THUMBNAILSIZE,Qt::KeepAspectRatio,Qt::SmoothTransformation);
+    images[idx].modified = true;
+    images[idx].touched = time(NULL);
+    images[idx].filechanged = fi.lastModified().toTime_t();
 
     QByteArray arr;
     QBuffer dat(&arr);
     dat.open(QBuffer::WriteOnly);
-    bool ok = images.at(idx)->thumb.save(&dat,"png");
+    bool ok = images.at(idx).thumb.save(&dat,"png");
 
     QSqlQuery qq;
     qq.prepare("SELECT thumb FROM thumbs WHERE file = (:fn)");
-    qq.bindValue(":fn",images.at(idx)->filename);
+    qq.bindValue(":fn",images.at(idx).filename);
     bool mod = qq.exec() && qq.next();
 
     if (ok) {
@@ -121,20 +89,15 @@ void ThumbnailModel::LoadUp(int idx) //const
             q.prepare("UPDATE thumbs SET thumb = :thm, mtime = :mtm WHERE file = :fn");
             act = "Updating";
         }
-        q.bindValue(":fn",images.at(idx)->filename);
+        q.bindValue(":fn",images.at(idx).filename);
         q.bindValue(":mtm",fi.lastModified().toTime_t());
         q.bindValue(":thm",arr);
         ok = q.exec();
 
-        qDebug() << "[db] " << act << " record for " << images.at(idx)->fnshort << ": " << ok;
-        if (ok) images[idx]->modified = false;
+        qDebug() << "[db] " << act << " record for " << images.at(idx).fnshort << ": " << ok;
+        if (ok) images[idx].modified = false;
         else qDebug() << q.lastError();
     }
-}
-
-size_t ThumbnailModel::ItemSizeInBytes(int idx)
-{
-    return (images.at(idx)->picture.depth() / 8) * images.at(idx)->picture.size().width() * images.at(idx)->picture.size().height();
 }
 
 void ThumbnailModel::GC(int skip)
@@ -144,17 +107,17 @@ void ThumbnailModel::GC(int skip)
 
     std::map<time_t,int> allocated;
     for (int i = 0; i < images.size(); i++) {
-        if ((i == skip) || !images.at(i)->loaded) continue;
-        allocated[images.at(i)->touched] = i;
+        if ((i == skip) || !images.at(i).loaded) continue;
+        allocated[images.at(i).touched] = i;
     }
     qDebug() << "[GC] Time map populated: " << allocated.size() << " entries";
     if (allocated.empty()) return;
 
     for (auto it = allocated.begin(); it != allocated.end(); ++it) {
         size_t csz = ItemSizeInBytes(it->second);
-        qDebug() << "[GC] Deleting " << images.at(it->second)->fnshort << " Timestamp " << it->first << "; size = " << csz;
-        images[it->second]->picture = QPixmap();
-        images[it->second]->loaded = false;
+        qDebug() << "[GC] Deleting " << images.at(it->second).fnshort << " Timestamp " << it->first << "; size = " << csz;
+        images[it->second].picture = QPixmap();
+        images[it->second].loaded = false;
         ram_footprint -= csz;
 
         if (ram_footprint < MAXPICSBYTES) {
@@ -162,4 +125,9 @@ void ThumbnailModel::GC(int skip)
             break;
         }
     }
+}
+
+void ThumbnailModel::touch(const QModelIndex &index)
+{
+    images[index.row()].touched = time(NULL);
 }

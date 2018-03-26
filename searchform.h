@@ -11,6 +11,9 @@ class SearchForm;
 struct SearchFormData {
     int rating = 1;
     int views = 0;
+    int minface = 0;
+    int maxface = 100;
+    bool grey = false;
     QDate mtime_min, mtime_max;
 };
 

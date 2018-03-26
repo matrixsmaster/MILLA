@@ -17,6 +17,9 @@ void SearchForm::on_buttonBox_accepted()
 {
     sdata.rating = ui->spinBox->value();
     sdata.views = ui->spinBox_2->value();
+    sdata.minface = ui->spinBox_3->value();
+    sdata.maxface = ui->spinBox_4->value();
+    sdata.grey = ui->radioButton_2->isChecked();
     sdata.mtime_min = ui->calendarWidget->selectedDate();
     sdata.mtime_max = ui->calendarWidget_2->selectedDate();
 }

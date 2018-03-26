@@ -3,7 +3,7 @@
  <class>SearchForm</class>
  <widget class="QDialog" name="SearchForm">
   <property name="windowModality">
-   <enum>Qt::WindowModal</enum>
+   <enum>Qt::ApplicationModal</enum>
   </property>
   <property name="geometry">
    <rect>
@@ -14,7 +14,7 @@
    </rect>
   </property>
   <property name="windowTitle">
-   <string>Dialog</string>
+   <string>Search</string>
   </property>
   <widget class="QDialogButtonBox" name="buttonBox">
    <property name="geometry">
@@ -144,6 +144,38 @@
      </widget>
     </item>
    </layout>
+  </widget>
+  <widget class="QSpinBox" name="spinBox_3">
+   <property name="geometry">
+    <rect>
+     <x>280</x>
+     <y>210</y>
+     <width>111</width>
+     <height>26</height>
+    </rect>
+   </property>
+   <property name="prefix">
+    <string>Faces &gt;= </string>
+   </property>
+  </widget>
+  <widget class="QSpinBox" name="spinBox_4">
+   <property name="geometry">
+    <rect>
+     <x>280</x>
+     <y>250</y>
+     <width>111</width>
+     <height>26</height>
+    </rect>
+   </property>
+   <property name="prefix">
+    <string>Faces &lt; </string>
+   </property>
+   <property name="minimum">
+    <number>1</number>
+   </property>
+   <property name="value">
+    <number>99</number>
+   </property>
   </widget>
  </widget>
  <resources/>

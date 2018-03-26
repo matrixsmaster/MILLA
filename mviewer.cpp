@@ -227,7 +227,7 @@ void MViewer::createStatRecord(QString fn)
 unsigned MViewer::incViews(bool left)
 {
     if ((left && !current_l.isValid()) || (!left && !current_r.isValid())) return 0;
-    QString fn = (left? current_l : current_r).data(ThumbnailModel::FullPathRole).value<QString>();
+    QString fn = (left? current_l : current_r).data(MImageListModel::FullPathRole).value<QString>();
     qDebug() << "Incrementing views counter for " << fn;
 
     QSqlQuery q;
@@ -255,7 +255,7 @@ void MViewer::showNextImage()
     current_l = ui->listView->selectionModel()->selectedIndexes().first();
     scaleImage(ui->scrollArea,ui->label,&current_l,1);
 
-    QString fn = current_l.data(ThumbnailModel::FullPathRole).toString();
+    QString fn = current_l.data(MImageListModel::FullPathRole).toString();
     qDebug() << fn;
     updateTags(fn);
     ui->progressBar->setValue(0);
@@ -296,7 +296,7 @@ void MViewer::on_actionOpen_triggered()
     if (bpath.isEmpty()) return;
 
     QDirIterator it(bpath, QDir::Files | QDir::NoDotAndDotDot, QDirIterator::Subdirectories | QDirIterator::FollowSymlinks);
-    std::list<QString> lst;
+    QList<QString> lst;
     while (it.hasNext()) {
         QFileInfo cfn(it.next());
         QString ext(cfn.suffix().toLower());
@@ -345,14 +345,15 @@ void MViewer::scaleImage(QScrollArea* scrl, QLabel* lbl, QModelIndex *idx, doubl
     if (ptm) ptm->LoadUp(idx->row());
     else return;
 
-    QPixmap map = idx->data(ThumbnailModel::LargePixmapRole).value<QPixmap>();
+    QPixmap map = idx->data(MImageListModel::LargePixmapRole).value<QPixmap>();
+    ptm->touch(*idx);
 
     if (ui->actionFit->isChecked())
         lbl->setPixmap(map.scaled(lbl->size(),Qt::KeepAspectRatio,Qt::SmoothTransformation));
 
     else {
         QSize nsz = map.size() * scaleFactor;
-        MImageExtras extr = getExtraCacheLine(idx->data(ThumbnailModel::FullPathRole).value<QString>());
+        MImageExtras extr = getExtraCacheLine(idx->data(MImageListModel::FullPathRole).value<QString>());
 
         if (ui->actionShow_faces->isChecked() && extr.valid && !extr.rois.empty()) {
             QImage inq(map.scaled(nsz,Qt::KeepAspectRatio,Qt::SmoothTransformation).toImage());
@@ -482,28 +483,28 @@ void MViewer::on_actionMatch_triggered()
     ThumbnailModel* ptm = dynamic_cast<ThumbnailModel*>(ui->listView->model());
     if (!ptm) return;
 
-    MImageExtras orig = getExtraCacheLine(current_l.data(ThumbnailModel::FullPathRole).value<QString>());
+    MImageExtras orig = getExtraCacheLine(current_l.data(MImageListModel::FullPathRole).value<QString>());
     if (!orig.valid) return;
-    QSize orig_size = current_l.data(ThumbnailModel::LargePixmapRole).value<QPixmap>().size();
+    QSize orig_size = current_l.data(MImageListModel::LargePixmapRole).value<QPixmap>().size();
     double orig_area = orig_size.width() * orig_size.height();
 
     MImageExtras cur;
-    std::map<double,ThumbnailRec*> targets;
-    QString we = current_l.data(ThumbnailModel::FullPathRole).value<QString>();
+    std::map<double,MImageListRecord*> targets;
+    QString we = current_l.data(MImageListModel::FullPathRole).value<QString>();
 
     for (auto &i : ptm->GetAllImages()) {
-        if (we == i->filename) continue;
+        if (we == i.filename) continue;
 
-        cur = getExtraCacheLine(i->filename);
+        cur = getExtraCacheLine(i.filename);
         if (!cur.valid) continue;
 
         double cur_area = cur.picsize.width() * cur.picsize.height();
         if (orig_area / cur_area > 2 || cur_area / orig_area > 2) continue;
 
         double corr = compareHist(orig.hist,cur.hist,CV_COMP_CORREL);
-        qDebug() << "Correlation with " << i->filename << ":  " << corr;
+        qDebug() << "Correlation with " << i.filename << ":  " << corr;
 
-        if (corr > 0) targets[corr] = i;
+        if (corr > 0) targets[corr] = &i;
     }
 
     QList<QString> lst;
@@ -551,9 +552,9 @@ MImageExtras MViewer::getExtraCacheLine(QString const &fn, bool forceload)
         //retreive image to analyze
         size_t idx = 0;
         for (auto &i : ptm->GetAllImages()) {
-            if (i->filename == fn) {
+            if (i.filename == fn) {
                 if (forceload) ptm->LoadUp(idx);
-                if (i->loaded) org = i->picture;
+                if (i.loaded) org = i.picture;
                 break;
             }
             idx++;
@@ -648,7 +649,7 @@ void MViewer::on_actionLoad_all_known_triggered()
 
     size_t x = 0;
     for (auto &i : ptm->GetAllImages()) {
-        if (!i->modified && i->picture.isNull()) ptm->LoadUp(x);
+        if (!i.modified && i.picture.isNull()) ptm->LoadUp(x);
         x++;
     }
 }
@@ -658,12 +659,11 @@ void MViewer::on_actionLoad_everything_slow_triggered()
     ThumbnailModel* ptm = dynamic_cast<ThumbnailModel*>(ui->listView->model());
     if (!ptm) return;
 
-    QList<ThumbnailRec*> &imgs = ptm->GetAllImages();
-    double prg = 0, dp = 100.f / (double)(imgs.size());
+    double prg = 0, dp = 100.f / (double)(ptm->GetAllImages().size());
     time_t pass = clock();
 
     for (auto &i : ptm->GetAllImages()) {
-        createStatRecord(i->filename);
+        createStatRecord(i.filename);
         prg += dp;
         ui->progressBar->setValue(floor(prg));
         QCoreApplication::processEvents();
@@ -736,7 +736,7 @@ void MViewer::updateCurrentTags()
     q.prepare("UPDATE stats SET ntags = :ntg, tags = :tgs WHERE file = :fn");
     q.bindValue(":ntg",ntg);
     q.bindValue(":tgs",tgs);
-    q.bindValue(":fn",current_l.data(ThumbnailModel::FullPathRole).toString());
+    q.bindValue(":fn",current_l.data(MImageListModel::FullPathRole).toString());
     bool ok = q.exec();
     qDebug() << "[db] Updating tags: " << ok;
 }
@@ -749,7 +749,7 @@ void MViewer::on_radio_search_toggled(bool checked)
 void MViewer::on_radio_settags_toggled(bool checked)
 {
     if (checked) {
-        if (current_l.isValid()) updateTags(current_l.data(ThumbnailModel::FullPathRole).toString());
+        if (current_l.isValid()) updateTags(current_l.data(MImageListModel::FullPathRole).toString());
         else updateTags();
     }
 }
@@ -765,28 +765,22 @@ void MViewer::searchResults(QList<QString> lst)
     ThumbnailModel* ptm = dynamic_cast<ThumbnailModel*>(ui->listView->model());
     if (!ptm) return;
 
-    QList<SResultRecord> out;
-    QList<ThumbnailRec*> &imgs = ptm->GetAllImages();
+    QList<MImageListRecord> out;
+    QList<MImageListRecord> &imgs = ptm->GetAllImages();
     for (auto &i : lst) {
-        SResultRecord k;
         int idx = 0;
 
-        k.path = i;
         for (auto &j : imgs) {
-            if (j->filename == i) break;
+            if (j.filename == i) break;
             idx++;
         }
         if (idx >= imgs.size()) {
             qDebug() << "ALERT: Unable to match filename " << i;
             return;
         }
-        k.shrt = imgs.at(idx)->fnshort;
-        k.thumb = imgs.at(idx)->thumb;
 
         ptm->LoadUp(idx);
-        k.large = imgs.at(idx)->picture;
-
-        out.push_back(k);
+        out.push_back(imgs.at(idx));
     }
 
     ui->listView_2->setModel(new SResultModel(out,ui->listView_2));
@@ -807,7 +801,7 @@ void MViewer::searchByTag()
 {
     ThumbnailModel* ptm = dynamic_cast<ThumbnailModel*>(ui->listView->model());
     if (!ptm) return;
-    QList<ThumbnailRec*> &imgs = ptm->GetAllImages();
+    QList<MImageListRecord> &imgs = ptm->GetAllImages();
     QSqlQuery q;
     std::map<QString,QList<int> > targ;
     QList<int> goal;
@@ -847,7 +841,7 @@ void MViewer::searchByTag()
             }
         if (!k) continue;
 
-        auto w = std::find_if(imgs.begin(),imgs.end(),[&] (const ThumbnailRec* a) { return (a->filename == i.first); });
+        auto w = std::find_if(imgs.begin(),imgs.end(),[&] (const MImageListRecord a) { return (a.filename == i.first); });
         if (w == imgs.end()) {
             qDebug() << "File " << i.first << " isn't among currently loaded ones";
             continue;
@@ -871,7 +865,7 @@ void MViewer::on_actionJump_to_triggered()
     size_t idx = 0;
     ok = false;
     for (auto &i : ptm->GetAllImages()) {
-        if ((path && !fn.compare(i->filename,Qt::CaseInsensitive)) || (!path && !fn.compare(i->fnshort,Qt::CaseInsensitive))) {
+        if ((path && !fn.compare(i.filename,Qt::CaseInsensitive)) || (!path && !fn.compare(i.fnshort,Qt::CaseInsensitive))) {
             ok = true;
             break;
         }
@@ -888,5 +882,6 @@ void MViewer::on_actionRefine_search_triggered()
     SearchForm frm;
     if (!frm.exec()) return;
 
-    qDebug() << frm.getSearchData().rating;
+    ThumbnailModel* ptm = dynamic_cast<ThumbnailModel*>(ui->listView->model());
+    if (!ptm) return;
 }
