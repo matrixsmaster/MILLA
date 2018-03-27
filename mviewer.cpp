@@ -58,6 +58,15 @@ MViewer::MViewer(QWidget *parent) :
         } else
             updateTags();
 
+        q.clear();
+        ok = q.exec("SELECT * FROM links LIMIT 1");
+        qDebug() << "[db] Read links table: " << ok;
+        if (!ok) {
+            QSqlQuery qq;
+            ok = qq.exec("CREATE TABLE links (left BLOB, right BLOB)");
+            qDebug() << "[db] Create new links table: " << ok;
+        }
+
     }
     if (!ok) qDebug() << "[ALERT] DB operations aren't finished";
 
@@ -152,6 +161,7 @@ void MViewer::on_pushButton_clicked()
     }
 }
 
+#if 0
 static std::string type2str(int type)
 {
     std::string r;
@@ -175,6 +185,7 @@ static std::string type2str(int type)
 
     return r;
 }
+#endif
 
 void MViewer::createStatRecord(QString fn)
 {
@@ -231,7 +242,7 @@ void MViewer::createStatRecord(QString fn)
 unsigned MViewer::incViews(bool left)
 {
     if ((left && !current_l.isValid()) || (!left && !current_r.isValid())) return 0;
-    QString fn = (left? current_l : current_r).data(MImageListModel::FullPathRole).value<QString>();
+    QString fn = (left? current_l : current_r).data(MImageListModel::FullPathRole).toString();
     qDebug() << "Incrementing views counter for " << fn;
 
     QSqlQuery q;
@@ -260,7 +271,6 @@ void MViewer::showNextImage()
     scaleImage(ui->scrollArea,ui->label,&current_l,1);
 
     QString fn = current_l.data(MImageListModel::FullPathRole).toString();
-    qDebug() << fn;
     updateTags(fn);
     progressBar->setValue(0);
     ui->radio_settags->setChecked(true);
@@ -285,7 +295,8 @@ void MViewer::showNextImage()
             }
         });
     }
-    qDebug() << "selChanged";
+
+    if (ui->actionShow_linked_image->isChecked()) displayLinkedImages(fn);
 }
 
 void MViewer::on_actionOpen_triggered()
@@ -359,7 +370,7 @@ void MViewer::scaleImage(QScrollArea* scrl, QLabel* lbl, QModelIndex *idx, doubl
 
     else {
         QSize nsz = map.size() * scaleFactor;
-        MImageExtras extr = getExtraCacheLine(idx->data(MImageListModel::FullPathRole).value<QString>());
+        MImageExtras extr = getExtraCacheLine(idx->data(MImageListModel::FullPathRole).toString());
 
         if (ui->actionShow_faces->isChecked() && extr.valid && !extr.rois.empty()) {
             QImage inq(map.scaled(nsz,Qt::KeepAspectRatio,Qt::SmoothTransformation).toImage());
@@ -437,10 +448,6 @@ QByteArray MViewer::storeMat(cv::Mat const &in)
     harr.append((char*)&tmp,sizeof(tmp));
     harr.append((char*)in.ptr(),tmp);
 
-    qDebug() << "[db] Size of harr = " << harr.size() << "; cols, rows, dims = " << in.cols << in.rows << in.dims;
-    qDebug() << tmp;
-    qDebug() << in.elemSize() << " <- " << type2str(in.type()).c_str();
-
     return harr;
 }
 
@@ -472,10 +479,6 @@ cv::Mat MViewer::loadMat(QByteArray const &arr)
 
     ptr = (const char*)uptr;
     memcpy(res.ptr(),ptr,tot);
-
-    qDebug() << "[db] Size of arr = " << arr.size() << "; cols, rows, dims = " << res.cols << res.rows << res.dims;
-    qDebug() << tot;
-    qDebug() << res.elemSize() << " <- " << type2str(res.type()).c_str();
 
     return res;
 }
@@ -534,7 +537,7 @@ MImageExtras MViewer::getExtraCacheLine(QString const &fn, bool forceload)
     if (!ptm) return res;
 
     QSqlQuery q;
-    q.prepare("SELECT sizex, sizey, grayscale, faces, facerects, hist FROM stats WHERE file = (:fn)");
+    q.prepare("SELECT sizex, sizey, grayscale, faces, facerects, hist, sha256 FROM stats WHERE file = (:fn)");
     q.bindValue(":fn",fn);;
     if (q.exec() && q.next()) {
         res.picsize = QSize(q.value(0).toUInt(), q.value(1).toUInt());
@@ -551,6 +554,8 @@ MImageExtras MViewer::getExtraCacheLine(QString const &fn, bool forceload)
         }
         if (q.value(5).canConvert(QVariant::ByteArray))
             res.hist = loadMat(qUncompress(q.value(5).toByteArray()));
+        if (q.value(6).canConvert(QVariant::ByteArray))
+            res.sha = q.value(6).toByteArray();
 
     } else {
         QPixmap org;
@@ -769,11 +774,11 @@ void MViewer::on_radio_settags_toggled(bool checked)
     }
 }
 
-void MViewer::searchResults(QList<QString> lst)
+void MViewer::resultsPresentation(QList<QString> lst, QListView* view, int tabIndex)
 {
-    if (ui->listView_2->model()) {
+    if (view->model()) {
         qDebug() << "Old model scheduled for removal";
-        ui->listView_2->model()->deleteLater();
+        view->model()->deleteLater();
         current_l = QModelIndex();
         current_r = QModelIndex();
     }
@@ -800,18 +805,23 @@ void MViewer::searchResults(QList<QString> lst)
         out.push_back(imgs.at(idx));
     }
 
-    ui->listView_2->setModel(new SResultModel(out,ui->listView_2));
-    ui->listView_2->setViewMode(QListView::ListMode);
-    ui->listView_2->setFlow(QListView::LeftToRight);
-    ui->listView_2->setWrapping(false);
+    view->setModel(new SResultModel(out,view));
+    view->setViewMode(QListView::ListMode);
+    view->setFlow(QListView::LeftToRight);
+    view->setWrapping(false);
+
+    ui->tabWidget->setCurrentIndex(tabIndex);
+}
+
+void MViewer::searchResults(QList<QString> lst)
+{
+    resultsPresentation(lst,ui->listView_2,1);
 
     connect(ui->listView_2->selectionModel(),&QItemSelectionModel::selectionChanged,[this] {
         current_r = ui->listView_2->selectionModel()->selectedIndexes().first();
         scaleImage(ui->scrollArea_2,ui->label_2,&current_r,1);
         incViews(false);
     });
-
-    ui->tabWidget->setCurrentIndex(1);
 }
 
 void MViewer::searchByTag()
@@ -941,4 +951,59 @@ void MViewer::on_actionClear_results_triggered()
 void MViewer::on_actionQuit_triggered()
 {
     QApplication::quit();
+}
+
+void MViewer::on_actionLink_left_to_right_triggered()
+{
+    if (!current_l.isValid() || !current_r.isValid()) return;
+
+    MImageExtras extl = getExtraCacheLine(current_l.data(MImageListModel::FullPathRole).toString());
+    MImageExtras extr = getExtraCacheLine(current_r.data(MImageListModel::FullPathRole).toString());
+    if (!extl.valid || !extr.valid) return;
+
+    QSqlQuery q;
+    q.prepare("SELECT * FROM links WHERE left = :sl AND right = :sr");
+    q.bindValue(":sl",extl.sha);
+    q.bindValue(":sr",extr.sha);
+    if (q.exec() && q.next()) {
+        qDebug() << "[db] Link is already registered, exiting";
+        return;
+    }
+
+    q.clear();
+    q.prepare("INSERT INTO links (left, right) VALUES (:sl, :sr)");
+    q.bindValue(":sl",extl.sha);
+    q.bindValue(":sr",extr.sha);
+    bool ok = q.exec();
+
+    qDebug() << "[db] Inserting link: " << ok;
+}
+
+void MViewer::displayLinkedImages(QString const &fn)
+{
+    MImageExtras extr = getExtraCacheLine(fn);
+    if (!extr.valid) return;
+
+    QSqlQuery q;
+    q.prepare("SELECT right FROM links WHERE left = :sha");
+    q.bindValue(":sha",extr.sha);
+    if (!q.exec()) return;
+
+    QList<QString> out;
+    while (q.next()) {
+        if (!q.value(0).canConvert(QVariant::ByteArray)) continue;
+
+        QSqlQuery qq;
+        qq.prepare("SELECT file FROM stats WHERE sha256 = :sha");
+        qq.bindValue(":sha",q.value(0).toByteArray());
+        if (qq.exec() && qq.next())
+            out.push_back(qq.value(0).toString());
+    }
+
+    resultsPresentation(out,ui->listView_3,2);
+    connect(ui->listView_3->selectionModel(),&QItemSelectionModel::selectionChanged,[this] {
+        current_r = ui->listView_3->selectionModel()->selectedIndexes().first();
+        scaleImage(ui->scrollArea_2,ui->label_2,&current_r,1);
+        incViews(false);
+    });
 }

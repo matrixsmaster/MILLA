@@ -247,6 +247,16 @@
                 </item>
                </layout>
               </widget>
+              <widget class="QWidget" name="tab_5">
+               <attribute name="title">
+                <string>Links</string>
+               </attribute>
+               <layout class="QHBoxLayout" name="horizontalLayout_7">
+                <item>
+                 <widget class="QListView" name="listView_3"/>
+                </item>
+               </layout>
+              </widget>
              </widget>
             </item>
            </layout>
@@ -1409,6 +1419,7 @@
     <property name="title">
      <string>Edit</string>
     </property>
+    <addaction name="actionLink_left_to_right"/>
     <addaction name="actionRotate_90_CW"/>
     <addaction name="actionRotate_90_CCW"/>
    </widget>
@@ -1418,6 +1429,7 @@
     </property>
     <addaction name="actionFit"/>
     <addaction name="actionShow_faces"/>
+    <addaction name="actionShow_linked_image"/>
    </widget>
    <widget class="QMenu" name="menuTools">
     <property name="title">
@@ -1556,6 +1568,22 @@
    </property>
    <property name="shortcut">
     <string>Ctrl+Q</string>
+   </property>
+  </action>
+  <action name="actionShow_linked_image">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Show linked images</string>
+   </property>
+  </action>
+  <action name="actionLink_left_to_right">
+   <property name="text">
+    <string>Link left to right</string>
+   </property>
+   <property name="shortcut">
+    <string>Shift+L</string>
    </property>
   </action>
  </widget>

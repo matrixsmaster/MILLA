@@ -43,6 +43,7 @@ struct MImageExtras {
     std::vector<MROI> rois;
     cv::Mat hist;
     bool color = true;
+    QByteArray sha;
 };
 
 namespace Ui {
@@ -86,11 +87,13 @@ private slots:
 
     void on_actionQuit_triggered();
 
+    void on_actionLink_left_to_right_triggered();
+
 private:
     Ui::MViewer *ui;
     QProgressBar* progressBar;
     double scaleFactor;
-    QModelIndex current_l, current_r;
+    QModelIndex current_l, current_r; //TODO: update them to MImageListRecord
     cv::CascadeClassifier* face_cascade;
     std::map<QString,MImageExtras> extra_cache;
     std::map<QString,std::pair<int,bool> > tags_cache;
@@ -122,9 +125,13 @@ private:
 
     void updateCurrentTags();
 
+    void resultsPresentation(QList<QString> lst, QListView *view, int tabIndex);
+
     void searchResults(QList<QString> lst);
 
     void searchByTag();
+
+    void displayLinkedImages(QString const &fn);
 };
 
 #endif // MVIEWER_H
