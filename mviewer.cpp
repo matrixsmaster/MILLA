@@ -289,6 +289,7 @@ unsigned MViewer::incViews(bool left)
     q.bindValue(":fn",fn);
     bool ok = q.exec();
     qDebug() << "[db] Updating views: " << ok;
+    if (!ok) qDebug() << "[db] " << q.lastError().text();
 
     return v;
 }
@@ -383,9 +384,8 @@ void MViewer::scanDirectory(QString const &dir, QList<QString> &addto)
     }
 }
 
-void MViewer::on_actionOpen_triggered()
+void MViewer::openDirByFile(QString const &fileName)
 {
-    QString fileName = QFileDialog::getOpenFileName(this, tr("Open image and directory"), "", tr("Image Files (*.png *.jpg *.jpeg *.bmp)"));
     if (fileName.isEmpty()) return;
 
     QFileInfo bpf(fileName);
@@ -398,9 +398,8 @@ void MViewer::on_actionOpen_triggered()
     showImageList(lst);
 }
 
-void MViewer::on_actionOpen_list_triggered()
+void MViewer::openDirByList(QString const &fileName)
 {
-    QString fileName = QFileDialog::getOpenFileName(this, tr("Open list of images"), "", tr("Text Files (*.txt *.lst)"));
     if (fileName.isEmpty()) return;
 
     QFile ilist(fileName);
@@ -425,6 +424,44 @@ void MViewer::on_actionOpen_list_triggered()
     }
 
     showImageList(lst);
+}
+
+void MViewer::processArguments()
+{
+    QStringList args = QApplication::arguments();
+    if (args.size() < 2) return;
+    args.erase(args.begin());
+
+    if (args.size() == 1) {
+        if (isLoadableFile(args.front(),nullptr)) openDirByFile(args.front());
+        else {
+            QFileInfo cfn(args.front());
+            QString ext(cfn.suffix().toLower());
+            if (ext == "txt" || ext == "lst")
+                openDirByList(args.front());
+        }
+        return;
+    }
+
+    cleanUp();
+
+    QList<QString> lst;
+    QString cpath;
+    for (auto &i : args) {
+        if (isLoadableFile(i,&cpath)) lst.push_back(cpath);
+    }
+
+    showImageList(lst);
+}
+
+void MViewer::on_actionOpen_triggered()
+{
+    openDirByFile(QFileDialog::getOpenFileName(this, tr("Open image and directory"), "", tr("Image Files (*.png *.jpg *.jpeg *.bmp)")));
+}
+
+void MViewer::on_actionOpen_list_triggered()
+{
+    openDirByList(QFileDialog::getOpenFileName(this, tr("Open list of images"), "", tr("Text Files (*.txt *.lst)")));
 }
 
 void MViewer::scaleImage(const MImageListRecord &rec, QScrollArea* scrl, QLabel* lbl, double factor)
@@ -765,7 +802,7 @@ void MViewer::on_actionLoad_everything_slow_triggered()
     stopButton->setEnabled(true);
     connect(stopButton,&QPushButton::clicked,this,[this] { flag_stop_load_everything = true; });
 
-    double passed, spd, est, prg = 0, all = (double)(ptm->GetAllImages().size());
+    double passed = 0, spd = 0, est, prg = 0, all = (double)(ptm->GetAllImages().size());
     double dp = 100.f / all;
     time_t pass, start = clock();
     size_t k = 0;
@@ -1070,7 +1107,7 @@ void MViewer::on_actionLink_left_to_right_triggered()
     q.bindValue(":sl",extl.sha);
     q.bindValue(":sr",extr.sha);
     if (q.exec() && q.next()) {
-        qDebug() << "[db] Link is already registered, exiting";
+        ui->statusBar->showMessage("Already linked");
         return;
     }
 
@@ -1111,4 +1148,11 @@ void MViewer::displayLinkedImages(QString const &fn)
         scaleImage(current_r,ui->scrollArea_2,ui->label_2,1);
         incViews(false);
     });
+}
+
+void MViewer::on_actionAbout_triggered()
+{
+    QMessageBox::about(this, tr("About MILLA"),
+                       tr("<p> <b>MILLA</b> image viewer. </p>"
+                          "<p>(C) Dmitry 'MatrixS_Master' Soloviov, 2018</p>"));
 }

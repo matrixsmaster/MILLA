@@ -58,6 +58,8 @@ public:
     explicit MViewer(QWidget *parent = 0);
     ~MViewer();
 
+    void processArguments();
+
 private slots:
     void on_pushButton_clicked();
 
@@ -91,6 +93,8 @@ private slots:
 
     void on_actionOpen_list_triggered();
 
+    void on_actionAbout_triggered();
+
 private:
     Ui::MViewer *ui;
     QTimer view_timer;
@@ -114,6 +118,10 @@ private:
     bool isLoadableFile(QString const &path, QString* canonicalPath);
 
     void scanDirectory(QString const &dir, QList<QString> &addto);
+
+    void openDirByFile(QString const &fileName);
+
+    void openDirByList(QString const &fileName);
 
     void showNextImage();
 

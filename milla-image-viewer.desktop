@@ -1,0 +1,9 @@
+[Desktop Entry]
+Name=MILLA Image Viewer
+Comment=A viewer with extended functionality for search and matching
+Exec=/opt/milla/bin/milla-view %F
+Icon=/opt/milla/share/milla.png
+Terminal=false
+Type=Application
+Categories=Qt;Graphics;RasterGraphics;Viewer;2DGraphics;
+MimeType=image/jpeg;image/png;text/plain;
