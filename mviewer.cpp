@@ -305,28 +305,15 @@ void MViewer::showNextImage()
         displayLinkedImages(current_l.filename);
 }
 
-void MViewer::on_actionOpen_triggered()
+void MViewer::cleanUp()
 {
-    QString fileName = QFileDialog::getOpenFileName(this, tr("Open Image"), "", tr("Image Files (*.png *.jpg *.jpeg *.bmp)"));
-    if (fileName.isEmpty()) return;
-
     extra_cache.clear();
     current_l = MImageListRecord();
     current_r = MImageListRecord();
+}
 
-    QFileInfo bpf(fileName);
-    QString bpath = bpf.canonicalPath();
-    if (bpath.isEmpty()) return;
-
-    QDirIterator it(bpath, QDir::Files | QDir::NoDotAndDotDot, QDirIterator::Subdirectories | QDirIterator::FollowSymlinks);
-    QList<QString> lst;
-    while (it.hasNext()) {
-        QFileInfo cfn(it.next());
-        QString ext(cfn.suffix().toLower());
-        if (ext == "png" || ext == "jpg" || ext == "jpeg" || ext == "bmp")
-            lst.push_back(cfn.canonicalFilePath());
-    }
-
+void MViewer::showImageList(QList<QString> const &lst)
+{
     if (ui->listView->model()) {
         qDebug() << "Old model scheduled for removal";
         ui->listView->model()->deleteLater();
@@ -348,6 +335,72 @@ void MViewer::on_actionOpen_triggered()
         incViews(false);
         qDebug() << "rightClick";
     });
+
+    ui->statusBar->showMessage(QString::asprintf("%d images",lst.size()));
+}
+
+bool MViewer::isLoadableFile(QString const &path, QString *canonicalPath)
+{
+    QFileInfo cfn(path);
+    QString ext(cfn.suffix().toLower());
+    if (ext == "png" || ext == "jpg" || ext == "jpeg" || ext == "bmp") {
+        if (canonicalPath) *canonicalPath = cfn.canonicalFilePath();
+        return true;
+    }
+    return false;
+}
+
+void MViewer::scanDirectory(QString const &dir, QList<QString> &addto)
+{
+    QDirIterator it(dir, QDir::Files | QDir::NoDotAndDotDot, QDirIterator::Subdirectories | QDirIterator::FollowSymlinks);
+    QString cpath;
+    while (it.hasNext()) {
+        if (isLoadableFile(it.next(),&cpath)) addto.push_back(cpath);
+    }
+}
+
+void MViewer::on_actionOpen_triggered()
+{
+    QString fileName = QFileDialog::getOpenFileName(this, tr("Open image and directory"), "", tr("Image Files (*.png *.jpg *.jpeg *.bmp)"));
+    if (fileName.isEmpty()) return;
+
+    QFileInfo bpf(fileName);
+    QString bpath = bpf.canonicalPath();
+    if (bpath.isEmpty()) return;
+
+    QList<QString> lst;
+    cleanUp();
+    scanDirectory(bpath,lst);
+    showImageList(lst);
+}
+
+void MViewer::on_actionOpen_list_triggered()
+{
+    QString fileName = QFileDialog::getOpenFileName(this, tr("Open list of images"), "", tr("Text Files (*.txt *.lst)"));
+    if (fileName.isEmpty()) return;
+
+    QFile ilist(fileName);
+    if (!ilist.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        qDebug() << "ALERT: unable to read file " << fileName;
+        return;
+    }
+    QString dat = ilist.readAll();
+    ilist.close();
+
+    QStringList ldat = dat.split('\n',QString::SkipEmptyParts);
+    dat.clear();
+    if (ldat.empty()) return;
+
+    cleanUp();
+
+    QList<QString> lst;
+    QString cpath;
+    for (auto &i : ldat) {
+        if (!i.isEmpty() && i.at(i.size()-1) == '/') scanDirectory(i,lst);
+        else if (isLoadableFile(i,&cpath)) lst.push_back(cpath);
+    }
+
+    showImageList(lst);
 }
 
 void MViewer::scaleImage(const MImageListRecord &rec, QScrollArea* scrl, QLabel* lbl, double factor)
@@ -890,6 +943,7 @@ void MViewer::on_actionJump_to_triggered()
     for (auto &i : ptm->GetAllImages()) {
         if ((path && !fn.compare(i.filename,Qt::CaseInsensitive)) || (!path && !fn.compare(i.fnshort,Qt::CaseInsensitive))) {
             ok = true;
+            ptm->LoadUp(idx);
             current_l = i;
             break;
         }

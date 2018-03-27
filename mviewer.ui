@@ -1406,6 +1406,7 @@
      <addaction name="actionCurrent_directory_to_CSV"/>
     </widget>
     <addaction name="actionOpen"/>
+    <addaction name="actionOpen_list"/>
     <addaction name="separator"/>
     <addaction name="actionJump_to"/>
     <addaction name="separator"/>
@@ -1469,7 +1470,7 @@
   <widget class="QStatusBar" name="statusBar"/>
   <action name="actionOpen">
    <property name="text">
-    <string>Open</string>
+    <string>Open file</string>
    </property>
    <property name="shortcut">
     <string>Ctrl+O</string>
@@ -1584,6 +1585,11 @@
    </property>
    <property name="shortcut">
     <string>L</string>
+   </property>
+  </action>
+  <action name="actionOpen_list">
+   <property name="text">
+    <string>Open list</string>
    </property>
   </action>
  </widget>

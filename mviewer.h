@@ -89,6 +89,8 @@ private slots:
 
     void on_actionLink_left_to_right_triggered();
 
+    void on_actionOpen_list_triggered();
+
 private:
     Ui::MViewer *ui;
     QProgressBar* progressBar;
@@ -98,6 +100,14 @@ private:
     std::map<QString,MImageExtras> extra_cache;
     std::map<QString,std::pair<int,bool> > tags_cache;
     QTimer* view_timer = NULL;
+
+    void cleanUp();
+
+    void showImageList(QList<QString> const &lst);
+
+    bool isLoadableFile(QString const &path, QString* canonicalPath);
+
+    void scanDirectory(QString const &dir, QList<QString> &addto);
 
     void showNextImage();
 
