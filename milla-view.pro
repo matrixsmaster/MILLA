@@ -23,7 +23,8 @@ HEADERS  += mviewer.h \
     thumbnailmodel.h \
     sresultmodel.h \
     searchform.h \
-    mimagelistmodel.h
+    mimagelistmodel.h \
+    db_format.h
 
 FORMS    += mviewer.ui \
     searchform.ui

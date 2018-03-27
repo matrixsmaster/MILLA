@@ -1,74 +1,39 @@
 ﻿#include "mviewer.h"
 #include "ui_mviewer.h"
 #include "searchform.h"
+#include "db_format.h"
 
 MViewer::MViewer(QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::MViewer)
 {
     ui->setupUi(this);
-    scaleFactor = 1;
+
+    if (!initDatabase()) {
+        qDebug() << "FATAL: Unable to initialize database " DB_FILEPATH;
+
+        connect(&view_timer,&QTimer::timeout,this,[this] { QApplication::exit(1); });
+        view_timer.start(2);
+        return;
+    }
 
     progressBar = new QProgressBar(this);
     progressBar->setTextVisible(false);
     ui->statusBar->addPermanentWidget(progressBar);
 
-    QSqlDatabase db = QSqlDatabase::addDatabase("QSQLITE");
-    QString fn = QDir::homePath() + "/.milla/storage.db";
-    qDebug() << "Storage database filename: " << fn;
-    db.setHostName("localhost");
-    db.setDatabaseName(fn);
-    db.setUserName("user");
-    bool ok = db.open();
-    qDebug() << "DB open:  " << ok;
+    stopButton = new QPushButton(this);
+    stopButton->setText("stop");
+    stopButton->setEnabled(false);
+    ui->statusBar->addPermanentWidget(stopButton);
 
-    if (ok) {
-        QSqlQuery q;
-        ok = q.exec("SELECT * FROM meta");
-        qDebug() << "[db] Read meta table: " << ok;
-        if (!ok) {
-            QSqlQuery qq;
-            ok = qq.exec("CREATE TABLE meta (version INT)");
-            qDebug() << "[db] Create new meta table: " << ok;
-            qq.clear();
-            qq.prepare("INSERT INTO meta (version) VALUES (:ver)");
-            qq.bindValue(":ver",INTERNAL_DB_VERSION);
-            ok = qq.exec();
-            qDebug() << "[db] Inserting current DB version tag " << INTERNAL_DB_VERSION << ": " << ok;
+    connect(&view_timer,&QTimer::timeout,this,[this] {
+        if (progressBar->value() < 100)
+            progressBar->setValue(progressBar->value()+1);
+        else {
+            view_timer.stop();
+            ui->lcdNumber->display((double)incViews());
         }
-
-        q.clear();
-        ok = q.exec("SELECT * FROM stats LIMIT 1");
-        qDebug() << "[db] Read stats table: " << ok;
-        if (!ok) {
-            QSqlQuery qq;
-            ok = qq.exec("CREATE TABLE stats (file TEXT, views UNSIGNED BIGINT, lastview UNSIGNED INT, rating TINYINT, likes INT, ntags INT, tags TEXT, notes TEXT, "
-                         "sizex UNSIGNED INT, sizey UNSIGNED INT, grayscale TINYINT, faces INT, facerects TEXT, hist BLOB, sha256 BLOB, length UNSIGNED BIGINT)");
-            qDebug() << "[db] Create new stats table: " << ok;
-        }
-
-        q.clear();
-        ok = q.exec("SELECT tag FROM tags LIMIT 1");
-        qDebug() << "[db] Read tags table: " << ok;
-        if (!ok) {
-            QSqlQuery qq;
-            ok = qq.exec("CREATE TABLE tags (key UNSIGNED INT, tag TEXT, rating UNSIGNED BIGINT)");
-            qDebug() << "[db] Create new tags table: " << ok;
-
-        } else
-            updateTags();
-
-        q.clear();
-        ok = q.exec("SELECT * FROM links LIMIT 1");
-        qDebug() << "[db] Read links table: " << ok;
-        if (!ok) {
-            QSqlQuery qq;
-            ok = qq.exec("CREATE TABLE links (left BLOB, right BLOB)");
-            qDebug() << "[db] Create new links table: " << ok;
-        }
-
-    }
-    if (!ok) qDebug() << "[ALERT] DB operations aren't finished";
+    });
 
     using namespace cv;
 
@@ -89,9 +54,71 @@ MViewer::MViewer(QWidget *parent) :
 MViewer::~MViewer()
 {
     if (face_cascade) delete face_cascade;
-    if (view_timer) delete view_timer;
     QSqlDatabase::database().close();
     delete ui;
+}
+
+bool MViewer::initDatabase()
+{
+    QSqlDatabase db = QSqlDatabase::addDatabase("QSQLITE");
+
+    QString fn = QDir::homePath() + DB_FILEPATH;
+    qDebug() << "Storage database filename: " << fn;
+    db.setHostName("localhost");
+    db.setDatabaseName(fn);
+    db.setUserName("user");
+    bool ok = db.open();
+    qDebug() << "DB open:  " << ok;
+    if (!ok) return false;
+
+    QSqlQuery q;
+    ok = q.exec("SELECT version FROM meta") && q.next();
+    qDebug() << "[db] Read meta table: " << ok;
+    if (!ok) {
+        QSqlQuery qq;
+        ok = qq.exec("CREATE TABLE meta (" DBF_META ")");
+        qDebug() << "[db] Create new meta table: " << ok;
+        qq.clear();
+        qq.prepare("INSERT INTO meta (version) VALUES (:ver)");
+        qq.bindValue(":ver",DB_VERSION);
+        ok = qq.exec();
+        qDebug() << "[db] Inserting current DB version tag " << DB_VERSION << ": " << ok;
+        if (!ok) return false;
+    } else
+        qDebug() << "DB version: " << q.value(0).toInt();
+
+    q.clear();
+    ok = DB_CORRECT_TABLE_CHECK(q,"'stats'");
+    qDebug() << "[db] Read stats table: " << ok;
+    if (!ok) {
+        QSqlQuery qq;
+        ok = qq.exec("CREATE TABLE stats (" DBF_STATS ")");
+        qDebug() << "[db] Create new stats table: " << ok;
+        if (!ok) return false;
+    }
+
+    q.clear();
+    ok = DB_CORRECT_TABLE_CHECK(q,"'tags'");
+    qDebug() << "[db] Read tags table: " << ok;
+    if (!ok) {
+        QSqlQuery qq;
+        ok = qq.exec("CREATE TABLE tags (" DBF_TAGS ")");
+        qDebug() << "[db] Create new tags table: " << ok;
+        if (!ok) return false;
+    } else
+        updateTags();
+
+    q.clear();
+    ok = DB_CORRECT_TABLE_CHECK(q,"'links'");
+    qDebug() << "[db] Read links table: " << ok;
+    if (!ok) {
+        QSqlQuery qq;
+        ok = qq.exec("CREATE TABLE links (" DBF_LINKS ")");
+        qDebug() << "[db] Create new links table: " << ok;
+        if (!ok) return false;
+    }
+
+    return ok;
 }
 
 void MViewer::addTag(QString const &tg, int key, bool check)
@@ -222,7 +249,7 @@ void MViewer::createStatRecord(QString fn)
     mfile.close();
 
     QSqlQuery q;
-    q.prepare("INSERT INTO stats (file, views, lastview, rating, likes, ntags, tags, notes, sizex, sizey, grayscale, faces, facerects, hist, sha256, length) VALUES "
+    q.prepare("INSERT INTO stats (" DBF_STATS_SHORT ") VALUES "
               "(:fn, 0, :tm, 0, 0, 0, \"\", \"\", :sx, :sy, :gry, :fcn, :fcr, :hst, :sha, :len)");
     q.bindValue(":fn",fn);
     q.bindValue(":tm",(uint)time(NULL));
@@ -237,6 +264,7 @@ void MViewer::createStatRecord(QString fn)
 
     bool ok = q.exec();
     qDebug() << "[db] Creating new statistics record: " << ok;
+    checkExtraCache();
 }
 
 unsigned MViewer::incViews(bool left)
@@ -288,21 +316,12 @@ void MViewer::showNextImage()
     else
         ui->lcdNumber->display(0);
 
-    if (view_timer) view_timer->start(20);
-    else {
-        view_timer = new QTimer();
-        connect(view_timer,&QTimer::timeout,this,[this] {
-            if (progressBar->value() < 100)
-                progressBar->setValue(progressBar->value()+1);
-            else {
-                view_timer->stop();
-                ui->lcdNumber->display((double)incViews());
-            }
-        });
-    }
-
+    view_timer.start(20);
     if (ui->actionShow_linked_image->isChecked())
         displayLinkedImages(current_l.filename);
+
+    checkExtraCache();
+    ui->statusBar->showMessage("");
 }
 
 void MViewer::cleanUp()
@@ -310,6 +329,11 @@ void MViewer::cleanUp()
     extra_cache.clear();
     current_l = MImageListRecord();
     current_r = MImageListRecord();
+}
+
+void MViewer::checkExtraCache()
+{
+    if (extra_cache.size() > EXTRA_CACHE_SIZE) extra_cache.clear();
 }
 
 void MViewer::showImageList(QList<QString> const &lst)
@@ -451,7 +475,24 @@ void MViewer::on_actionFit_triggered()
     scaleImage(current_r,ui->scrollArea_2,ui->label_2,1);
 }
 
-cv::Mat MViewer::quickConvert(QImage &in) //FIXME: not always working
+QString MViewer::timePrinter(double sec) const
+{
+    QString res;
+    double ehr = floor(sec / 3600.f);
+    if (ehr > 0) {
+        res += QString::asprintf("%.0f hrs ",ehr);
+        sec -= ehr * 3600.f;
+    }
+    double emn = floor(sec / 60.f);
+    if (emn > 0) {
+        res += QString::asprintf("%.0f min ",emn);
+        sec -= emn * 60.f;
+    }
+    res += QString::asprintf("%.1f sec",sec);
+    return res;
+}
+
+cv::Mat MViewer::quickConvert(QImage &in) const //FIXME: not always working
 {
     if (in.format() != QImage::Format_RGB888) {
         in = in.convertToFormat(QImage::Format_RGB888);
@@ -460,7 +501,7 @@ cv::Mat MViewer::quickConvert(QImage &in) //FIXME: not always working
     return cv::Mat(in.size().height(),in.size().width(),CV_8UC3,in.bits());
 }
 
-cv::Mat MViewer::slowConvert(QImage const &in)
+cv::Mat MViewer::slowConvert(QImage const &in) const
 {
     using namespace cv;
 
@@ -483,7 +524,7 @@ cv::Mat MViewer::slowConvert(QImage const &in)
     return r;
 }
 
-QByteArray MViewer::storeMat(cv::Mat const &in)
+QByteArray MViewer::storeMat(cv::Mat const &in) const
 {
     QByteArray harr;
     harr.append((char*)&(in.cols),sizeof(in.cols));
@@ -503,7 +544,7 @@ QByteArray MViewer::storeMat(cv::Mat const &in)
     return harr;
 }
 
-cv::Mat MViewer::loadMat(QByteArray const &arr)
+cv::Mat MViewer::loadMat(QByteArray const &arr) const
 {
     cv::Mat res;
     const char* ptr = arr.constData();
@@ -721,6 +762,9 @@ void MViewer::on_actionLoad_everything_slow_triggered()
     ThumbnailModel* ptm = dynamic_cast<ThumbnailModel*>(ui->listView->model());
     if (!ptm) return;
 
+    stopButton->setEnabled(true);
+    connect(stopButton,&QPushButton::clicked,this,[this] { flag_stop_load_everything = true; });
+
     double passed, spd, est, prg = 0, all = (double)(ptm->GetAllImages().size());
     double dp = 100.f / all;
     time_t pass, start = clock();
@@ -732,17 +776,30 @@ void MViewer::on_actionLoad_everything_slow_triggered()
         prg += dp;
         pass = clock() - start;
         passed = (double)pass / (double)CLOCKS_PER_SEC;
-        spd = passed / (double)(k++);
+        spd = (double)(k++) / ((passed < FLT_EPSILON)? FLT_EPSILON : passed);
         est = (all - k) / spd;
 
         progressBar->setValue(floor(prg));
-        ui->statusBar->showMessage(QString::asprintf("Objects: %.0f; Elapsed: %.1f sec; Speed: %.2f img/sec; Remaining: %.1f sec",all,passed,spd,est));
+        ui->statusBar->showMessage(QString::asprintf("Objects: %.0f; Elapsed: %s; Processed: %lu; Speed: %.2f img/sec; Remaining: %s",
+                                                     all,
+                                                     timePrinter(passed).toStdString().c_str(),
+                                                     k,spd,
+                                                     timePrinter(est).toStdString().c_str()));
 
         QCoreApplication::processEvents();
+        if (flag_stop_load_everything) break;
     }
 
     progressBar->setValue(100);
-    ui->statusBar->showMessage(QString::asprintf("Objects: %.0f; Elapsed: %.1f sec; Speed: %.2f img/sec",all,passed,spd));
+    ui->statusBar->showMessage(QString::asprintf("Objects: %.0f; Elapsed: %s; Speed: %.2f img/sec. %s.",
+                                                 all,
+                                                 timePrinter(passed).toStdString().c_str(),
+                                                 spd,
+                                                 (flag_stop_load_everything?"Cancelled by user":"Finished")));
+
+    flag_stop_load_everything = false;
+    disconnect(stopButton,&QPushButton::clicked,0,0);
+    stopButton->setEnabled(false);
 }
 
 void MViewer::on_listWidget_itemClicked(QListWidgetItem *item)
@@ -1006,7 +1063,7 @@ void MViewer::on_actionLink_left_to_right_triggered()
 
     MImageExtras extl = getExtraCacheLine(current_l.filename);
     MImageExtras extr = getExtraCacheLine(current_r.filename);
-    if (!extl.valid || !extr.valid) return;
+    if (!extl.valid || !extr.valid || extl.sha.isEmpty() || extr.sha.isEmpty()) return;
 
     QSqlQuery q;
     q.prepare("SELECT * FROM links WHERE left = :sl AND right = :sr");
@@ -1024,6 +1081,7 @@ void MViewer::on_actionLink_left_to_right_triggered()
     bool ok = q.exec();
 
     qDebug() << "[db] Inserting link: " << ok;
+    if (ok) ui->statusBar->showMessage("Linked");
 }
 
 void MViewer::displayLinkedImages(QString const &fn)

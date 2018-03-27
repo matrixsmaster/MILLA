@@ -23,7 +23,7 @@
 #include <opencv2/highgui/highgui.hpp>
 #include <ctime>
 
-#define INTERNAL_DB_VERSION 1
+#define EXTRA_CACHE_SIZE 1500
 #define FACE_CASCADE_FILE "/tmp/face_cascade.xml"
 
 enum MROIType {
@@ -93,15 +93,21 @@ private slots:
 
 private:
     Ui::MViewer *ui;
+    QTimer view_timer;
     QProgressBar* progressBar;
-    double scaleFactor;
+    QPushButton* stopButton;
+    double scaleFactor = 1;
     MImageListRecord current_l, current_r;
-    cv::CascadeClassifier* face_cascade;
+    cv::CascadeClassifier* face_cascade = nullptr;
     std::map<QString,MImageExtras> extra_cache;
     std::map<QString,std::pair<int,bool> > tags_cache;
-    QTimer* view_timer = NULL;
+    bool flag_stop_load_everything = false;
+
+    bool initDatabase();
 
     void cleanUp();
+
+    void checkExtraCache();
 
     void showImageList(QList<QString> const &lst);
 
@@ -121,13 +127,15 @@ private:
 
     void scaleImage(const MImageListRecord &rec, QScrollArea* scrl, QLabel* lbl, double factor);
 
-    cv::Mat quickConvert(QImage &in);
+    QString timePrinter(double sec) const;
 
-    cv::Mat slowConvert(QImage const &in);
+    cv::Mat quickConvert(QImage &in) const;
 
-    QByteArray storeMat(cv::Mat const &in);
+    cv::Mat slowConvert(QImage const &in) const;
 
-    cv::Mat loadMat(QByteArray const &arr);
+    QByteArray storeMat(cv::Mat const &in) const;
+
+    cv::Mat loadMat(QByteArray const &arr) const;
 
     MImageExtras getExtraCacheLine(QString const &fn, bool forceload = false);
 
