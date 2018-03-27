@@ -12,6 +12,7 @@
 #include <QListWidget>
 #include <QProgressBar>
 #include <QTimer>
+#include <QPainter>
 #include <QtSql/QSqlDatabase>
 #include <QCryptographicHash>
 #include <QInputDialog>
@@ -128,6 +129,10 @@ private:
     void addTag(QString const &tg, int key, bool check = false);
 
     void updateTags(QString fn = QString());
+
+    void updateStars(QString fn = QString());
+
+    void changedStars(int n);
 
     void createStatRecord(QString fn);
 

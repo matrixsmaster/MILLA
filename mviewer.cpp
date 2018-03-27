@@ -35,6 +35,12 @@ MViewer::MViewer(QWidget *parent) :
         }
     });
 
+    connect(ui->star_1,&StarLabel::clicked,this,[this] { changedStars(1); });
+    connect(ui->star_2,&StarLabel::clicked,this,[this] { changedStars(2); });
+    connect(ui->star_3,&StarLabel::clicked,this,[this] { changedStars(3); });
+    connect(ui->star_4,&StarLabel::clicked,this,[this] { changedStars(4); });
+    connect(ui->star_5,&StarLabel::clicked,this,[this] { changedStars(5); });
+
     using namespace cv;
 
     face_cascade = NULL;
@@ -154,6 +160,41 @@ void MViewer::updateTags(QString fn)
             addTag(q.value(0).toString(),q.value(1).toInt(),c);
         }
     }
+}
+
+void MViewer::updateStars(QString fn)
+{
+    int n = 5;
+
+    if (!fn.isEmpty()) {
+        QSqlQuery q;
+        q.prepare("SELECT rating FROM stats WHERE file = :fn");
+        q.bindValue(":fn",fn);
+        if (q.exec() && q.next()) n = q.value(0).toInt();
+        else n = 0;
+    }
+
+    ui->star_1->setStarActivated(n > 0);
+    ui->star_2->setStarActivated(n > 1);
+    ui->star_3->setStarActivated(n > 2);
+    ui->star_4->setStarActivated(n > 3);
+    ui->star_5->setStarActivated(n > 4);
+}
+
+void MViewer::changedStars(int n)
+{
+    if (!current_l.valid) return;
+    if (n < 0) n = 0;
+    if (n > 5) n = 5;
+
+    QSqlQuery q;
+    q.prepare("UPDATE stats SET rating = :r WHERE file = :fn");
+    q.bindValue(":r",n);
+    q.bindValue(":fn",current_l.filename);
+    bool ok = q.exec();
+    qDebug() << "[db] Rating update: " << ok;
+
+    updateStars(current_l.filename);
 }
 
 void MViewer::on_pushButton_clicked()
@@ -305,6 +346,7 @@ void MViewer::showNextImage()
     current_l = idx.data(MImageListModel::FullDataRole).value<MImageListRecord>();
     scaleImage(current_l,ui->scrollArea,ui->label,1);
     updateTags(current_l.filename);
+    updateStars(current_l.filename);
 
     progressBar->setValue(0);
     ui->radio_settags->setChecked(true);

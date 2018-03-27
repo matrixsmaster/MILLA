@@ -1,5 +1,8 @@
-<!DOCTYPE RCC><RCC version="1.0">
-<qresource>
-    <file>face_cascade.xml</file>
-</qresource>
+<RCC>
+    <qresource prefix="/">
+        <file>face_cascade.xml</file>
+        <file>star-filled.png</file>
+        <file>star-empty.png</file>
+        <file>milla.png</file>
+    </qresource>
 </RCC>
