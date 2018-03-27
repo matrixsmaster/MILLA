@@ -93,7 +93,7 @@ private:
     Ui::MViewer *ui;
     QProgressBar* progressBar;
     double scaleFactor;
-    QModelIndex current_l, current_r; //TODO: update them to MImageListRecord
+    MImageListRecord current_l, current_r;
     cv::CascadeClassifier* face_cascade;
     std::map<QString,MImageExtras> extra_cache;
     std::map<QString,std::pair<int,bool> > tags_cache;
@@ -109,7 +109,7 @@ private:
 
     unsigned incViews(bool left = true);
 
-    void scaleImage(QScrollArea* scrl, QLabel* lbl, QModelIndex* idx, double factor);
+    void scaleImage(const MImageListRecord &rec, QScrollArea* scrl, QLabel* lbl, double factor);
 
     cv::Mat quickConvert(QImage &in);
 

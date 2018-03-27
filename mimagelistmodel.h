@@ -21,9 +21,13 @@
 struct MImageListRecord {
     QString filename, fnshort;
     QPixmap thumb, picture;
-    bool loaded, modified;
-    time_t touched, filechanged;
+    time_t touched = 0, filechanged = 0;
+    bool loaded = false;
+    bool modified = true;
+    bool valid = false;
 };
+
+Q_DECLARE_METATYPE(MImageListRecord)
 
 class MImageListModel : public QAbstractListModel
 {
@@ -33,7 +37,8 @@ public:
     enum Roles
     {
         LargePixmapRole = Qt::UserRole + 1,
-        FullPathRole
+        FullPathRole,
+        FullDataRole
     };
 
     explicit MImageListModel(QObject *parent = 0);

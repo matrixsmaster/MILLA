@@ -27,6 +27,13 @@ QVariant MImageListModel::data(const QModelIndex &index, int role) const
         case FullPathRole:
             return images.value(index.row()).filename;
 
+        case FullDataRole:
+        {
+            QVariant _rec;
+            _rec.setValue(images.at(index.row()));
+            return _rec;
+        }
+
         }
     }
     return QVariant();

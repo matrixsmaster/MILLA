@@ -15,9 +15,7 @@ ThumbnailModel::ThumbnailModel(QList<QString> files, QObject *parent)
     for (auto &i : files) {
         MImageListRecord rec;
         rec.filename = i;
-        rec.loaded = false;
-        rec.modified = true;
-        rec.filechanged = 0;
+        rec.valid = true;
 
         if (ok) {
             QSqlQuery qq;

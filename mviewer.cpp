@@ -241,8 +241,8 @@ void MViewer::createStatRecord(QString fn)
 
 unsigned MViewer::incViews(bool left)
 {
-    if ((left && !current_l.isValid()) || (!left && !current_r.isValid())) return 0;
-    QString fn = (left? current_l : current_r).data(MImageListModel::FullPathRole).toString();
+    if ((left && !current_l.valid) || (!left && !current_r.valid)) return 0;
+    QString fn = (left? current_l : current_r).filename;
     qDebug() << "Incrementing views counter for " << fn;
 
     QSqlQuery q;
@@ -267,17 +267,22 @@ unsigned MViewer::incViews(bool left)
 
 void MViewer::showNextImage()
 {
-    current_l = ui->listView->selectionModel()->selectedIndexes().first();
-    scaleImage(ui->scrollArea,ui->label,&current_l,1);
+    QModelIndex idx = ui->listView->selectionModel()->selectedIndexes().first();
+    ThumbnailModel* ptm = dynamic_cast<ThumbnailModel*>(ui->listView->model());
+    if (ptm) ptm->LoadUp(idx.row());
+    else return;
+    ptm->touch(idx);
 
-    QString fn = current_l.data(MImageListModel::FullPathRole).toString();
-    updateTags(fn);
+    current_l = idx.data(MImageListModel::FullDataRole).value<MImageListRecord>();
+    scaleImage(current_l,ui->scrollArea,ui->label,1);
+    updateTags(current_l.filename);
+
     progressBar->setValue(0);
     ui->radio_settags->setChecked(true);
 
     QSqlQuery q;
     q.prepare("SELECT views FROM stats WHERE file = :fn");
-    q.bindValue(":fn",fn);
+    q.bindValue(":fn",current_l.filename);
     if (q.exec() && q.next())
         ui->lcdNumber->display((double)q.value(0).toUInt());
     else
@@ -296,7 +301,8 @@ void MViewer::showNextImage()
         });
     }
 
-    if (ui->actionShow_linked_image->isChecked()) displayLinkedImages(fn);
+    if (ui->actionShow_linked_image->isChecked())
+        displayLinkedImages(current_l.filename);
 }
 
 void MViewer::on_actionOpen_triggered()
@@ -305,6 +311,8 @@ void MViewer::on_actionOpen_triggered()
     if (fileName.isEmpty()) return;
 
     extra_cache.clear();
+    current_l = MImageListRecord();
+    current_r = MImageListRecord();
 
     QFileInfo bpf(fileName);
     QString bpath = bpf.canonicalPath();
@@ -322,8 +330,6 @@ void MViewer::on_actionOpen_triggered()
     if (ui->listView->model()) {
         qDebug() << "Old model scheduled for removal";
         ui->listView->model()->deleteLater();
-        current_l = QModelIndex();
-        current_r = QModelIndex();
     }
 
     bool purelist = true; //TODO: move it to user settings
@@ -337,16 +343,16 @@ void MViewer::on_actionOpen_triggered()
 
     connect(ui->listView->selectionModel(),&QItemSelectionModel::selectionChanged,[this] { showNextImage(); });
     connect(ui->listView,&QListView::customContextMenuRequested,this,[this] {
-        current_r = ui->listView->selectionModel()->selectedIndexes().first();
-        scaleImage(ui->scrollArea_2,ui->label_2,&current_r,1);
+        current_r = ui->listView->selectionModel()->selectedIndexes().first().data(MImageListModel::FullDataRole).value<MImageListRecord>();
+        scaleImage(current_r,ui->scrollArea_2,ui->label_2,1);
         incViews(false);
         qDebug() << "rightClick";
     });
 }
 
-void MViewer::scaleImage(QScrollArea* scrl, QLabel* lbl, QModelIndex *idx, double factor)
+void MViewer::scaleImage(const MImageListRecord &rec, QScrollArea* scrl, QLabel* lbl, double factor)
 {
-    if (!idx->isValid() || !ui->listView->model()) return;
+    if (!rec.valid) return;
 
     scaleFactor *= factor;
     if (scaleFactor <= FLT_EPSILON) scaleFactor = 1;
@@ -358,22 +364,15 @@ void MViewer::scaleImage(QScrollArea* scrl, QLabel* lbl, QModelIndex *idx, doubl
     scrl->updateGeometry();
     scrl->setWidgetResizable(true);
 
-    ThumbnailModel* ptm = dynamic_cast<ThumbnailModel*>(ui->listView->model());
-    if (ptm) ptm->LoadUp(idx->row());
-    else return;
-
-    QPixmap map = idx->data(MImageListModel::LargePixmapRole).value<QPixmap>();
-    ptm->touch(*idx);
-
     if (ui->actionFit->isChecked())
-        lbl->setPixmap(map.scaled(lbl->size(),Qt::KeepAspectRatio,Qt::SmoothTransformation));
+        lbl->setPixmap(rec.picture.scaled(lbl->size(),Qt::KeepAspectRatio,Qt::SmoothTransformation));
 
     else {
-        QSize nsz = map.size() * scaleFactor;
-        MImageExtras extr = getExtraCacheLine(idx->data(MImageListModel::FullPathRole).toString());
+        QSize nsz = rec.picture.size() * scaleFactor;
+        MImageExtras extr = getExtraCacheLine(rec.filename);
 
         if (ui->actionShow_faces->isChecked() && extr.valid && !extr.rois.empty()) {
-            QImage inq(map.scaled(nsz,Qt::KeepAspectRatio,Qt::SmoothTransformation).toImage());
+            QImage inq(rec.picture.scaled(nsz,Qt::KeepAspectRatio,Qt::SmoothTransformation).toImage());
             QPainter painter(&inq);
             QPen paintpen(Qt::red);
             paintpen.setWidth(2);
@@ -387,7 +386,7 @@ void MViewer::scaleImage(QScrollArea* scrl, QLabel* lbl, QModelIndex *idx, doubl
             lbl->setPixmap(QPixmap::fromImage(inq));
 
         } else
-            lbl->setPixmap(map.scaled(nsz,Qt::KeepAspectRatio,Qt::SmoothTransformation));
+            lbl->setPixmap(rec.picture.scaled(nsz,Qt::KeepAspectRatio,Qt::SmoothTransformation));
     }
 
 }
@@ -395,8 +394,8 @@ void MViewer::scaleImage(QScrollArea* scrl, QLabel* lbl, QModelIndex *idx, doubl
 void MViewer::on_actionFit_triggered()
 {
     if (!ui->actionFit->isChecked()) scaleFactor = 1;
-    scaleImage(ui->scrollArea,ui->label,&current_l,1);
-    scaleImage(ui->scrollArea_2,ui->label_2,&current_r,1);
+    scaleImage(current_l,ui->scrollArea,ui->label,1);
+    scaleImage(current_r,ui->scrollArea_2,ui->label_2,1);
 }
 
 cv::Mat MViewer::quickConvert(QImage &in) //FIXME: not always working
@@ -487,22 +486,21 @@ void MViewer::on_actionMatch_triggered()
 {
     using namespace cv;
 
-    if (!current_l.isValid() || !ui->listView->model()) return;
+    if (!current_l.valid || !ui->listView->model()) return;
 
     ThumbnailModel* ptm = dynamic_cast<ThumbnailModel*>(ui->listView->model());
     if (!ptm) return;
 
-    MImageExtras orig = getExtraCacheLine(current_l.data(MImageListModel::FullPathRole).value<QString>());
+    MImageExtras orig = getExtraCacheLine(current_l.filename);
     if (!orig.valid) return;
-    QSize orig_size = current_l.data(MImageListModel::LargePixmapRole).value<QPixmap>().size();
+    QSize orig_size = current_l.picture.size();
     double orig_area = orig_size.width() * orig_size.height();
 
     MImageExtras cur;
     std::map<double,MImageListRecord*> targets;
-    QString we = current_l.data(MImageListModel::FullPathRole).value<QString>();
 
     for (auto &i : ptm->GetAllImages()) {
-        if (we == i.filename) continue;
+        if (current_l.filename == i.filename) continue;
 
         cur = getExtraCacheLine(i.filename);
         if (!cur.valid) continue;
@@ -712,7 +710,7 @@ void MViewer::on_listWidget_itemClicked(QListWidgetItem *item)
         return;
     }
 
-    if (!current_l.isValid()) {
+    if (!current_l.valid) {
         //revert change
         item->setCheckState(was? Qt::Checked : Qt::Unchecked);
         return;
@@ -742,7 +740,7 @@ void MViewer::on_listWidget_itemClicked(QListWidgetItem *item)
 
 void MViewer::updateCurrentTags()
 {
-    if (!current_l.isValid()) return;
+    if (!current_l.valid) return;
 
     QString tgs;
     int ntg = 0;
@@ -756,7 +754,7 @@ void MViewer::updateCurrentTags()
     q.prepare("UPDATE stats SET ntags = :ntg, tags = :tgs WHERE file = :fn");
     q.bindValue(":ntg",ntg);
     q.bindValue(":tgs",tgs);
-    q.bindValue(":fn",current_l.data(MImageListModel::FullPathRole).toString());
+    q.bindValue(":fn",current_l.filename);
     bool ok = q.exec();
     qDebug() << "[db] Updating tags: " << ok;
 }
@@ -769,7 +767,7 @@ void MViewer::on_radio_search_toggled(bool checked)
 void MViewer::on_radio_settags_toggled(bool checked)
 {
     if (checked) {
-        if (current_l.isValid()) updateTags(current_l.data(MImageListModel::FullPathRole).toString());
+        if (current_l.valid) updateTags(current_l.filename);
         else updateTags();
     }
 }
@@ -779,8 +777,6 @@ void MViewer::resultsPresentation(QList<QString> lst, QListView* view, int tabIn
     if (view->model()) {
         qDebug() << "Old model scheduled for removal";
         view->model()->deleteLater();
-        current_l = QModelIndex();
-        current_r = QModelIndex();
     }
 
     if (lst.isEmpty()) return;
@@ -818,8 +814,8 @@ void MViewer::searchResults(QList<QString> lst)
     resultsPresentation(lst,ui->listView_2,1);
 
     connect(ui->listView_2->selectionModel(),&QItemSelectionModel::selectionChanged,[this] {
-        current_r = ui->listView_2->selectionModel()->selectedIndexes().first();
-        scaleImage(ui->scrollArea_2,ui->label_2,&current_r,1);
+        current_r = ui->listView_2->selectionModel()->selectedIndexes().first().data(MImageListModel::FullDataRole).value<MImageListRecord>();
+        scaleImage(current_r,ui->scrollArea_2,ui->label_2,1);
         incViews(false);
     });
 }
@@ -894,14 +890,13 @@ void MViewer::on_actionJump_to_triggered()
     for (auto &i : ptm->GetAllImages()) {
         if ((path && !fn.compare(i.filename,Qt::CaseInsensitive)) || (!path && !fn.compare(i.fnshort,Qt::CaseInsensitive))) {
             ok = true;
+            current_l = i;
             break;
         }
         idx++;
     }
-    if (!ok) return;
 
-    current_l = ui->listView->selectionModel()->model()->index(idx,0);
-    scaleImage(ui->scrollArea,ui->label,&current_l,1);
+    if (ok) scaleImage(current_l,ui->scrollArea,ui->label,1);
 }
 
 void MViewer::on_actionRefine_search_triggered()
@@ -934,18 +929,16 @@ void MViewer::on_actionRefine_search_triggered()
 
 void MViewer::on_actionSwap_images_triggered()
 {
-    QModelIndex tmp(current_l);
+    MImageListRecord tmp(current_l);
     current_l = current_r;
     current_r = tmp;
-    scaleImage(ui->scrollArea,ui->label,&current_l,1);
-    scaleImage(ui->scrollArea_2,ui->label_2,&current_r,1);
+    scaleImage(current_l,ui->scrollArea,ui->label,1);
+    scaleImage(current_r,ui->scrollArea_2,ui->label_2,1);
 }
 
 void MViewer::on_actionClear_results_triggered()
 {
     if (ui->listView_2->model()) ui->listView_2->model()->deleteLater();
-    current_l = QModelIndex();
-    current_r = QModelIndex();
 }
 
 void MViewer::on_actionQuit_triggered()
@@ -955,10 +948,10 @@ void MViewer::on_actionQuit_triggered()
 
 void MViewer::on_actionLink_left_to_right_triggered()
 {
-    if (!current_l.isValid() || !current_r.isValid()) return;
+    if (!current_l.valid || !current_r.valid) return;
 
-    MImageExtras extl = getExtraCacheLine(current_l.data(MImageListModel::FullPathRole).toString());
-    MImageExtras extr = getExtraCacheLine(current_r.data(MImageListModel::FullPathRole).toString());
+    MImageExtras extl = getExtraCacheLine(current_l.filename);
+    MImageExtras extr = getExtraCacheLine(current_r.filename);
     if (!extl.valid || !extr.valid) return;
 
     QSqlQuery q;
@@ -1002,8 +995,8 @@ void MViewer::displayLinkedImages(QString const &fn)
 
     resultsPresentation(out,ui->listView_3,2);
     connect(ui->listView_3->selectionModel(),&QItemSelectionModel::selectionChanged,[this] {
-        current_r = ui->listView_3->selectionModel()->selectedIndexes().first();
-        scaleImage(ui->scrollArea_2,ui->label_2,&current_r,1);
+        current_r = ui->listView_3->selectionModel()->selectedIndexes().first().data(MImageListModel::FullDataRole).value<MImageListRecord>();
+        scaleImage(current_r,ui->scrollArea_2,ui->label_2,1);
         incViews(false);
     });
 }
