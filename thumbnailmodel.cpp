@@ -129,3 +129,13 @@ void ThumbnailModel::touch(const QModelIndex &index)
 {
     images[index.row()].touched = time(NULL);
 }
+
+void ThumbnailModel::clearCache()
+{
+    for (auto &i : images)
+        if (i.loaded) {
+            i.loaded = false;
+            i.picture = QPixmap();
+        }
+    ram_footprint = 0;
+}

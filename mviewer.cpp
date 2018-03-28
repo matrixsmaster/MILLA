@@ -1287,3 +1287,9 @@ void MViewer::on_actionRight_image_triggered()
     ui->actionLeft_image->setChecked(false);
     ui->actionRight_image->setChecked(true);
 }
+
+void MViewer::on_actionClear_image_cache_triggered()
+{
+    ThumbnailModel* ptm = dynamic_cast<ThumbnailModel*>(ui->listView->model());
+    if (ptm) ptm->clearCache();
+}

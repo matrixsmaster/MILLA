@@ -17,6 +17,8 @@ public:
 
     void touch(const QModelIndex &index);
 
+    void clearCache();
+
 protected:
     size_t ram_footprint = 0;
 };

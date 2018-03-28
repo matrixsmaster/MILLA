@@ -1445,6 +1445,7 @@
      <string>Tools</string>
     </property>
     <addaction name="actionSwap_images"/>
+    <addaction name="actionClear_image_cache"/>
    </widget>
    <widget class="QMenu" name="menuHelp">
     <property name="title">
@@ -1655,6 +1656,11 @@
    </property>
    <property name="text">
     <string>Right image</string>
+   </property>
+  </action>
+  <action name="actionClear_image_cache">
+   <property name="text">
+    <string>Clear image cache</string>
    </property>
   </action>
  </widget>

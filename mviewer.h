@@ -106,6 +106,8 @@ private slots:
 
     void on_actionRight_image_triggered();
 
+    void on_actionClear_image_cache_triggered();
+
 private:
     Ui::MViewer *ui;
     QTimer view_timer;
