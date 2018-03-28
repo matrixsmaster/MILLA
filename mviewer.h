@@ -96,6 +96,8 @@ private slots:
 
     void on_actionAbout_triggered();
 
+    void on_pushButton_2_clicked();
+
 private:
     Ui::MViewer *ui;
     QTimer view_timer;

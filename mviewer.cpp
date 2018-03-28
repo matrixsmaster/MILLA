@@ -352,12 +352,15 @@ void MViewer::showNextImage()
     ui->radio_settags->setChecked(true);
 
     QSqlQuery q;
-    q.prepare("SELECT views FROM stats WHERE file = :fn");
+    q.prepare("SELECT views, notes FROM stats WHERE file = :fn");
     q.bindValue(":fn",current_l.filename);
-    if (q.exec() && q.next())
+    if (q.exec() && q.next()) {
         ui->lcdNumber->display((double)q.value(0).toUInt());
-    else
+        ui->plainTextEdit->setPlainText(q.value(1).toString());
+    } else {
         ui->lcdNumber->display(0);
+        ui->plainTextEdit->clear();
+    }
 
     view_timer.start(20);
     if (ui->actionShow_linked_image->isChecked())
@@ -1197,4 +1200,16 @@ void MViewer::on_actionAbout_triggered()
     QMessageBox::about(this, tr("About MILLA"),
                        tr("<p> <b>MILLA</b> image viewer. </p>"
                           "<p>(C) Dmitry 'MatrixS_Master' Soloviov, 2018</p>"));
+}
+
+void MViewer::on_pushButton_2_clicked()
+{
+    if (!current_l.valid) return;
+
+    QSqlQuery q;
+    q.prepare("UPDATE stats SET notes = :nt WHERE file = :fn");
+    q.bindValue(":nt",ui->plainTextEdit->toPlainText());
+    q.bindValue(":fn",current_l.filename);
+    bool ok = q.exec();
+    qDebug() << "[db] Setting user notes: " << ok;
 }
