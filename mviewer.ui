@@ -1439,6 +1439,7 @@
     <addaction name="actionFit"/>
     <addaction name="actionShow_faces"/>
     <addaction name="actionShow_linked_image"/>
+    <addaction name="actionThumbnails_cloud"/>
    </widget>
    <widget class="QMenu" name="menuTools">
     <property name="title">
@@ -1661,6 +1662,14 @@
   <action name="actionClear_image_cache">
    <property name="text">
     <string>Clear image cache</string>
+   </property>
+  </action>
+  <action name="actionThumbnails_cloud">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Thumbnails cloud</string>
    </property>
   </action>
  </widget>

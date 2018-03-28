@@ -19,7 +19,10 @@ QVariant MImageListModel::data(const QModelIndex &index, int role) const
             return images.value(index.row()).thumb;
 
         case Qt::DisplayRole:
-            return images.value(index.row()).fnshort;
+            if (do_shorten)
+                return images.value(index.row()).fnshort.left(MAXSHORTLENGTH);
+            else
+                return images.value(index.row()).fnshort;
 
         case LargePixmapRole:
             return images.value(index.row()).picture;

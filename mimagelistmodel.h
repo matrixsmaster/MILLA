@@ -16,6 +16,7 @@
 #include <QDateTime>
 
 #define THUMBNAILSIZE 100
+#define MAXSHORTLENGTH 24
 #define MAXPICSBYTES 1024*1024*1024
 
 struct MImageListRecord {
@@ -52,8 +53,11 @@ public:
 
     virtual QList<MImageListRecord>& GetAllImages() { return images; }
 
+    virtual void setShortenFilenames(bool en) { do_shorten = en; }
+
 protected:
     QList<MImageListRecord> images;
+    bool do_shorten = false;
 
     virtual size_t ItemSizeInBytes(int idx);
 };

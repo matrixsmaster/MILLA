@@ -370,9 +370,11 @@ void MViewer::showImageList(QList<QString> const &lst)
         ui->listView->model()->deleteLater();
     }
 
-    bool purelist = true; //TODO: move it to user settings
+    bool purelist = !(ui->actionThumbnails_cloud->isChecked());
+    ThumbnailModel* ptr = new ThumbnailModel(lst,ui->listView);
 
-    ui->listView->setModel(new ThumbnailModel(lst,ui->listView));
+    ptr->setShortenFilenames(!purelist);
+    ui->listView->setModel(ptr);
     ui->listView->setViewMode(purelist? QListView::ListMode : QListView::IconMode);
     ui->listView->setFlow(purelist? QListView::TopToBottom : QListView::LeftToRight);
     ui->listView->setWrapping(!purelist);
@@ -384,7 +386,6 @@ void MViewer::showImageList(QList<QString> const &lst)
         current_r = ui->listView->selectionModel()->selectedIndexes().first().data(MImageListModel::FullDataRole).value<MImageListRecord>();
         scaleImage(current_r,ui->scrollArea_2,ui->label_2,1);
         incViews(false);
-        qDebug() << "rightClick";
     });
 
     ui->statusBar->showMessage(QString::asprintf("%d images",lst.size()));
@@ -1290,6 +1291,19 @@ void MViewer::on_actionRight_image_triggered()
 
 void MViewer::on_actionClear_image_cache_triggered()
 {
+    extra_cache.clear();
     ThumbnailModel* ptm = dynamic_cast<ThumbnailModel*>(ui->listView->model());
     if (ptm) ptm->clearCache();
+}
+
+void MViewer::on_actionThumbnails_cloud_changed()
+{
+    ThumbnailModel* ptm = dynamic_cast<ThumbnailModel*>(ui->listView->model());
+    if (!ptm) return;
+
+    QList<QString> lst;
+    for (auto &i : ptm->GetAllImages()) lst.push_back(i.filename);
+
+    cleanUp();
+    showImageList(lst);
 }

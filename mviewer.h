@@ -108,6 +108,8 @@ private slots:
 
     void on_actionClear_image_cache_triggered();
 
+    void on_actionThumbnails_cloud_changed();
+
 private:
     Ui::MViewer *ui;
     QTimer view_timer;
