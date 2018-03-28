@@ -98,6 +98,10 @@ private slots:
 
     void on_pushButton_2_clicked();
 
+    void on_actionKudos_to_left_image_triggered();
+
+    void on_actionKudos_to_right_image_triggered();
+
 private:
     Ui::MViewer *ui;
     QTimer view_timer;
@@ -165,6 +169,8 @@ private:
     void searchByTag();
 
     void displayLinkedImages(QString const &fn);
+
+    void kudos(MImageListRecord const &to, int delta);
 };
 
 #endif // MVIEWER_H

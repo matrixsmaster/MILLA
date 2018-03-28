@@ -1425,6 +1425,9 @@
      <string>Edit</string>
     </property>
     <addaction name="actionLink_left_to_right"/>
+    <addaction name="actionKudos_to_left_image"/>
+    <addaction name="actionKudos_to_right_image"/>
+    <addaction name="separator"/>
     <addaction name="actionRotate_90_CW"/>
     <addaction name="actionRotate_90_CCW"/>
    </widget>
@@ -1606,6 +1609,22 @@
   <action name="actionAbout">
    <property name="text">
     <string>About</string>
+   </property>
+  </action>
+  <action name="actionKudos_to_left_image">
+   <property name="text">
+    <string>Kudos to left image</string>
+   </property>
+   <property name="shortcut">
+    <string>K</string>
+   </property>
+  </action>
+  <action name="actionKudos_to_right_image">
+   <property name="text">
+    <string>Kudos to right image</string>
+   </property>
+   <property name="shortcut">
+    <string>Alt+K</string>
    </property>
   </action>
  </widget>

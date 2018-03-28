@@ -347,6 +347,7 @@ void MViewer::showNextImage()
     scaleImage(current_l,ui->scrollArea,ui->label,1);
     updateTags(current_l.filename);
     updateStars(current_l.filename);
+    kudos(current_l,0);
 
     progressBar->setValue(0);
     ui->radio_settags->setChecked(true);
@@ -1127,6 +1128,15 @@ void MViewer::on_actionSwap_images_triggered()
     current_r = tmp;
     scaleImage(current_l,ui->scrollArea,ui->label,1);
     scaleImage(current_r,ui->scrollArea_2,ui->label_2,1);
+
+    if (current_l.valid) {
+        updateTags(current_l.filename);
+        updateStars(current_l.filename);
+        if (ui->actionShow_linked_image->isChecked())
+            displayLinkedImages(current_l.filename);
+    }
+    kudos(current_l,0);
+    ui->statusBar->showMessage("");
 }
 
 void MViewer::on_actionClear_results_triggered()
@@ -1212,4 +1222,41 @@ void MViewer::on_pushButton_2_clicked()
     q.bindValue(":fn",current_l.filename);
     bool ok = q.exec();
     qDebug() << "[db] Setting user notes: " << ok;
+}
+
+void MViewer::on_actionKudos_to_left_image_triggered()
+{
+    kudos(current_l,1);
+}
+
+void MViewer::on_actionKudos_to_right_image_triggered()
+{
+    kudos(current_r,1);
+}
+
+void MViewer::kudos(MImageListRecord const &to, int delta)
+{
+    ui->lcdNumber_2->display(0);
+    if (!to.valid) return;
+
+    int n = delta;
+    QSqlQuery q;
+    q.prepare("SELECT likes FROM stats WHERE file = :fn");
+    q.bindValue(":fn",to.filename);
+
+    if (!q.exec() || !q.next()) return;
+
+    n += q.value(0).toInt();
+
+    bool ok = true;
+    if (delta) {
+        q.clear();
+        q.prepare("UPDATE stats SET likes = :lk WHERE file = :fn");
+        q.bindValue(":lk",n);
+        q.bindValue(":fn",to.filename);
+        ok = q.exec();
+        qDebug() << "[db] Updating likes: " << ok;
+    }
+
+    if (ok) ui->lcdNumber_2->display(n);
 }
