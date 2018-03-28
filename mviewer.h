@@ -70,8 +70,6 @@ private slots:
 
     void on_actionMatch_triggered();
 
-    void on_actionLoad_all_known_triggered();
-
     void on_listWidget_itemClicked(QListWidgetItem *item);
 
     void on_actionLoad_everything_slow_triggered();
@@ -102,6 +100,12 @@ private slots:
 
     void on_actionKudos_to_right_image_triggered();
 
+    void on_actionLink_bidirectional_triggered();
+
+    void on_actionLeft_image_triggered();
+
+    void on_actionRight_image_triggered();
+
 private:
     Ui::MViewer *ui;
     QTimer view_timer;
@@ -129,6 +133,8 @@ private:
     void openDirByFile(QString const &fileName);
 
     void openDirByList(QString const &fileName);
+
+    void leftImageMetaUpdate();
 
     void showNextImage();
 

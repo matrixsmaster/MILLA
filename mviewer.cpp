@@ -229,32 +229,6 @@ void MViewer::on_pushButton_clicked()
     }
 }
 
-#if 0
-static std::string type2str(int type)
-{
-    std::string r;
-
-    uchar depth = type & CV_MAT_DEPTH_MASK;
-    uchar chans = 1 + (type >> CV_CN_SHIFT);
-
-    switch ( depth ) {
-    case CV_8U:  r = "8U"; break;
-    case CV_8S:  r = "8S"; break;
-    case CV_16U: r = "16U"; break;
-    case CV_16S: r = "16S"; break;
-    case CV_32S: r = "32S"; break;
-    case CV_32F: r = "32F"; break;
-    case CV_64F: r = "64F"; break;
-    default:     r = "User"; break;
-    }
-
-    r += "C";
-    r += (chans+'0');
-
-    return r;
-}
-#endif
-
 void MViewer::createStatRecord(QString fn)
 {
     QSqlQuery qa;
@@ -335,6 +309,32 @@ unsigned MViewer::incViews(bool left)
     return v;
 }
 
+void MViewer::leftImageMetaUpdate()
+{
+    if (current_l.valid) {
+        updateTags(current_l.filename);
+        updateStars(current_l.filename);
+        if (ui->actionShow_linked_image->isChecked())
+            displayLinkedImages(current_l.filename);
+
+        QSqlQuery q;
+        q.prepare("SELECT views, notes FROM stats WHERE file = :fn");
+        q.bindValue(":fn",current_l.filename);
+        if (q.exec() && q.next()) {
+            ui->lcdNumber->display((double)q.value(0).toUInt());
+            ui->plainTextEdit->setPlainText(q.value(1).toString());
+        } else {
+            ui->lcdNumber->display(0);
+            ui->plainTextEdit->clear();
+        }
+    }
+    kudos(current_l,0);
+
+    ui->radio_settags->setChecked(true);
+    progressBar->setValue(0);
+    ui->statusBar->showMessage("");
+}
+
 void MViewer::showNextImage()
 {
     QModelIndex idx = ui->listView->selectionModel()->selectedIndexes().first();
@@ -345,30 +345,10 @@ void MViewer::showNextImage()
 
     current_l = idx.data(MImageListModel::FullDataRole).value<MImageListRecord>();
     scaleImage(current_l,ui->scrollArea,ui->label,1);
-    updateTags(current_l.filename);
-    updateStars(current_l.filename);
-    kudos(current_l,0);
-
-    progressBar->setValue(0);
-    ui->radio_settags->setChecked(true);
-
-    QSqlQuery q;
-    q.prepare("SELECT views, notes FROM stats WHERE file = :fn");
-    q.bindValue(":fn",current_l.filename);
-    if (q.exec() && q.next()) {
-        ui->lcdNumber->display((double)q.value(0).toUInt());
-        ui->plainTextEdit->setPlainText(q.value(1).toString());
-    } else {
-        ui->lcdNumber->display(0);
-        ui->plainTextEdit->clear();
-    }
+    leftImageMetaUpdate();
+    checkExtraCache();
 
     view_timer.start(20);
-    if (ui->actionShow_linked_image->isChecked())
-        displayLinkedImages(current_l.filename);
-
-    checkExtraCache();
-    ui->statusBar->showMessage("");
 }
 
 void MViewer::cleanUp()
@@ -828,18 +808,6 @@ void MViewer::detectFaces(const cv::Mat &inp, std::vector<cv::Rect>* store)
     return;
 }
 
-void MViewer::on_actionLoad_all_known_triggered()
-{
-    ThumbnailModel* ptm = dynamic_cast<ThumbnailModel*>(ui->listView->model());
-    if (!ptm) return;
-
-    size_t x = 0;
-    for (auto &i : ptm->GetAllImages()) {
-        if (!i.modified && i.picture.isNull()) ptm->LoadUp(x);
-        x++;
-    }
-}
-
 void MViewer::on_actionLoad_everything_slow_triggered()
 {
     ThumbnailModel* ptm = dynamic_cast<ThumbnailModel*>(ui->listView->model());
@@ -1007,9 +975,17 @@ void MViewer::searchResults(QList<QString> lst)
     resultsPresentation(lst,ui->listView_2,1);
 
     connect(ui->listView_2->selectionModel(),&QItemSelectionModel::selectionChanged,[this] {
-        current_r = ui->listView_2->selectionModel()->selectedIndexes().first().data(MImageListModel::FullDataRole).value<MImageListRecord>();
-        scaleImage(current_r,ui->scrollArea_2,ui->label_2,1);
-        incViews(false);
+        MImageListRecord _r = ui->listView_2->selectionModel()->selectedIndexes().first().data(MImageListModel::FullDataRole).value<MImageListRecord>();
+        if (ui->actionLeft_image->isChecked()) {
+            current_l = _r;
+            scaleImage(current_l,ui->scrollArea,ui->label,1);
+            leftImageMetaUpdate();
+            ui->lcdNumber->display((double)incViews());
+        } else {
+            current_r = _r;
+            scaleImage(current_r,ui->scrollArea_2,ui->label_2,1);
+            incViews(false);
+        }
     });
 }
 
@@ -1099,25 +1075,64 @@ void MViewer::on_actionRefine_search_triggered()
     if (!frm.exec()) return;
     SearchFormData flt = frm.getSearchData();
 
-    MImageListModel* ptm = dynamic_cast<MImageListModel*>(ui->listView_2->model()? ui->listView_2->model() : ui->listView->model());
+    MImageListModel* ptm;
+    if (flt.linked_only)
+        ptm = dynamic_cast<MImageListModel*>(ui->listView_3->model());
+    else
+        ptm = dynamic_cast<MImageListModel*>(ui->listView_2->model()? ui->listView_2->model() : ui->listView->model());
     if (!ptm) return;
 
     QSqlQuery q;
-    QList<QString> out;
+    size_t area;
+    std::multimap<size_t,QString> tmap;
+    std::set<QString> tlst;
+
     for (auto &i : ptm->GetAllImages()) {
         q.clear();
-        q.prepare("SELECT rating, views, faces, grayscale FROM stats WHERE file = :fn");
+        q.prepare("SELECT rating, likes, views, faces, grayscale, sizex, sizey, ntags, notes FROM stats WHERE file = :fn");
         q.bindValue(":fn",i.filename);
         if (q.exec() && q.next()) {
-            if (q.value(0).toInt() && flt.rating > q.value(0).toInt()) continue;
-            if (flt.views > q.value(1).toUInt()) continue;
-            if (q.value(2).toInt() < flt.minface || q.value(2).toInt() > flt.maxface) continue;
-            if (flt.grey != (q.value(3).toInt()>0)) continue;
-            if (i.filechanged < flt.mtime_min || i.filechanged > flt.mtime_max) continue;
+            if (flt.rating > q.value(0).toInt()) continue;
+            if (flt.kudos > q.value(1).toInt()) continue;
+            if (q.value(2).toUInt() < flt.minviews || q.value(2).toUInt() > flt.maxviews) continue;
+            if (q.value(3).toInt() < flt.minface || q.value(3).toInt() > flt.maxface) continue;
+            if (flt.colors > -1 && flt.colors != (q.value(4).toInt()>0)) continue;
+            if (i.filechanged < flt.minmtime || i.filechanged > flt.maxmtime) continue;
+            if (flt.wo_tags && q.value(7).toInt()) continue;
+            if (flt.w_notes && q.value(8).toString().isEmpty()) continue;
 
-            out.push_back(i.filename);
+            area = q.value(5).toUInt() * q.value(6).toUInt();
+            if (area < flt.minsize || area > flt.maxsize) continue;
+
+            switch (flt.sort) {
+            case SRFRM_RATING: tmap.insert(std::pair<int,QString>(q.value(0).toInt(), i.filename)); break;
+            case SRFRM_KUDOS: tmap.insert(std::pair<int,QString>(q.value(1).toInt(), i.filename)); break;
+            case SRFRM_VIEWS: tmap.insert(std::pair<int,QString>(q.value(2).toUInt(), i.filename)); break;
+            case SRFRM_DATE: tmap.insert(std::pair<int,QString>(i.filechanged, i.filename)); break;
+            case SRFRM_FACES: tmap.insert(std::pair<int,QString>(q.value(3).toInt(), i.filename)); break;
+            default: tlst.insert(i.filename);
+            }
+        }
+
+        if (tlst.size() + tmap.size() >= flt.maxresults) break;
+    }
+
+    QList<QString> out;
+
+    qDebug() << "Start of list";
+    if (flt.sort == SRFRM_NAME) {
+        for (auto &i : tlst) {
+            qDebug() << i;
+            out.push_back(i);
+        }
+    } else {
+        for (auto i = tmap.rbegin(); i != tmap.rend(); ++i) {
+            qDebug() << "key: " << i->first << "; val = " << i->second;
+            out.push_back(i->second);
         }
     }
+    qDebug() << "End of list";
+
     searchResults(out);
 }
 
@@ -1128,15 +1143,7 @@ void MViewer::on_actionSwap_images_triggered()
     current_r = tmp;
     scaleImage(current_l,ui->scrollArea,ui->label,1);
     scaleImage(current_r,ui->scrollArea_2,ui->label_2,1);
-
-    if (current_l.valid) {
-        updateTags(current_l.filename);
-        updateStars(current_l.filename);
-        if (ui->actionShow_linked_image->isChecked())
-            displayLinkedImages(current_l.filename);
-    }
-    kudos(current_l,0);
-    ui->statusBar->showMessage("");
+    leftImageMetaUpdate();
 }
 
 void MViewer::on_actionClear_results_triggered()
@@ -1174,6 +1181,14 @@ void MViewer::on_actionLink_left_to_right_triggered()
 
     qDebug() << "[db] Inserting link: " << ok;
     if (ok) ui->statusBar->showMessage("Linked");
+}
+
+void MViewer::on_actionLink_bidirectional_triggered()
+{
+    on_actionLink_left_to_right_triggered();
+    on_actionSwap_images_triggered();
+    on_actionLink_left_to_right_triggered();
+    on_actionSwap_images_triggered();
 }
 
 void MViewer::displayLinkedImages(QString const &fn)
@@ -1259,4 +1274,16 @@ void MViewer::kudos(MImageListRecord const &to, int delta)
     }
 
     if (ok) ui->lcdNumber_2->display(n);
+}
+
+void MViewer::on_actionLeft_image_triggered()
+{
+    ui->actionLeft_image->setChecked(true);
+    ui->actionRight_image->setChecked(false);
+}
+
+void MViewer::on_actionRight_image_triggered()
+{
+    ui->actionLeft_image->setChecked(false);
+    ui->actionRight_image->setChecked(true);
 }

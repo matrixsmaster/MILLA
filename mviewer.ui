@@ -1425,6 +1425,7 @@
      <string>Edit</string>
     </property>
     <addaction name="actionLink_left_to_right"/>
+    <addaction name="actionLink_bidirectional"/>
     <addaction name="actionKudos_to_left_image"/>
     <addaction name="actionKudos_to_right_image"/>
     <addaction name="separator"/>
@@ -1443,7 +1444,6 @@
     <property name="title">
      <string>Tools</string>
     </property>
-    <addaction name="actionLoad_all_known"/>
     <addaction name="actionSwap_images"/>
    </widget>
    <widget class="QMenu" name="menuHelp">
@@ -1456,6 +1456,14 @@
     <property name="title">
      <string>Search</string>
     </property>
+    <widget class="QMenu" name="menuShow_in">
+     <property name="title">
+      <string>Show in</string>
+     </property>
+     <addaction name="actionLeft_image"/>
+     <addaction name="actionRight_image"/>
+    </widget>
+    <addaction name="menuShow_in"/>
     <addaction name="actionClear_results"/>
     <addaction name="actionRefine_search"/>
     <addaction name="actionMatch"/>
@@ -1506,14 +1514,6 @@
     <string>Ctrl+M</string>
    </property>
   </action>
-  <action name="actionLoad_all_known">
-   <property name="enabled">
-    <bool>false</bool>
-   </property>
-   <property name="text">
-    <string>Load all known</string>
-   </property>
-  </action>
   <action name="actionShow_faces">
    <property name="checkable">
     <bool>true</bool>
@@ -1538,6 +1538,9 @@
    </property>
   </action>
   <action name="actionCurrent_directory_to_CSV">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
    <property name="text">
     <string>Current directory to CSV</string>
    </property>
@@ -1625,6 +1628,33 @@
    </property>
    <property name="shortcut">
     <string>Alt+K</string>
+   </property>
+  </action>
+  <action name="actionLink_bidirectional">
+   <property name="text">
+    <string>Link bidirectional</string>
+   </property>
+   <property name="shortcut">
+    <string>Shift+L</string>
+   </property>
+  </action>
+  <action name="actionLeft_image">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Left image</string>
+   </property>
+  </action>
+  <action name="actionRight_image">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Right image</string>
    </property>
   </action>
  </widget>

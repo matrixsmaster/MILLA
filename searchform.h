@@ -3,19 +3,36 @@
 
 #include <QDialog>
 #include <QDate>
+#include <QComboBox>
+#include <QRegExp>
+#include <QDebug>
 
 namespace Ui {
 class SearchForm;
 }
 
+enum SearchFormSort {
+    SRFRM_NONE,
+    SRFRM_RATING,
+    SRFRM_KUDOS,
+    SRFRM_VIEWS,
+    SRFRM_DATE,
+    SRFRM_NAME,
+    SRFRM_FACES,
+};
+
 struct SearchFormData {
-    int rating = 1;
-    unsigned views = 0;
-    int minface = 0;
-    int maxface = 100;
-    bool grey = false;
-    time_t mtime_min = 0;
-    time_t mtime_max = 0;
+    int rating, kudos;
+    unsigned minviews, maxviews;
+    int minface, maxface;
+    int colors;
+    time_t minmtime, maxmtime;
+    size_t minsize, maxsize;
+    bool wo_tags;
+    bool w_notes;
+    bool linked_only;
+    SearchFormSort sort;
+    size_t maxresults;
 };
 
 class SearchForm : public QDialog
@@ -34,6 +51,8 @@ private slots:
 private:
     Ui::SearchForm *ui;
     SearchFormData sdata;
+
+    size_t getSize(QComboBox* box, bool &ok);
 };
 
 #endif // SEARCHFORM_H

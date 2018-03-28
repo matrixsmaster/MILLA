@@ -9,8 +9,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>635</width>
-    <height>448</height>
+    <width>630</width>
+    <height>478</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -22,7 +22,7 @@
      <x>540</x>
      <y>20</y>
      <width>81</width>
-     <height>241</height>
+     <height>221</height>
     </rect>
    </property>
    <property name="orientation">
@@ -38,7 +38,7 @@
      <x>10</x>
      <y>30</y>
      <width>231</width>
-     <height>181</height>
+     <height>191</height>
     </rect>
    </property>
   </widget>
@@ -46,8 +46,8 @@
    <property name="geometry">
     <rect>
      <x>280</x>
-     <y>130</y>
-     <width>111</width>
+     <y>150</y>
+     <width>121</width>
      <height>26</height>
     </rect>
    </property>
@@ -55,23 +55,26 @@
     <string>Rating &gt;= </string>
    </property>
    <property name="minimum">
-    <number>1</number>
+    <number>0</number>
    </property>
    <property name="maximum">
     <number>5</number>
+   </property>
+   <property name="value">
+    <number>0</number>
    </property>
   </widget>
   <widget class="QSpinBox" name="spinBox_2">
    <property name="geometry">
     <rect>
      <x>280</x>
-     <y>170</y>
-     <width>111</width>
+     <y>230</y>
+     <width>121</width>
      <height>26</height>
     </rect>
    </property>
    <property name="prefix">
-    <string>Views &gt; </string>
+    <string>Views &gt;= </string>
    </property>
    <property name="maximum">
     <number>1000</number>
@@ -109,7 +112,7 @@
      <x>10</x>
      <y>250</y>
      <width>231</width>
-     <height>181</height>
+     <height>191</height>
     </rect>
    </property>
   </widget>
@@ -118,8 +121,8 @@
     <rect>
      <x>280</x>
      <y>20</y>
-     <width>111</width>
-     <height>96</height>
+     <width>121</width>
+     <height>111</height>
     </rect>
    </property>
    <property name="title">
@@ -131,9 +134,6 @@
       <property name="text">
        <string>Color</string>
       </property>
-      <property name="checked">
-       <bool>true</bool>
-      </property>
      </widget>
     </item>
     <item>
@@ -143,14 +143,24 @@
       </property>
      </widget>
     </item>
+    <item>
+     <widget class="QRadioButton" name="radioButton_9">
+      <property name="text">
+       <string>Insignificant</string>
+      </property>
+      <property name="checked">
+       <bool>true</bool>
+      </property>
+     </widget>
+    </item>
    </layout>
   </widget>
   <widget class="QSpinBox" name="spinBox_3">
    <property name="geometry">
     <rect>
      <x>280</x>
-     <y>250</y>
-     <width>111</width>
+     <y>270</y>
+     <width>121</width>
      <height>26</height>
     </rect>
    </property>
@@ -161,9 +171,9 @@
   <widget class="QSpinBox" name="spinBox_4">
    <property name="geometry">
     <rect>
-     <x>280</x>
-     <y>290</y>
-     <width>111</width>
+     <x>420</x>
+     <y>270</y>
+     <width>121</width>
      <height>26</height>
     </rect>
    </property>
@@ -183,10 +193,10 @@
   <widget class="QGroupBox" name="groupBox_2">
    <property name="geometry">
     <rect>
-     <x>400</x>
+     <x>420</x>
      <y>20</y>
-     <width>131</width>
-     <height>221</height>
+     <width>111</width>
+     <height>201</height>
     </rect>
    </property>
    <property name="title">
@@ -198,12 +208,15 @@
       <property name="text">
        <string>Rating</string>
       </property>
+      <property name="checked">
+       <bool>true</bool>
+      </property>
      </widget>
     </item>
     <item>
-     <widget class="QRadioButton" name="radioButton_4">
+     <widget class="QRadioButton" name="radioButton_10">
       <property name="text">
-       <string>Likes</string>
+       <string>Kudos</string>
       </property>
      </widget>
     </item>
@@ -241,13 +254,13 @@
    <property name="geometry">
     <rect>
      <x>280</x>
-     <y>210</y>
-     <width>111</width>
+     <y>190</y>
+     <width>121</width>
      <height>26</height>
     </rect>
    </property>
    <property name="prefix">
-    <string>Likes &gt;= </string>
+    <string>Kudos &gt;= </string>
    </property>
    <property name="maximum">
     <number>500</number>
@@ -257,13 +270,298 @@
    <property name="geometry">
     <rect>
      <x>280</x>
-     <y>330</y>
-     <width>101</width>
+     <y>340</y>
+     <width>131</width>
      <height>23</height>
     </rect>
    </property>
    <property name="text">
-    <string>without tags</string>
+    <string>Only without tags</string>
+   </property>
+  </widget>
+  <widget class="QCheckBox" name="checkBox_2">
+   <property name="geometry">
+    <rect>
+     <x>280</x>
+     <y>370</y>
+     <width>271</width>
+     <height>23</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Search only in images linked to current left</string>
+   </property>
+  </widget>
+  <widget class="QComboBox" name="comboBox">
+   <property name="geometry">
+    <rect>
+     <x>380</x>
+     <y>410</y>
+     <width>161</width>
+     <height>25</height>
+    </rect>
+   </property>
+   <item>
+    <property name="text">
+     <string>Insignificant</string>
+    </property>
+   </item>
+   <item>
+    <property name="text">
+     <string>0.3 Mp (640x480)</string>
+    </property>
+   </item>
+   <item>
+    <property name="text">
+     <string>0.7 Mp (1024x768)</string>
+    </property>
+   </item>
+   <item>
+    <property name="text">
+     <string>1.0 Mp (1152x864)</string>
+    </property>
+   </item>
+   <item>
+    <property name="text">
+     <string>1.2 Mp (1280x960)</string>
+    </property>
+   </item>
+   <item>
+    <property name="text">
+     <string>1.9 Mp (1600x1200)</string>
+    </property>
+   </item>
+   <item>
+    <property name="text">
+     <string>2.0 Mp (1920x1080)</string>
+    </property>
+   </item>
+   <item>
+    <property name="text">
+     <string>2.2 Mp (1720x1280)</string>
+    </property>
+   </item>
+   <item>
+    <property name="text">
+     <string>3.1 Mp (2048x1536)</string>
+    </property>
+   </item>
+   <item>
+    <property name="text">
+     <string>4.5 Mp (2592x1728)</string>
+    </property>
+   </item>
+   <item>
+    <property name="text">
+     <string>4.9 Mp (2560x1920)</string>
+    </property>
+   </item>
+   <item>
+    <property name="text">
+     <string>6.0 Mp (3008x2008)</string>
+    </property>
+   </item>
+   <item>
+    <property name="text">
+     <string>8.0 Mp (3264x2448)</string>
+    </property>
+   </item>
+   <item>
+    <property name="text">
+     <string>11.5 Mp (4520x2540)</string>
+    </property>
+   </item>
+   <item>
+    <property name="text">
+     <string>12.0 Mp (4048x3040)</string>
+    </property>
+   </item>
+  </widget>
+  <widget class="QLabel" name="label_3">
+   <property name="geometry">
+    <rect>
+     <x>280</x>
+     <y>410</y>
+     <width>91</width>
+     <height>17</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Minimum size</string>
+   </property>
+  </widget>
+  <widget class="QLabel" name="label_4">
+   <property name="geometry">
+    <rect>
+     <x>280</x>
+     <y>440</y>
+     <width>91</width>
+     <height>17</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Maximum size</string>
+   </property>
+  </widget>
+  <widget class="QComboBox" name="comboBox_2">
+   <property name="geometry">
+    <rect>
+     <x>380</x>
+     <y>440</y>
+     <width>161</width>
+     <height>25</height>
+    </rect>
+   </property>
+   <item>
+    <property name="text">
+     <string>Insignificant</string>
+    </property>
+   </item>
+   <item>
+    <property name="text">
+     <string>0.3 Mp (640x480)</string>
+    </property>
+   </item>
+   <item>
+    <property name="text">
+     <string>0.7 Mp (1024x768)</string>
+    </property>
+   </item>
+   <item>
+    <property name="text">
+     <string>1.0 Mp (1152x864)</string>
+    </property>
+   </item>
+   <item>
+    <property name="text">
+     <string>1.2 Mp (1280x960)</string>
+    </property>
+   </item>
+   <item>
+    <property name="text">
+     <string>1.9 Mp (1600x1200)</string>
+    </property>
+   </item>
+   <item>
+    <property name="text">
+     <string>2.0 Mp (1920x1080)</string>
+    </property>
+   </item>
+   <item>
+    <property name="text">
+     <string>2.2 Mp (1720x1280)</string>
+    </property>
+   </item>
+   <item>
+    <property name="text">
+     <string>3.1 Mp (2048x1536)</string>
+    </property>
+   </item>
+   <item>
+    <property name="text">
+     <string>4.5 Mp (2592x1728)</string>
+    </property>
+   </item>
+   <item>
+    <property name="text">
+     <string>4.9 Mp (2560x1920)</string>
+    </property>
+   </item>
+   <item>
+    <property name="text">
+     <string>6.0 Mp (3008x2008)</string>
+    </property>
+   </item>
+   <item>
+    <property name="text">
+     <string>8.0 Mp (3264x2448)</string>
+    </property>
+   </item>
+   <item>
+    <property name="text">
+     <string>11.5 Mp (4520x2540)</string>
+    </property>
+   </item>
+   <item>
+    <property name="text">
+     <string>12.0 Mp (4048x3040)</string>
+    </property>
+   </item>
+  </widget>
+  <widget class="QSpinBox" name="spinBox_6">
+   <property name="geometry">
+    <rect>
+     <x>420</x>
+     <y>230</y>
+     <width>121</width>
+     <height>26</height>
+    </rect>
+   </property>
+   <property name="prefix">
+    <string>Views &lt; </string>
+   </property>
+   <property name="minimum">
+    <number>1</number>
+   </property>
+   <property name="maximum">
+    <number>999999</number>
+   </property>
+   <property name="value">
+    <number>999999</number>
+   </property>
+  </widget>
+  <widget class="QCheckBox" name="checkBox_3">
+   <property name="geometry">
+    <rect>
+     <x>10</x>
+     <y>450</y>
+     <width>171</width>
+     <height>23</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Ignore modification time</string>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
+  </widget>
+  <widget class="QCheckBox" name="checkBox_4">
+   <property name="geometry">
+    <rect>
+     <x>420</x>
+     <y>340</y>
+     <width>121</width>
+     <height>23</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Only with notes</string>
+   </property>
+  </widget>
+  <widget class="QSpinBox" name="spinBox_7">
+   <property name="geometry">
+    <rect>
+     <x>280</x>
+     <y>310</y>
+     <width>261</width>
+     <height>26</height>
+    </rect>
+   </property>
+   <property name="suffix">
+    <string> results</string>
+   </property>
+   <property name="prefix">
+    <string>No more than </string>
+   </property>
+   <property name="minimum">
+    <number>1</number>
+   </property>
+   <property name="maximum">
+    <number>1000</number>
+   </property>
+   <property name="value">
+    <number>1000</number>
    </property>
   </widget>
  </widget>
