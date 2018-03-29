@@ -10,7 +10,7 @@ class ExportForm;
 struct ExportFormData {
     int table;
     bool loaded_only;
-    bool filename, views, rating, kudos, tags, notes, sha, length;
+    bool filename, views, rating, likes, tags, notes, sha, length;
     bool tagname, tagrate;
     char separator;
 };

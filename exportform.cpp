@@ -42,7 +42,7 @@ void ExportForm::on_buttonBox_accepted()
     edata.filename = ui->checkBox->isChecked();
     edata.views = ui->checkBox_2->isChecked();
     edata.rating = ui->checkBox_3->isChecked();
-    edata.kudos = ui->checkBox_4->isChecked();
+    edata.likes = ui->checkBox_4->isChecked();
     edata.tags = ui->checkBox_5->isChecked();
     edata.notes = ui->checkBox_6->isChecked();
     edata.sha = ui->checkBox_7->isChecked();

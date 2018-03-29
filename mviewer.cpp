@@ -1318,15 +1318,37 @@ bool MViewer::dataExport(ExportFormData const &s, QTextStream &f)
     QSqlQuery q;
 
     if (s.table == 1) {
-        QStringList a,b;
+        QSet<QString> a,b,c;
         ThumbnailModel* ptm = dynamic_cast<ThumbnailModel*>(ui->listView->model());
         if (s.loaded_only) {
             if (!ptm) return true;
-            for (auto &i : ptm->GetAllImages()) a.push_back(i.filename);
+            for (auto &i : ptm->GetAllImages()) a.insert(i.filename);
         }
 
         if (!q.exec("SELECT file FROM stats")) return false;
-        while (q.next()) b.push_back(q.value(0).toString());
+        while (q.next()) b.insert(q.value(0).toString());
+
+        if (s.loaded_only) c = b.intersect(a);
+        else c = b;
+
+        for (auto &i : c) {
+            if (s.filename) f << i << s.separator;
+
+            q.clear();
+            q.prepare("SELECT views, rating, likes, tags, notes, sha256, length FROM stats WHERE file = :fn");
+            q.bindValue(":fn",i);
+            if (q.exec() && q.next()) {
+                if (s.views) f << q.value(0).toUInt() << s.separator;
+                if (s.rating) f << q.value(1).toInt() << s.separator;
+                if (s.likes) f << q.value(2).toInt() << s.separator;
+                if (s.tags) f << "\"" << q.value(3).toString() << "\"" << s.separator;
+                if (s.notes) f << "\"" << q.value(4).toString() << "\"" << s.separator;
+                if (s.sha) f << q.value(5).toByteArray().toHex() << s.separator;
+                if (s.length) f << q.value(6).toUInt() << s.separator;
+            }
+
+            if (s.separator != '\n') f << '\n';
+        }
 
     } else {
         if (!q.exec("SELECT tag, rating FROM tags")) return false;
