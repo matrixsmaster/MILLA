@@ -18,7 +18,8 @@ SOURCES += main.cpp\
     sresultmodel.cpp \
     searchform.cpp \
     mimagelistmodel.cpp \
-    starlabel.cpp
+    starlabel.cpp \
+    exportform.cpp
 
 HEADERS  += mviewer.h \
     thumbnailmodel.h \
@@ -26,10 +27,12 @@ HEADERS  += mviewer.h \
     searchform.h \
     mimagelistmodel.h \
     db_format.h \
-    starlabel.h
+    starlabel.h \
+    exportform.h
 
 FORMS    += mviewer.ui \
-    searchform.ui
+    searchform.ui \
+    exportform.ui
 
 CONFIG   += c++11
 

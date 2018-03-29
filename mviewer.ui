@@ -1403,12 +1403,6 @@
     <property name="title">
      <string>File</string>
     </property>
-    <widget class="QMenu" name="menuExport_DB">
-     <property name="title">
-      <string>Export DB</string>
-     </property>
-     <addaction name="actionCurrent_directory_to_CSV"/>
-    </widget>
     <addaction name="actionOpen"/>
     <addaction name="actionOpen_list"/>
     <addaction name="separator"/>
@@ -1416,7 +1410,8 @@
     <addaction name="separator"/>
     <addaction name="actionLoad_everything_slow"/>
     <addaction name="separator"/>
-    <addaction name="menuExport_DB"/>
+    <addaction name="actionExport_data"/>
+    <addaction name="actionImport_data"/>
     <addaction name="separator"/>
     <addaction name="actionQuit"/>
    </widget>
@@ -1537,14 +1532,6 @@
   <action name="actionLoad_everything_slow">
    <property name="text">
     <string>Index content</string>
-   </property>
-  </action>
-  <action name="actionCurrent_directory_to_CSV">
-   <property name="enabled">
-    <bool>false</bool>
-   </property>
-   <property name="text">
-    <string>Current directory to CSV</string>
    </property>
   </action>
   <action name="actionJump_to">
@@ -1670,6 +1657,16 @@
    </property>
    <property name="text">
     <string>Thumbnails cloud</string>
+   </property>
+  </action>
+  <action name="actionExport_data">
+   <property name="text">
+    <string>Export data</string>
+   </property>
+  </action>
+  <action name="actionImport_data">
+   <property name="text">
+    <string>Import data</string>
    </property>
   </action>
  </widget>

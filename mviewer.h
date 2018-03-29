@@ -16,14 +16,17 @@
 #include <QtSql/QSqlDatabase>
 #include <QCryptographicHash>
 #include <QInputDialog>
-#include <thumbnailmodel.h>
-#include <sresultmodel.h>
 #include <opencv2/opencv.hpp>
 #include <opencv2/features2d/features2d.hpp>
 #include <opencv2/objdetect/objdetect.hpp>
 #include <opencv2/highgui/highgui.hpp>
 #include <ctime>
+#include "thumbnailmodel.h"
+#include "sresultmodel.h"
+#include "exportform.h"
 
+#define MILLA_VERSION "ver. 0.1.1"
+#define MILLA_SITE "http://github.com/matrixsmaster/MILLA"
 #define EXTRA_CACHE_SIZE 1500
 #define FACE_CASCADE_FILE "/tmp/face_cascade.xml"
 
@@ -110,6 +113,8 @@ private slots:
 
     void on_actionThumbnails_cloud_changed();
 
+    void on_actionExport_data_triggered();
+
 private:
     Ui::MViewer *ui;
     QTimer view_timer;
@@ -181,6 +186,8 @@ private:
     void displayLinkedImages(QString const &fn);
 
     void kudos(MImageListRecord const &to, int delta);
+
+    bool dataExport(ExportFormData const &s, QTextStream &f);
 };
 
 #endif // MVIEWER_H

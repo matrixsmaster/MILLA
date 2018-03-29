@@ -1067,7 +1067,10 @@ void MViewer::on_actionJump_to_triggered()
         idx++;
     }
 
-    if (ok) scaleImage(current_l,ui->scrollArea,ui->label,1);
+    if (ok) {
+        scaleImage(current_l,ui->scrollArea,ui->label,1);
+        leftImageMetaUpdate();
+    }
 }
 
 void MViewer::on_actionRefine_search_triggered()
@@ -1224,7 +1227,9 @@ void MViewer::displayLinkedImages(QString const &fn)
 void MViewer::on_actionAbout_triggered()
 {
     QMessageBox::about(this, tr("About MILLA"),
-                       tr("<p> <b>MILLA</b> image viewer. </p>"
+                       tr("<p><b>MILLA</b> image viewer.</p>"
+                          "<p><i>" MILLA_VERSION "</i></p>"
+                          "<p><a href=" MILLA_SITE ">GitHub site</a></p>"
                           "<p>(C) Dmitry 'MatrixS_Master' Soloviov, 2018</p>"));
 }
 
@@ -1306,4 +1311,53 @@ void MViewer::on_actionThumbnails_cloud_changed()
 
     cleanUp();
     showImageList(lst);
+}
+
+bool MViewer::dataExport(ExportFormData const &s, QTextStream &f)
+{
+    QSqlQuery q;
+
+    if (s.table == 1) {
+        QStringList a,b;
+        ThumbnailModel* ptm = dynamic_cast<ThumbnailModel*>(ui->listView->model());
+        if (s.loaded_only) {
+            if (!ptm) return true;
+            for (auto &i : ptm->GetAllImages()) a.push_back(i.filename);
+        }
+
+        if (!q.exec("SELECT file FROM stats")) return false;
+        while (q.next()) b.push_back(q.value(0).toString());
+
+    } else {
+        if (!q.exec("SELECT tag, rating FROM tags")) return false;
+        while (q.next()) {
+            if (s.tagname) f << q.value(0).toString() << s.separator;
+            if (s.tagrate) f << q.value(1).toUInt() << s.separator;
+            if (s.separator != '\n') f << '\n';
+        }
+    }
+
+    return true;
+}
+
+void MViewer::on_actionExport_data_triggered()
+{
+    ExportForm frm;
+    if (!frm.exec()) return;
+    ExportFormData s = frm.getExportData();
+    QString fileName = QFileDialog::getSaveFileName(this, tr("Export to"), "", tr("Text Files [txt,csv] (*.txt *.csv)"));
+    if (fileName.isEmpty()) return;
+    if (fileName.right(4).toUpper() != ".CSV" && fileName.right(4).toUpper() != ".TXT") fileName += ".csv";
+
+    QFile fl(fileName);
+    if (!fl.open(QIODevice::WriteOnly | QIODevice::Text)) {
+        qDebug() << "ALERT: unable to write to " << fileName;
+        return;
+    }
+
+    QTextStream strm(&fl);
+    bool ok = dataExport(s,strm);
+
+    fl.close();
+    qDebug() << "[db] Export data: " << ok;
 }
