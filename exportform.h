@@ -9,10 +9,11 @@ class ExportForm;
 
 struct ExportFormData {
     int table;
-    bool loaded_only;
+    bool loaded_only, header;
     bool filename, views, rating, likes, tags, notes, sha, length;
     bool tagname, tagrate;
     char separator;
+    bool imp_noover;
 };
 
 class ExportForm : public QDialog
@@ -20,7 +21,7 @@ class ExportForm : public QDialog
     Q_OBJECT
 
 public:
-    explicit ExportForm(QWidget *parent = 0);
+    explicit ExportForm(bool forImport = false, QWidget *parent = 0);
     ~ExportForm();
 
     ExportFormData getExportData() { return edata; }

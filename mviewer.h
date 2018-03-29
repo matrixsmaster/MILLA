@@ -21,6 +21,7 @@
 #include <opencv2/objdetect/objdetect.hpp>
 #include <opencv2/highgui/highgui.hpp>
 #include <ctime>
+#include <chrono>
 #include "thumbnailmodel.h"
 #include "sresultmodel.h"
 #include "exportform.h"
@@ -115,6 +116,8 @@ private slots:
 
     void on_actionExport_data_triggered();
 
+    void on_actionImport_data_triggered();
+
 private:
     Ui::MViewer *ui;
     QTimer view_timer;
@@ -188,6 +191,10 @@ private:
     void kudos(MImageListRecord const &to, int delta);
 
     bool dataExport(ExportFormData const &s, QTextStream &f);
+
+    bool dataImport(ExportFormData const &s, QTextStream &f);
+
+    void selectIEFileDialog(bool import);
 };
 
 #endif // MVIEWER_H

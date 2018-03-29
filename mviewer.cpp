@@ -488,7 +488,7 @@ void MViewer::on_actionOpen_triggered()
 
 void MViewer::on_actionOpen_list_triggered()
 {
-    openDirByList(QFileDialog::getOpenFileName(this, tr("Open list of images"), "", tr("Text Files (*.txt *.lst)")));
+    openDirByList(QFileDialog::getOpenFileName(this, tr("Open list of images"), "", tr("Text Files [txt,lst] (*.txt *.lst)")));
 }
 
 void MViewer::scaleImage(const MImageListRecord &rec, QScrollArea* scrl, QLabel* lbl, double factor)
@@ -819,15 +819,16 @@ void MViewer::on_actionLoad_everything_slow_triggered()
 
     double passed = 0, spd = 0, est, prg = 0, all = (double)(ptm->GetAllImages().size());
     double dp = 100.f / all;
-    time_t pass, start = clock();
     size_t k = 0;
+
+    using namespace std::chrono;
+    auto start = steady_clock::now();
 
     for (auto &i : ptm->GetAllImages()) {
         createStatRecord(i.filename);
 
         prg += dp;
-        pass = clock() - start;
-        passed = (double)pass / (double)CLOCKS_PER_SEC;
+        passed = (duration_cast<duration<double>>(steady_clock::now() - start)).count();
         spd = (double)(k++) / ((passed < FLT_EPSILON)? FLT_EPSILON : passed);
         est = (all - k) / spd;
 
@@ -1331,6 +1332,18 @@ bool MViewer::dataExport(ExportFormData const &s, QTextStream &f)
         if (s.loaded_only) c = b.intersect(a);
         else c = b;
 
+        if (s.header) {
+            if (s.filename) f << "File name" << s.separator;
+            if (s.views) f << "Views count" << s.separator;
+            if (s.rating) f << "Rating" << s.separator;
+            if (s.likes) f << "Kudos" << s.separator;
+            if (s.tags) f << "Tags" << s.separator;
+            if (s.notes) f << "Notes" << s.separator;
+            if (s.sha) f << "SHA-256" << s.separator;
+            if (s.length) f << "File size" << s.separator;
+            if (s.separator != '\n') f << '\n';
+        }
+
         for (auto &i : c) {
             if (s.filename) f << i << s.separator;
 
@@ -1351,6 +1364,12 @@ bool MViewer::dataExport(ExportFormData const &s, QTextStream &f)
         }
 
     } else {
+        if (s.header) {
+            if (s.tagname) f << "Tag" << s.separator;
+            if (s.tagrate) f << "Rating" << s.separator;
+            if (s.separator != '\n') f << '\n';
+        }
+
         if (!q.exec("SELECT tag, rating FROM tags")) return false;
         while (q.next()) {
             if (s.tagname) f << q.value(0).toString() << s.separator;
@@ -1362,24 +1381,46 @@ bool MViewer::dataExport(ExportFormData const &s, QTextStream &f)
     return true;
 }
 
-void MViewer::on_actionExport_data_triggered()
+bool MViewer::dataImport(ExportFormData const &s, QTextStream &f)
 {
-    ExportForm frm;
+    QSqlQuery q;
+    //TODO
+    return false;
+}
+
+void MViewer::selectIEFileDialog(bool import)
+{
+    ExportForm frm(import);
     if (!frm.exec()) return;
     ExportFormData s = frm.getExportData();
-    QString fileName = QFileDialog::getSaveFileName(this, tr("Export to"), "", tr("Text Files [txt,csv] (*.txt *.csv)"));
+
+    QString fileName = import?
+                QFileDialog::getOpenFileName(this, tr("Import from"), "", tr("Text Files [txt,csv] (*.txt *.csv)")) :
+                QFileDialog::getSaveFileName(this, tr("Export to"), "", tr("Text Files [txt,csv] (*.txt *.csv)"));
     if (fileName.isEmpty()) return;
-    if (fileName.right(4).toUpper() != ".CSV" && fileName.right(4).toUpper() != ".TXT") fileName += ".csv";
+
+    if ((import) && (fileName.right(4).toUpper() != ".CSV" && fileName.right(4).toUpper() != ".TXT"))
+        fileName += ".csv";
 
     QFile fl(fileName);
-    if (!fl.open(QIODevice::WriteOnly | QIODevice::Text)) {
-        qDebug() << "ALERT: unable to write to " << fileName;
+    if (!fl.open(QIODevice::Text | (import? QIODevice::ReadOnly : QIODevice::WriteOnly))) {
+        qDebug() << "ALERT: unable to gain access to " << fileName;
         return;
     }
 
     QTextStream strm(&fl);
-    bool ok = dataExport(s,strm);
+    bool ok = import? dataImport(s,strm) : dataExport(s,strm);
 
     fl.close();
-    qDebug() << "[db] Export data: " << ok;
+    qDebug() << "[db] " << (import? "Import":"Export") << " data: " << ok;
+}
+
+void MViewer::on_actionExport_data_triggered()
+{
+    selectIEFileDialog(false);
+}
+
+void MViewer::on_actionImport_data_triggered()
+{
+    selectIEFileDialog(true);
 }

@@ -1,11 +1,18 @@
 #include "exportform.h"
 #include "ui_exportform.h"
 
-ExportForm::ExportForm(QWidget *parent) :
+ExportForm::ExportForm(bool forImport, QWidget *parent) :
     QDialog(parent),
     ui(new Ui::ExportForm)
 {
     ui->setupUi(this);
+
+    if (forImport) {
+        this->setWindowTitle("Import image data");
+        ui->groupBox_3->setTitle("Input options");
+        ui->checkBox_11->setVisible(false);
+    } else
+        ui->checkBox_13->setVisible(false);
 }
 
 ExportForm::~ExportForm()
@@ -36,6 +43,7 @@ void ExportForm::on_groupBox_toggled(bool arg1)
 void ExportForm::on_buttonBox_accepted()
 {
     edata.loaded_only = ui->checkBox_11->isChecked();
+    edata.header = ui->checkBox_12->isChecked();
 
     edata.table = ui->groupBox->isChecked()? 1 : 2;
 
@@ -54,4 +62,6 @@ void ExportForm::on_buttonBox_accepted()
     if (ui->radioButton_4->isChecked()) edata.separator = '\n';
     else if (ui->lineEdit->text().isEmpty()) edata.separator = '\t';
     else edata.separator = ui->lineEdit->text().at(0).toLatin1();
+
+    edata.imp_noover = ui->checkBox_13->isChecked();
 }
