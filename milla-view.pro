@@ -34,7 +34,7 @@ FORMS    += mviewer.ui \
     searchform.ui \
     exportform.ui
 
-CONFIG   += c++11
+CONFIG   += c++14
 
 LIBS     += -lopencv_core -lopencv_imgproc -lopencv_features2d -lopencv_flann -lopencv_objdetect -lopencv_highgui
 

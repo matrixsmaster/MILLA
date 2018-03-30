@@ -190,6 +190,8 @@ private:
 
     void kudos(MImageListRecord const &to, int delta);
 
+    QString tagsLineConvert(QString in, bool encode);
+
     bool dataExport(ExportFormData const &s, QTextStream &f);
 
     bool dataImport(ExportFormData const &s, QTextStream &f);

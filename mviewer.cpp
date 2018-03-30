@@ -142,23 +142,23 @@ void MViewer::updateTags(QString fn)
     QSqlQuery q,qq;
     bool ok = q.exec("SELECT tag, key FROM tags ORDER BY rating DESC");
     qDebug() << "[db] Read whole tags table: " << ok;
-    if (ok) {
-        ui->listWidget->clear();
-        tags_cache.clear();
+    if (!ok) return;
 
-        QStringList tlst;
-        if (!fn.isEmpty()) {
-            qq.prepare("SELECT tags FROM stats WHERE file = :fn");
-            qq.bindValue(":fn",fn);
-            if (qq.exec() && qq.next())
-                tlst = qq.value(0).toString().split(',',QString::SkipEmptyParts);
-        }
+    ui->listWidget->clear();
+    tags_cache.clear();
 
-        while (q.next()) {
-            bool c = false;
-            if (!tlst.empty() && tlst.contains(q.value(1).toString())) c = true;
-            addTag(q.value(0).toString(),q.value(1).toInt(),c);
-        }
+    QStringList tlst;
+    if (!fn.isEmpty()) {
+        qq.prepare("SELECT tags FROM stats WHERE file = :fn");
+        qq.bindValue(":fn",fn);
+        if (qq.exec() && qq.next())
+            tlst = qq.value(0).toString().split(',',QString::SkipEmptyParts);
+    }
+
+    bool c;
+    while (q.next()) {
+        c = (!tlst.empty() && tlst.contains(q.value(1).toString()));
+        addTag(q.value(0).toString(),q.value(1).toInt(),c);
     }
 }
 
@@ -1307,6 +1307,39 @@ void MViewer::on_actionThumbnails_cloud_changed()
     showImageList(lst);
 }
 
+QString MViewer::tagsLineConvert(QString in, bool encode)
+{
+    if (in.isEmpty() || tags_cache.empty()) return in;
+
+    QStringList lin = in.split(',',QString::SkipEmptyParts);
+    QString out;
+    QTextStream x(&out);
+    for (auto &i : lin) {
+        if (encode) {
+            if (tags_cache.count(i)) x << tags_cache[i].first << ",";
+            else qDebug() << "ALERT: unable to associate tag " << i;
+
+        } else {
+            bool ok;
+            int n = i.toInt(&ok);
+            if (ok) {
+                auto j = std::find_if(tags_cache.begin(),tags_cache.end(),[n] (auto &it) {
+                    return (it.second.first == n); });
+                if (j != tags_cache.end())
+                    x << j->first << ",";
+                else
+                    qDebug() << "ALERT: unable to associate tag #" << n;
+            } else {
+                qDebug() << "ALERT: malformed tags string " << in;
+                break;
+            }
+        }
+    }
+
+    x.flush();
+    return out;
+}
+
 bool MViewer::dataExport(ExportFormData const &s, QTextStream &f)
 {
     QSqlQuery q;
@@ -1347,7 +1380,7 @@ bool MViewer::dataExport(ExportFormData const &s, QTextStream &f)
                 if (s.views) f << q.value(0).toUInt() << s.separator;
                 if (s.rating) f << q.value(1).toInt() << s.separator;
                 if (s.likes) f << q.value(2).toInt() << s.separator;
-                if (s.tags) f << "\"" << q.value(3).toString() << "\"" << s.separator;
+                if (s.tags) f << "\"" << tagsLineConvert(q.value(3).toString(),false) << "\"" << s.separator;
                 if (s.notes) f << "\"" << q.value(4).toString() << "\"" << s.separator;
                 if (s.sha) f << q.value(5).toByteArray().toHex() << s.separator;
                 if (s.length) f << q.value(6).toUInt() << s.separator;
@@ -1392,7 +1425,7 @@ void MViewer::selectIEFileDialog(bool import)
                 QFileDialog::getSaveFileName(this, tr("Export to"), "", tr("Text Files [txt,csv] (*.txt *.csv)"));
     if (fileName.isEmpty()) return;
 
-    if ((import) && (fileName.right(4).toUpper() != ".CSV" && fileName.right(4).toUpper() != ".TXT"))
+    if ((!import) && (fileName.right(4).toUpper() != ".CSV" && fileName.right(4).toUpper() != ".TXT"))
         fileName += ".csv";
 
     QFile fl(fileName);
@@ -1402,7 +1435,9 @@ void MViewer::selectIEFileDialog(bool import)
     }
 
     QTextStream strm(&fl);
+    updateTags();
     bool ok = import? dataImport(s,strm) : dataExport(s,strm);
+    if (current_l.valid) updateTags(current_l.filename);
 
     fl.close();
     qDebug() << "[db] " << (import? "Import":"Export") << " data: " << ok;
