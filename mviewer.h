@@ -25,6 +25,7 @@
 #include "thumbnailmodel.h"
 #include "sresultmodel.h"
 #include "exportform.h"
+#include "mimpexpmodule.h"
 
 #define MILLA_VERSION "ver. 0.1.1"
 #define MILLA_SITE "http://github.com/matrixsmaster/MILLA"
@@ -127,7 +128,7 @@ private:
     MImageListRecord current_l, current_r;
     cv::CascadeClassifier* face_cascade = nullptr;
     std::map<QString,MImageExtras> extra_cache;
-    std::map<QString,std::pair<int,bool> > tags_cache;
+    MTagCache tags_cache;
     bool flag_stop_load_everything = false;
 
     bool initDatabase();
@@ -189,12 +190,6 @@ private:
     void displayLinkedImages(QString const &fn);
 
     void kudos(MImageListRecord const &to, int delta);
-
-    QString tagsLineConvert(QString in, bool encode);
-
-    bool dataExport(ExportFormData const &s, QTextStream &f);
-
-    bool dataImport(ExportFormData const &s, QTextStream &f);
 
     void selectIEFileDialog(bool import);
 };

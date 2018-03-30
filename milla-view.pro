@@ -19,7 +19,8 @@ SOURCES += main.cpp\
     searchform.cpp \
     mimagelistmodel.cpp \
     starlabel.cpp \
-    exportform.cpp
+    exportform.cpp \
+    mimpexpmodule.cpp
 
 HEADERS  += mviewer.h \
     thumbnailmodel.h \
@@ -28,7 +29,8 @@ HEADERS  += mviewer.h \
     mimagelistmodel.h \
     db_format.h \
     starlabel.h \
-    exportform.h
+    exportform.h \
+    mimpexpmodule.h
 
 FORMS    += mviewer.ui \
     searchform.ui \

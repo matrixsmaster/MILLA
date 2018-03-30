@@ -11,6 +11,7 @@ ExportForm::ExportForm(bool forImport, QWidget *parent) :
         this->setWindowTitle("Import image data");
         ui->groupBox_3->setTitle("Input options");
         ui->checkBox_11->setVisible(false);
+        ui->radioButton_4->setVisible(false);
     } else
         ui->checkBox_13->setVisible(false);
 }

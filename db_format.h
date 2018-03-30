@@ -34,5 +34,11 @@
 
 #define DBF_LINKS "left BLOB, right BLOB"
 
+#define DBF_EXPORT_RECORD "SELECT views, rating, likes, tags, notes, sha256, length FROM stats WHERE "
+
+#define DBF_IMPORT_SELECT "SELECT file, views, rating, likes, tags, notes, sha256, length FROM stats WHERE "
+
+#define DBF_IMPORT_UPDATE "UPDATE stats SET file = :fn, views = :v, rating = :r, likes = :l, tags = :t, notes = :n, sha256 = :s, length = :len WHERE "
+
 #endif // DB_FORMAT_H
 

@@ -1,7 +1,6 @@
 ﻿#include "mviewer.h"
 #include "ui_mviewer.h"
 #include "searchform.h"
-#include "db_format.h"
 
 MViewer::MViewer(QWidget *parent) :
     QMainWindow(parent),
@@ -1307,113 +1306,6 @@ void MViewer::on_actionThumbnails_cloud_changed()
     showImageList(lst);
 }
 
-QString MViewer::tagsLineConvert(QString in, bool encode)
-{
-    if (in.isEmpty() || tags_cache.empty()) return in;
-
-    QStringList lin = in.split(',',QString::SkipEmptyParts);
-    QString out;
-    QTextStream x(&out);
-    for (auto &i : lin) {
-        if (encode) {
-            if (tags_cache.count(i)) x << tags_cache[i].first << ",";
-            else qDebug() << "ALERT: unable to associate tag " << i;
-
-        } else {
-            bool ok;
-            int n = i.toInt(&ok);
-            if (ok) {
-                auto j = std::find_if(tags_cache.begin(),tags_cache.end(),[n] (auto &it) {
-                    return (it.second.first == n); });
-                if (j != tags_cache.end())
-                    x << j->first << ",";
-                else
-                    qDebug() << "ALERT: unable to associate tag #" << n;
-            } else {
-                qDebug() << "ALERT: malformed tags string " << in;
-                break;
-            }
-        }
-    }
-
-    x.flush();
-    return out;
-}
-
-bool MViewer::dataExport(ExportFormData const &s, QTextStream &f)
-{
-    QSqlQuery q;
-
-    if (s.table == 1) {
-        QSet<QString> a,b,c;
-        ThumbnailModel* ptm = dynamic_cast<ThumbnailModel*>(ui->listView->model());
-        if (s.loaded_only) {
-            if (!ptm) return true;
-            for (auto &i : ptm->GetAllImages()) a.insert(i.filename);
-        }
-
-        if (!q.exec("SELECT file FROM stats")) return false;
-        while (q.next()) b.insert(q.value(0).toString());
-
-        if (s.loaded_only) c = b.intersect(a);
-        else c = b;
-
-        if (s.header) {
-            if (s.filename) f << "File name" << s.separator;
-            if (s.views) f << "Views count" << s.separator;
-            if (s.rating) f << "Rating" << s.separator;
-            if (s.likes) f << "Kudos" << s.separator;
-            if (s.tags) f << "Tags" << s.separator;
-            if (s.notes) f << "Notes" << s.separator;
-            if (s.sha) f << "SHA-256" << s.separator;
-            if (s.length) f << "File size" << s.separator;
-            if (s.separator != '\n') f << '\n';
-        }
-
-        for (auto &i : c) {
-            if (s.filename) f << i << s.separator;
-
-            q.clear();
-            q.prepare("SELECT views, rating, likes, tags, notes, sha256, length FROM stats WHERE file = :fn");
-            q.bindValue(":fn",i);
-            if (q.exec() && q.next()) {
-                if (s.views) f << q.value(0).toUInt() << s.separator;
-                if (s.rating) f << q.value(1).toInt() << s.separator;
-                if (s.likes) f << q.value(2).toInt() << s.separator;
-                if (s.tags) f << "\"" << tagsLineConvert(q.value(3).toString(),false) << "\"" << s.separator;
-                if (s.notes) f << "\"" << q.value(4).toString() << "\"" << s.separator;
-                if (s.sha) f << q.value(5).toByteArray().toHex() << s.separator;
-                if (s.length) f << q.value(6).toUInt() << s.separator;
-            }
-
-            if (s.separator != '\n') f << '\n';
-        }
-
-    } else {
-        if (s.header) {
-            if (s.tagname) f << "Tag" << s.separator;
-            if (s.tagrate) f << "Rating" << s.separator;
-            if (s.separator != '\n') f << '\n';
-        }
-
-        if (!q.exec("SELECT tag, rating FROM tags")) return false;
-        while (q.next()) {
-            if (s.tagname) f << q.value(0).toString() << s.separator;
-            if (s.tagrate) f << q.value(1).toUInt() << s.separator;
-            if (s.separator != '\n') f << '\n';
-        }
-    }
-
-    return true;
-}
-
-bool MViewer::dataImport(ExportFormData const &s, QTextStream &f)
-{
-    QSqlQuery q;
-    //TODO
-    return false;
-}
-
 void MViewer::selectIEFileDialog(bool import)
 {
     ExportForm frm(import);
@@ -1435,8 +1327,13 @@ void MViewer::selectIEFileDialog(bool import)
     }
 
     QTextStream strm(&fl);
+    ThumbnailModel* ptm = dynamic_cast<ThumbnailModel*>(ui->listView->model());
     updateTags();
-    bool ok = import? dataImport(s,strm) : dataExport(s,strm);
+    MImpExpModule mod(&tags_cache,(ptm? &(ptm->GetAllImages()) : nullptr));
+
+    bool ok = import?
+                mod.dataImport(s,strm,[this] (auto fn) { this->createStatRecord(fn); }) :
+                mod.dataExport(s,strm);
     if (current_l.valid) updateTags(current_l.filename);
 
     fl.close();
