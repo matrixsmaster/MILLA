@@ -55,6 +55,10 @@ public:
 
     virtual void setShortenFilenames(bool en) { do_shorten = en; }
 
+    virtual QModelIndex getRecordIndex(int n) { return createIndex(n,0); }
+
+    virtual QModelIndex getRecordIndex(const QString &fn);
+
 protected:
     QList<MImageListRecord> images;
     bool do_shorten = false;

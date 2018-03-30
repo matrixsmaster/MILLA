@@ -46,3 +46,20 @@ size_t MImageListModel::ItemSizeInBytes(int idx)
 {
     return (images.at(idx).picture.depth() / 8) * images.at(idx).picture.size().width() * images.at(idx).picture.size().height();
 }
+
+QModelIndex MImageListModel::getRecordIndex(const QString &fn)
+{
+    bool path = fn.contains('/');
+
+    size_t idx = 0;
+    bool ok = false;
+    for (auto &i : images) {
+        if ((path && !fn.compare(i.filename,Qt::CaseInsensitive)) || (!path && !fn.compare(i.fnshort,Qt::CaseInsensitive))) {
+            ok = true;
+            break;
+        }
+        idx++;
+    }
+
+    return ok? createIndex(idx,0) : QModelIndex();
+}

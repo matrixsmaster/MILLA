@@ -467,18 +467,28 @@ void MViewer::processArguments()
             if (ext == "txt" || ext == "lst")
                 openDirByList(args.front());
         }
-        return;
+
+    } else {
+
+        cleanUp();
+
+        QList<QString> lst;
+        QString cpath;
+        for (auto &i : args) {
+            if (isLoadableFile(i,&cpath)) lst.push_back(cpath);
+        }
+
+        showImageList(lst);
     }
 
-    cleanUp();
-
-    QList<QString> lst;
-    QString cpath;
-    for (auto &i : args) {
-        if (isLoadableFile(i,&cpath)) lst.push_back(cpath);
+    ThumbnailModel* ptm = dynamic_cast<ThumbnailModel*>(ui->listView->model());
+    if (ptm) {
+        QString canon;
+        if (isLoadableFile(args.front(),&canon))
+            ui->listView->setCurrentIndex(ptm->getRecordIndex(canon));
+        else
+            ui->listView->setCurrentIndex(ptm->getRecordIndex(0));
     }
-
-    showImageList(lst);
 }
 
 void MViewer::on_actionOpen_triggered()
@@ -1053,25 +1063,8 @@ void MViewer::on_actionJump_to_triggered()
 
     bool ok;
     QString fn = QInputDialog::getText(this,tr("Jump to file"),tr("File name or full path"),QLineEdit::Normal,QString(),&ok);
-    if (!ok) return;
-    bool path = fn.contains('/');
 
-    size_t idx = 0;
-    ok = false;
-    for (auto &i : ptm->GetAllImages()) {
-        if ((path && !fn.compare(i.filename,Qt::CaseInsensitive)) || (!path && !fn.compare(i.fnshort,Qt::CaseInsensitive))) {
-            ok = true;
-            ptm->LoadUp(idx);
-            current_l = i;
-            break;
-        }
-        idx++;
-    }
-
-    if (ok) {
-        scaleImage(current_l,ui->scrollArea,ui->label,1);
-        leftImageMetaUpdate();
-    }
+    if (ok) ui->listView->setCurrentIndex(ptm->getRecordIndex(fn));
 }
 
 void MViewer::on_actionRefine_search_triggered()
