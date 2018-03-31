@@ -1,6 +1,6 @@
 #include "thumbnailmodel.h"
 
-ThumbnailModel::ThumbnailModel(QList<QString> files, QObject *parent)
+ThumbnailModel::ThumbnailModel(QStringList files, QObject *parent)
     : MImageListModel(parent)
 {
     QSqlQuery q;

@@ -32,6 +32,8 @@
 #define MILLA_SITE "http://github.com/matrixsmaster/MILLA"
 #define EXTRA_CACHE_SIZE 1500
 #define FACE_CASCADE_FILE "/tmp/face_cascade.xml"
+#define MILLA_OPEN_FILE "Image Files (*.png *.jpg *.jpeg *.bmp)"
+#define MILLA_OPEN_LIST "Text Files [txt,lst] (*.txt *.lst)"
 
 enum MROIType {
     MROI_GENERIC = 0,
@@ -145,13 +147,13 @@ private:
 
     void checkExtraCache();
 
-    void showImageList(QList<QString> const &lst);
+    void showImageList(QStringList const &lst);
 
     bool isLoadableFile(QString const &path, QString* canonicalPath);
 
-    void scanDirectory(QString const &dir, QList<QString> &addto);
+    void scanDirectory(QString const &dir, QStringList &addto, bool recursive);
 
-    void openDirByFile(QString const &fileName);
+    void openDirByFile(QString const &fileName, bool recursive = false);
 
     void openDirByList(QString const &fileName);
 
@@ -191,9 +193,9 @@ private:
 
     void updateCurrentTags();
 
-    void resultsPresentation(QList<QString> lst, QListView *view, int tabIndex);
+    void resultsPresentation(QStringList lst, QListView *view, int tabIndex);
 
-    void searchResults(QList<QString> lst);
+    void searchResults(QStringList lst);
 
     void searchByTag();
 

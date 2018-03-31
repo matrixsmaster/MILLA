@@ -389,7 +389,7 @@ void MViewer::checkExtraCache()
     if (extra_cache.size() > EXTRA_CACHE_SIZE) extra_cache.clear();
 }
 
-void MViewer::showImageList(QList<QString> const &lst)
+void MViewer::showImageList(QStringList const &lst)
 {
     if (ui->listView->model()) {
         qDebug() << "Old model scheduled for removal";
@@ -428,16 +428,18 @@ bool MViewer::isLoadableFile(QString const &path, QString *canonicalPath)
     return false;
 }
 
-void MViewer::scanDirectory(QString const &dir, QList<QString> &addto)
+void MViewer::scanDirectory(QString const &dir, QStringList &addto, bool recursive)
 {
-    QDirIterator it(dir, QDir::Files | QDir::NoDotAndDotDot, QDirIterator::Subdirectories | QDirIterator::FollowSymlinks);
+    QDirIterator::IteratorFlags flags = QDirIterator::FollowSymlinks;
+    if (recursive) flags |= QDirIterator::Subdirectories;
+    QDirIterator it(dir, QDir::Files | QDir::NoDotAndDotDot, flags);
     QString cpath;
     while (it.hasNext()) {
         if (isLoadableFile(it.next(),&cpath)) addto.push_back(cpath);
     }
 }
 
-void MViewer::openDirByFile(QString const &fileName)
+void MViewer::openDirByFile(QString const &fileName, bool recursive)
 {
     if (fileName.isEmpty()) return;
 
@@ -445,9 +447,9 @@ void MViewer::openDirByFile(QString const &fileName)
     QString bpath = bpf.canonicalPath();
     if (bpath.isEmpty()) return;
 
-    QList<QString> lst;
+    QStringList lst;
     cleanUp();
-    scanDirectory(bpath,lst);
+    scanDirectory(bpath,lst,recursive);
     showImageList(lst);
 }
 
@@ -469,10 +471,12 @@ void MViewer::openDirByList(QString const &fileName)
 
     cleanUp();
 
-    QList<QString> lst;
+    QStringList lst;
     QString cpath;
     for (auto &i : ldat) {
-        if (!i.isEmpty() && i.at(i.size()-1) == '/') scanDirectory(i,lst);
+        if (i.isEmpty()) continue;
+        if (i.at(i.size()-1) == '/') scanDirectory(i,lst,false);
+        else if (i.right(2) == "/*") scanDirectory(i.left(i.size()-1),lst,true);
         else if (isLoadableFile(i,&cpath)) lst.push_back(cpath);
     }
 
@@ -498,7 +502,7 @@ void MViewer::processArguments()
 
         cleanUp();
 
-        QList<QString> lst;
+        QStringList lst;
         QString cpath;
         for (auto &i : args) {
             if (isLoadableFile(i,&cpath)) lst.push_back(cpath);
@@ -519,12 +523,15 @@ void MViewer::processArguments()
 
 void MViewer::on_actionOpen_triggered()
 {
-    openDirByFile(QFileDialog::getOpenFileName(this, tr("Open image and directory"), "", tr("Image Files (*.png *.jpg *.jpeg *.bmp)")));
+    QString fn = QFileDialog::getOpenFileName(this, tr("Open image and directory"), "", tr(MILLA_OPEN_FILE));
+    if (fn.isEmpty()) return;
+    bool rec = QMessageBox::question(this, tr("Type of scan"), tr("Do recursive scan?"), QMessageBox::Yes | QMessageBox::No) == QMessageBox::Yes;
+    openDirByFile(fn,rec);
 }
 
 void MViewer::on_actionOpen_list_triggered()
 {
-    openDirByList(QFileDialog::getOpenFileName(this, tr("Open list of images"), "", tr("Text Files [txt,lst] (*.txt *.lst)")));
+    openDirByList(QFileDialog::getOpenFileName(this, tr("Open list of images"), "", tr(MILLA_OPEN_LIST)));
 }
 
 void MViewer::scaleImage(const MImageListRecord &rec, QScrollArea* scrl, QLabel* lbl, double factor)
@@ -708,7 +715,7 @@ void MViewer::on_actionMatch_triggered()
         if (corr > 0) targets[corr] = &i;
     }
 
-    QList<QString> lst;
+    QStringList lst;
     int k = 0;
     for (auto i = targets.rbegin(); i != targets.rend() && k < 10; ++i,k++) { //TODO: move k into settings
         lst.push_back(i->second->filename);
@@ -970,7 +977,7 @@ void MViewer::on_radio_settags_toggled(bool checked)
     }
 }
 
-void MViewer::resultsPresentation(QList<QString> lst, QListView* view, int tabIndex)
+void MViewer::resultsPresentation(QStringList lst, QListView* view, int tabIndex)
 {
     if (view->model()) {
         qDebug() << "Old model scheduled for removal";
@@ -1007,7 +1014,7 @@ void MViewer::resultsPresentation(QList<QString> lst, QListView* view, int tabIn
     ui->tabWidget->setCurrentIndex(tabIndex);
 }
 
-void MViewer::searchResults(QList<QString> lst)
+void MViewer::searchResults(QStringList lst)
 {
     resultsPresentation(lst,ui->listView_2,1);
 
@@ -1034,7 +1041,7 @@ void MViewer::searchByTag()
     QSqlQuery q;
     std::map<QString,QList<int> > targ;
     QList<int> goal;
-    QList<QString> found;
+    QStringList found;
 
     for (auto &i : tags_cache) {
         if (!i.second.second) continue;
@@ -1140,7 +1147,7 @@ void MViewer::on_actionRefine_search_triggered()
         if (tlst.size() + tmap.size() >= flt.maxresults) break;
     }
 
-    QList<QString> out;
+    QStringList out;
 
     qDebug() << "Start of list";
     if (flt.sort == SRFRM_NAME) {
@@ -1224,7 +1231,7 @@ void MViewer::displayLinkedImages(QString const &fn)
     q.bindValue(":sha",extr.sha);
     if (!q.exec()) return;
 
-    QList<QString> out;
+    QStringList out;
     while (q.next()) {
         if (!q.value(0).canConvert(QVariant::ByteArray)) continue;
 
@@ -1325,7 +1332,7 @@ void MViewer::on_actionThumbnails_cloud_changed()
     ThumbnailModel* ptm = dynamic_cast<ThumbnailModel*>(ui->listView->model());
     if (!ptm) return;
 
-    QList<QString> lst;
+    QStringList lst;
     for (auto &i : ptm->GetAllImages()) lst.push_back(i.filename);
 
     cleanUp();

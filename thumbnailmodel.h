@@ -8,7 +8,7 @@ class ThumbnailModel : public MImageListModel
     Q_OBJECT
 
 public:
-    explicit ThumbnailModel(QList<QString> files, QObject *parent = 0);
+    explicit ThumbnailModel(QStringList files, QObject *parent = 0);
     virtual ~ThumbnailModel();
 
     void LoadUp(int idx);
