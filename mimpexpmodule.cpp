@@ -133,9 +133,15 @@ bool MImpExpModule::dataImport(ExportFormData const &d, QTextStream &f, myFunVoi
             if (d.header) continue;
         }
 
+        QString tmp(" ");
+        while ((s.at(s.length()-1) != d.separator) && (s.count('\"') % 2) && !tmp.isNull()) {
+            tmp = f.readLine();
+            s += "\n" + tmp;
+        }
+
         QStringList sl = s.split(d.separator,QString::SkipEmptyParts);
         if (sl.length() != m) {
-            qDebug() << "[db] ALERT: Import error: fields count don't match!";
+            qDebug() << "[db] ALERT: Import error: fields count doesn't match!";
             return false;
         }
 
@@ -179,7 +185,7 @@ bool MImpExpModule::dataImport(ExportFormData const &d, QTextStream &f, myFunVoi
 
             if (!ok) init_rec_callback(tgs["file"].toString());
 
-            QString tmp = tgs["notes"].toString();
+            tmp = tgs["notes"].toString();
             if (!tmp.isEmpty() && tmp.at(0) == '\"') tmp = tmp.mid(1,tmp.length()-2);
             tgs["notes"] = tmp;
 
@@ -195,7 +201,7 @@ bool MImpExpModule::dataImport(ExportFormData const &d, QTextStream &f, myFunVoi
             q.bindValue(":len",tgs["length"].toUInt());
             ok = q.exec();
 
-            qDebug() << "[db] Import data: " << q.lastQuery() << ": " << ok;
+            qDebug() << "[db] Import data: " << ok;
 
         } else {
             //

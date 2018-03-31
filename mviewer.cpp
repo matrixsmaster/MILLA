@@ -698,9 +698,6 @@ MImageExtras MViewer::getExtraCacheLine(QString const &fn, bool forceload)
         return extra_cache[fn];
 
     MImageExtras res;
-    ThumbnailModel* ptm = dynamic_cast<ThumbnailModel*>(ui->listView->model());
-    if (!ptm) return res;
-
     QSqlQuery q;
     q.prepare("SELECT sizex, sizey, grayscale, faces, facerects, hist, sha256 FROM stats WHERE file = (:fn)");
     q.bindValue(":fn",fn);;
@@ -726,14 +723,21 @@ MImageExtras MViewer::getExtraCacheLine(QString const &fn, bool forceload)
         QPixmap org;
 
         //retreive image to analyze
-        size_t idx = 0;
-        for (auto &i : ptm->GetAllImages()) {
-            if (i.filename == fn) {
-                if (forceload) ptm->LoadUp(idx);
-                if (i.loaded) org = i.picture;
-                break;
+        ThumbnailModel* ptm = dynamic_cast<ThumbnailModel*>(ui->listView->model());
+        if (ptm) {
+            size_t idx = 0;
+            for (auto &i : ptm->GetAllImages()) {
+                if (i.filename == fn) {
+                    if (forceload) ptm->LoadUp(idx);
+                    if (i.loaded) org = i.picture;
+                    break;
+                }
+                idx++;
             }
-            idx++;
+
+        } else if (forceload) {
+            org.load(fn);
+
         }
         if (org.isNull()) return res;
 
