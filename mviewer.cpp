@@ -41,6 +41,8 @@ MViewer::MViewer(QWidget *parent) :
     connect(ui->star_4,&StarLabel::clicked,this,[this] { changedStars(4); });
     connect(ui->star_5,&StarLabel::clicked,this,[this] { changedStars(5); });
 
+    loadingMovie = new QMovie(":/loading_icon.gif");
+
     using namespace cv;
 
     face_cascade = NULL;
@@ -60,6 +62,7 @@ MViewer::MViewer(QWidget *parent) :
 MViewer::~MViewer()
 {
     if (face_cascade) delete face_cascade;
+    if (loadingMovie) delete loadingMovie;
     QSqlDatabase::database().close();
     delete ui;
 }
@@ -202,10 +205,22 @@ void MViewer::prepareLongProcessing(bool finish)
     progressBar->setValue(finish? 100 : 0);
     stopButton->setEnabled(!finish);
     flag_stop_load_everything = false;
-    if (finish)
+
+    if (finish) {
         QApplication::restoreOverrideCursor();
-    else
+        loadingMovie->stop();
+        ui->statusBar->removeWidget(loadingLabel);
+        delete loadingLabel;
+        loadingLabel = nullptr;
+
+    } else {
         QApplication::setOverrideCursor(Qt::WaitCursor);
+        loadingLabel = new QLabel(this);
+        loadingLabel->setMovie(loadingMovie);
+        ui->statusBar->insertWidget(1,loadingLabel);
+        loadingMovie->jumpToFrame(0);
+        loadingMovie->start();
+    }
 }
 
 void MViewer::on_pushButton_clicked()
@@ -1371,4 +1386,21 @@ void MViewer::on_actionExport_data_triggered()
 void MViewer::on_actionImport_data_triggered()
 {
     selectIEFileDialog(true);
+}
+
+void MViewer::on_actionUpdate_thumbnails_triggered()
+{
+    ThumbnailModel* ptm = dynamic_cast<ThumbnailModel*>(ui->listView->model());
+    if (!ptm) return;
+
+    prepareLongProcessing();
+
+    int m = ptm->GetAllImages().size();
+    for (int i = 0; i < m && !flag_stop_load_everything; i++) {
+        progressBar->setValue(floor((double)i / (double)m * 100.f));
+        ptm->LoadUp(i);
+        QCoreApplication::processEvents();
+    }
+
+    prepareLongProcessing(true);
 }

@@ -13,6 +13,7 @@
 #include <QProgressBar>
 #include <QTimer>
 #include <QPainter>
+#include <QMovie>
 #include <QtSql/QSqlDatabase>
 #include <QCryptographicHash>
 #include <QInputDialog>
@@ -119,17 +120,24 @@ private slots:
 
     void on_actionImport_data_triggered();
 
+    void on_actionUpdate_thumbnails_triggered();
+
 private:
     Ui::MViewer *ui;
+
     QTimer view_timer;
     QProgressBar* progressBar;
     QPushButton* stopButton;
+    QMovie* loadingMovie;
+    QLabel* loadingLabel = nullptr;
+
+    bool flag_stop_load_everything = false;
     double scaleFactor = 1;
     MImageListRecord current_l, current_r;
+
     cv::CascadeClassifier* face_cascade = nullptr;
     std::map<QString,MImageExtras> extra_cache;
     MTagCache tags_cache;
-    bool flag_stop_load_everything = false;
 
     bool initDatabase();
 

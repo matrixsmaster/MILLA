@@ -1409,6 +1409,7 @@
     <addaction name="actionJump_to"/>
     <addaction name="separator"/>
     <addaction name="actionLoad_everything_slow"/>
+    <addaction name="actionUpdate_thumbnails"/>
     <addaction name="separator"/>
     <addaction name="actionExport_data"/>
     <addaction name="actionImport_data"/>
@@ -1667,6 +1668,14 @@
   <action name="actionImport_data">
    <property name="text">
     <string>Import data</string>
+   </property>
+  </action>
+  <action name="actionUpdate_thumbnails">
+   <property name="text">
+    <string>Update thumbnails</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+U</string>
    </property>
   </action>
  </widget>
