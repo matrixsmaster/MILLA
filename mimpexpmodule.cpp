@@ -14,6 +14,8 @@ QString MImpExpModule::tagsLineConvert(QString in, bool encode)
     QString out;
     QTextStream x(&out);
     for (auto &i : lin) {
+        i = i.trimmed();
+
         if (encode) {
             if (foreign_cache->count(i)) x << foreign_cache->at(i).first << ",";
             else qDebug() << "ALERT: unable to associate tag " << i;
@@ -217,7 +219,9 @@ bool MImpExpModule::dataImport(ExportFormData const &d, QTextStream &f, initRecC
             }
 
             //if current file is completely new to us - let's initialize its own DB record
-            if (!ok) init_rec_callback(tgs["file"].toString());
+            if (!ok) {
+                if (!init_rec_callback(tgs["file"].toString())) continue; //don't "update" invalid records
+            }
 
             //the last thing to do - send a SQL message to DB
             q.clear();

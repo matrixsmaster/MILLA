@@ -14,7 +14,7 @@
 typedef std::map<QString,std::pair<int,bool>> MTagCache;
 
 //workaround bug with 'unrecognizable' std::function
-typedef std::function<void(QString)> initRecCB;
+typedef std::function<bool(QString)> initRecCB;
 typedef std::function<bool(double)> progressCB;
 
 class MImpExpModule

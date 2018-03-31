@@ -28,7 +28,7 @@
 #include "exportform.h"
 #include "mimpexpmodule.h"
 
-#define MILLA_VERSION "ver. 0.1.4"
+#define MILLA_VERSION "ver. 0.1.5"
 #define MILLA_SITE "http://github.com/matrixsmaster/MILLA"
 #define EXTRA_CACHE_SIZE 1500
 #define FACE_CASCADE_FILE "/tmp/face_cascade.xml"
@@ -179,7 +179,7 @@ private:
 
     void prepareLongProcessing(bool finish = false);
 
-    void createStatRecord(QString fn);
+    bool createStatRecord(QString fn, bool cache_global = false);
 
     unsigned incViews(bool left = true);
 
@@ -195,7 +195,7 @@ private:
 
     cv::Mat loadMat(QByteArray const &arr) const;
 
-    MImageExtras getExtraCacheLine(QString const &fn, bool forceload = false);
+    MImageExtras getExtraCacheLine(QString const &fn, bool forceload = false, bool ignore_thumbs = false);
 
     void detectFaces(const cv::Mat &inp, std::vector<cv::Rect> *store);
 

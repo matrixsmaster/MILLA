@@ -255,18 +255,21 @@ void MViewer::on_pushButton_clicked()
     }
 }
 
-void MViewer::createStatRecord(QString fn)
+bool MViewer::createStatRecord(QString fn, bool cache_global)
 {
     QSqlQuery qa;
     qa.prepare("SELECT views FROM stats WHERE file = (:fn)");
     qa.bindValue(":fn",fn);
     if (qa.exec() && qa.next()) {
         qDebug() << "[db] createStatRecord() called for known record " << fn;
-        return;
+        return false;
     }
 
-    MImageExtras ext = getExtraCacheLine(fn,true);
-    if (!ext.valid) qDebug() << "[ALERT] INVALID EXTRA DATA RETURNED FOR " << fn;
+    MImageExtras ext = getExtraCacheLine(fn,true,cache_global);
+    if (!ext.valid) {
+        qDebug() << "[ALERT] INVALID EXTRA DATA RETURNED FOR " << fn;
+        return false;
+    }
 
     int fcn = 0;
     QString fcdat;
@@ -306,6 +309,8 @@ void MViewer::createStatRecord(QString fn)
     bool ok = q.exec();
     qDebug() << "[db] Creating new statistics record: " << ok;
     checkExtraCache();
+
+    return true;
 }
 
 unsigned MViewer::incViews(bool left)
@@ -320,7 +325,7 @@ unsigned MViewer::incViews(bool left)
 
     unsigned v = 0;
     if (q.exec() && q.next()) v = q.value(0).toUInt();
-    else createStatRecord(fn);
+    else if (!createStatRecord(fn)) return 0;
     v++;
 
     q.clear();
@@ -726,7 +731,7 @@ void MViewer::on_actionMatch_triggered()
     searchResults(lst);
 }
 
-MImageExtras MViewer::getExtraCacheLine(QString const &fn, bool forceload)
+MImageExtras MViewer::getExtraCacheLine(QString const &fn, bool forceload, bool ignore_thumbs)
 {
     using namespace cv;
 
@@ -760,7 +765,7 @@ MImageExtras MViewer::getExtraCacheLine(QString const &fn, bool forceload)
 
         //retreive image to analyze
         ThumbnailModel* ptm = dynamic_cast<ThumbnailModel*>(ui->listView->model());
-        if (ptm) {
+        if (ptm && !ignore_thumbs) {
             size_t idx = 0;
             for (auto &i : ptm->GetAllImages()) {
                 if (i.filename == fn) {
@@ -873,7 +878,9 @@ void MViewer::on_actionLoad_everything_slow_triggered()
     auto start = steady_clock::now();
 
     for (auto &i : ptm->GetAllImages()) {
-        createStatRecord(i.filename);
+        QCoreApplication::processEvents();
+        if (flag_stop_load_everything) break;
+        if (!createStatRecord(i.filename)) continue;
 
         prg += dp;
         passed = (duration_cast<duration<double>>(steady_clock::now() - start)).count();
@@ -886,9 +893,6 @@ void MViewer::on_actionLoad_everything_slow_triggered()
                                                      timePrinter(passed).toStdString().c_str(),
                                                      k,spd,
                                                      timePrinter(est).toStdString().c_str()));
-
-        QCoreApplication::processEvents();
-        if (flag_stop_load_everything) break;
     }
 
     ui->statusBar->showMessage(QString::asprintf("Objects: %.0f; Elapsed: %s; Speed: %.2f img/sec. %s.",
@@ -1362,7 +1366,7 @@ void MViewer::selectIEFileDialog(bool import)
     }
 
     QTextStream strm(&fl);
-    ThumbnailModel* ptm = dynamic_cast<ThumbnailModel*>(ui->listView->model());
+    ThumbnailModel* ptm = s.loaded_only? dynamic_cast<ThumbnailModel*>(ui->listView->model()) : nullptr;
     updateTags();
 
     MImpExpModule mod(&tags_cache,(ptm? &(ptm->GetAllImages()) : nullptr));
@@ -1375,7 +1379,7 @@ void MViewer::selectIEFileDialog(bool import)
     prepareLongProcessing();
 
     bool ok = import?
-                mod.dataImport(s,strm,[this] (auto fn) { this->createStatRecord(fn); }) :
+                mod.dataImport(s,strm,[this,s] (auto fn) { return this->createStatRecord(fn,!s.loaded_only); }) :
                 mod.dataExport(s,strm);
     if (current_l.valid) updateTags(current_l.filename);
     else updateTags();
