@@ -197,6 +197,17 @@ void MViewer::changedStars(int n)
     updateStars(current_l.filename);
 }
 
+void MViewer::prepareLongProcessing(bool finish)
+{
+    progressBar->setValue(finish? 100 : 0);
+    stopButton->setEnabled(!finish);
+    flag_stop_load_everything = false;
+    if (finish)
+        QApplication::restoreOverrideCursor();
+    else
+        QApplication::setOverrideCursor(Qt::WaitCursor);
+}
+
 void MViewer::on_pushButton_clicked()
 {
     if (ui->lineEdit->text().isEmpty() || ui->lineEdit->text().contains(',')) return;
@@ -828,12 +839,11 @@ void MViewer::on_actionLoad_everything_slow_triggered()
     ThumbnailModel* ptm = dynamic_cast<ThumbnailModel*>(ui->listView->model());
     if (!ptm) return;
 
-    stopButton->setEnabled(true);
-    flag_stop_load_everything = false;
-
     double passed = 0, spd = 0, est, prg = 0, all = (double)(ptm->GetAllImages().size());
     double dp = 100.f / all;
     size_t k = 0;
+
+    prepareLongProcessing();
 
     using namespace std::chrono;
     auto start = steady_clock::now();
@@ -857,15 +867,12 @@ void MViewer::on_actionLoad_everything_slow_triggered()
         if (flag_stop_load_everything) break;
     }
 
-    progressBar->setValue(100);
     ui->statusBar->showMessage(QString::asprintf("Objects: %.0f; Elapsed: %s; Speed: %.2f img/sec. %s.",
                                                  all,
                                                  timePrinter(passed).toStdString().c_str(),
                                                  spd,
                                                  (flag_stop_load_everything?"Cancelled by user":"Finished")));
-
-    flag_stop_load_everything = false;
-    stopButton->setEnabled(false);
+    prepareLongProcessing(true);
 }
 
 void MViewer::on_listWidget_itemClicked(QListWidgetItem *item)
@@ -1341,19 +1348,15 @@ void MViewer::selectIEFileDialog(bool import)
         return !flag_stop_load_everything;
     });
 
-    stopButton->setEnabled(true);
-    flag_stop_load_everything = false;
-    progressBar->setValue(0);
+    prepareLongProcessing();
 
     bool ok = import?
                 mod.dataImport(s,strm,[this] (auto fn) { this->createStatRecord(fn); }) :
                 mod.dataExport(s,strm);
     if (current_l.valid) updateTags(current_l.filename);
+    else updateTags();
 
-    progressBar->setValue(100);
-    flag_stop_load_everything = false;
-    stopButton->setEnabled(false);
-
+    prepareLongProcessing(true);
     fl.close();
     qDebug() << "[db] " << (import? "Import":"Export") << " data: " << ok;
 

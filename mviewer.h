@@ -27,7 +27,7 @@
 #include "exportform.h"
 #include "mimpexpmodule.h"
 
-#define MILLA_VERSION "ver. 0.1.1"
+#define MILLA_VERSION "ver. 0.1.2"
 #define MILLA_SITE "http://github.com/matrixsmaster/MILLA"
 #define EXTRA_CACHE_SIZE 1500
 #define FACE_CASCADE_FILE "/tmp/face_cascade.xml"
@@ -158,6 +158,8 @@ private:
     void updateStars(QString fn = QString());
 
     void changedStars(int n);
+
+    void prepareLongProcessing(bool finish = false);
 
     void createStatRecord(QString fn);
 
