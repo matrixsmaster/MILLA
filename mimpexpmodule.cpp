@@ -10,8 +10,6 @@ QString MImpExpModule::tagsLineConvert(QString in, bool encode)
 {
     if (in.isEmpty() || foreign_cache->empty()) return in;
 
-    if (encode && in.at(0) == '\"') in = in.mid(1,in.length()-2);
-
     QStringList lin = in.split(',',QString::SkipEmptyParts);
     QString out;
     QTextStream x(&out);
@@ -39,6 +37,13 @@ QString MImpExpModule::tagsLineConvert(QString in, bool encode)
 
     x.flush();
     return out;
+}
+
+QString MImpExpModule::removeQuotes(QString const &in) const
+{
+    QString tmp(in);
+    if (!tmp.isEmpty() && tmp.at(0) == '\"') tmp = tmp.mid(1,tmp.length()-2);
+    return tmp;
 }
 
 bool MImpExpModule::dataExport(ExportFormData const &s, QTextStream &f)
@@ -70,6 +75,8 @@ bool MImpExpModule::dataExport(ExportFormData const &s, QTextStream &f)
             if (s.separator != '\n') f << '\n';
         }
 
+        setProgress(c.size());
+
         for (auto &i : c) {
             if (s.filename) f << i << s.separator;
 
@@ -87,6 +94,7 @@ bool MImpExpModule::dataExport(ExportFormData const &s, QTextStream &f)
             }
 
             if (s.separator != '\n') f << '\n';
+            if (!incProgress()) break;
         }
 
     } else {
@@ -107,14 +115,16 @@ bool MImpExpModule::dataExport(ExportFormData const &s, QTextStream &f)
     return true;
 }
 
-bool MImpExpModule::dataImport(ExportFormData const &d, QTextStream &f, myFunVoidQStr init_rec_callback)
+bool MImpExpModule::dataImport(ExportFormData const &d, QTextStream &f, initRecCB init_rec_callback)
 {
     QSqlQuery q;
 
+    //calculate number of fileds we expect in the input file
     int m = (d.table == 1)?
                 (d.filename+d.views+d.rating+d.likes+d.tags+d.notes+d.sha+d.length):
                 (d.tagname+d.tagrate);
 
+    //create tagged map of field indices
     std::map<QString,int> tmap;
     tmap["file"] =   0;
     tmap["views"] =  d.filename;
@@ -125,41 +135,62 @@ bool MImpExpModule::dataImport(ExportFormData const &d, QTextStream &f, myFunVoi
     tmap["sha"] =    d.filename+d.views+d.rating+d.likes+d.tags+d.notes;
     tmap["length"] = d.filename+d.views+d.rating+d.likes+d.tags+d.notes+d.sha;
 
+    //prepare data if we're going to load tags
+    QStringList otgs;
+    std::map<QString,int> nwtgs;
+    if (d.table == 2) {
+        //collect all known tags first
+        if (q.exec("SELECT tag, rating FROM tags")) {
+            while (q.next()) otgs.push_back(q.value(0).toString());
+        }
+    }
+
+    //read file line-by-line
     bool once = false;
+    setProgress(getNumOfLines(f));
     for (QString s = f.readLine(); !s.isNull(); s = f.readLine()) {
-        if (s.isEmpty()) continue;
+
+        if (!incProgress()) break;  //break operation if user had cancelled it
+
+        if (s.isEmpty()) continue;  //skip empty lines
+
         if (!once) {
             once = true;
-            if (d.header) continue;
+            if (d.header) continue; //skip header line
         }
 
+        //since 'notes' field can contain multiple lines, we need to collect'em all
         QString tmp(" ");
         while ((s.at(s.length()-1) != d.separator) && (s.count('\"') % 2) && !tmp.isNull()) {
             tmp = f.readLine();
             s += "\n" + tmp;
+            incProgress(); //finish current record even if operation was cancelled
         }
 
+        //now actually extract fields - split the line by separators
         QStringList sl = s.split(d.separator,QString::SkipEmptyParts);
         if (sl.length() != m) {
             qDebug() << "[db] ALERT: Import error: fields count doesn't match!";
             return false;
         }
 
-        if (d.table == 1) {
+        if (d.table == 1) { //importing into stats table
             std::map<QString,QVariant> tgs;
 
+            //try to look into our current DB to get something we already knew
             q.clear();
-            if (d.filename) {
+            if (d.filename) { //we can search by filename (easier)
                 q.prepare(DBF_IMPORT_SELECT "file = :key");
                 q.bindValue(":key",sl.front());
 
-            } else if (d.sha) {
+            } else if (d.sha) { //or by SHA-256 sum, if the filename isn't listed in input file
                 q.prepare(DBF_IMPORT_SELECT "sha256 = :key");
                 q.bindValue(":key",QByteArray::fromHex(sl.at(tmap["sha"]).toLatin1()));
             }
 
-            bool ok = q.exec() && q.next();
+            bool ok = q.exec() && q.next(); //are you feeling lucky?
 
+            //let's update temporary fields either by empty data or by actual data from db
             tgs["file"] =   ok? q.value(0).toString()       : QString();
             tgs["views"] =  ok? q.value(1).toUInt()         : uint(0);
             tgs["rating"] = ok? q.value(2).toInt()          : int(0);
@@ -169,26 +200,26 @@ bool MImpExpModule::dataImport(ExportFormData const &d, QTextStream &f, myFunVoi
             tgs["sha"] =    ok? q.value(6).toByteArray()    : QByteArray();
             tgs["length"] = ok? q.value(7).toUInt()         : uint(0);
 
+            //now the UPDATER himself - let's decide how we overwrite each field individually
             if ((!d.imp_noover || tgs["file"].toString().isEmpty()) && d.filename)    tgs["file"] =  sl.front();
             if ((!d.imp_noover || tgs["views"] < 1) && d.views)                       tgs["views"] = sl.at(tmap["views"]).toUInt();
             if ((!d.imp_noover || tgs["rating"] < 1) && d.rating)                     tgs["rating"]= sl.at(tmap["rating"]).toInt();
             if ((!d.imp_noover || tgs["likes"] < 1) && d.likes)                       tgs["likes"] = sl.at(tmap["likes"]).toInt();
-            if ((!d.imp_noover || tgs["tags"].toString().isEmpty()) && d.tags)        tgs["tags"] =  tagsLineConvert(sl.at(tmap["tags"]),true);
-            if ((!d.imp_noover || tgs["notes"].toString().isEmpty()) && d.notes)      tgs["notes"] = sl.at(tmap["notes"]);
+            if ((!d.imp_noover || tgs["tags"].toString().isEmpty()) && d.tags)        tgs["tags"] =  tagsLineConvert(removeQuotes(sl.at(tmap["tags"])),true);
+            if ((!d.imp_noover || tgs["notes"].toString().isEmpty()) && d.notes)      tgs["notes"] = removeQuotes(sl.at(tmap["notes"]));
             if ((!d.imp_noover || tgs["sha"].toByteArray().isEmpty()) && d.sha)       tgs["sha"] =   QByteArray::fromHex(sl.at(tmap["sha"]).toLatin1());
             if ((!d.imp_noover || tgs["length"] < 1) && d.length)                     tgs["length"]= sl.at(tmap["length"]).toUInt();
 
+            //on this stage, we SHOULD know a file's name. If not - we failed.
             if (tgs["file"].toString().isEmpty()) {
                 qDebug() << "[db] ALERT: Import data: file record without a name!";
                 continue;
             }
 
+            //if current file is completely new to us - let's initialize its own DB record
             if (!ok) init_rec_callback(tgs["file"].toString());
 
-            tmp = tgs["notes"].toString();
-            if (!tmp.isEmpty() && tmp.at(0) == '\"') tmp = tmp.mid(1,tmp.length()-2);
-            tgs["notes"] = tmp;
-
+            //the last thing to do - send a SQL message to DB
             q.clear();
             q.prepare(DBF_IMPORT_UPDATE "file = :fn");
             q.bindValue(":fn",tgs["file"].toString());
@@ -203,9 +234,72 @@ bool MImpExpModule::dataImport(ExportFormData const &d, QTextStream &f, myFunVoi
 
             qDebug() << "[db] Import data: " << ok;
 
-        } else {
-            //
+        } else { //importing into tags table
+            if (!d.tagname) continue; //nothing to import
+            if (otgs.contains(sl.front(),Qt::CaseInsensitive)) continue; //tag already known
+            nwtgs[sl.front()] = d.tagrate? sl.at(1).toInt() : 0;
+
         }
     }
+
+    //if tags table loaded, let's update DB
+    if (d.table == 2) {
+        setProgress(nwtgs.size());
+
+        //determine max key
+        int mxkey = 0;
+        q.clear();
+        if (q.exec(DB_CORRECT_TAG_KEY_GET) && q.next()) mxkey = q.value(0).toUInt();
+        qDebug() << "[db] Max key known: " << mxkey;
+
+        //insert new tags
+        for (auto &i : nwtgs) {
+            q.clear();
+            q.prepare("INSERT INTO tags (" DBF_TAGS_SHORT ") VALUES (:key, :tg, :rt)");
+            q.bindValue(":key",++mxkey);
+            q.bindValue(":tg",i.first);
+            q.bindValue(":rt",i.second);
+            if (!q.exec()) break;
+            qDebug() << "[db] Tag " << i.first << "inserted";
+            if (!incProgress()) break;
+        }
+    }
+
     return true;
+}
+
+int MImpExpModule::getNumOfLines(QTextStream &f)
+{
+    char c;
+    int cnt = 0;
+
+    f.seek(0);
+    while (!f.atEnd()) {
+        f >> c;
+        if (c == '\n') cnt++;
+    }
+    f.seek(0);
+
+    return cnt;
+}
+
+void MImpExpModule::setProgress(int total)
+{
+    if (pbar_fun) {
+        maxprogval = total;
+        pbar_fun(0);
+    } else
+        maxprogval = 1;
+
+    curprogval = 0;
+}
+
+bool MImpExpModule::incProgress()
+{
+    if (!pbar_fun) return true;
+
+    curprogval += 1;
+    double v = (curprogval / maxprogval) * 100.f;
+
+    return pbar_fun(v);
 }

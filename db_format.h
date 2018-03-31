@@ -32,6 +32,10 @@
 
 #define DBF_TAGS "key UNSIGNED INT, tag TEXT, rating UNSIGNED BIGINT"
 
+#define DBF_TAGS_SHORT "key, tag, rating"
+
+#define DB_CORRECT_TAG_KEY_GET "SELECT key FROM tags ORDER BY key DESC LIMIT 1"
+
 #define DBF_LINKS "left BLOB, right BLOB"
 
 #define DBF_EXPORT_RECORD "SELECT views, rating, likes, tags, notes, sha256, length FROM stats WHERE "

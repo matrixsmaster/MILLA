@@ -33,6 +33,7 @@ MViewer::MViewer(QWidget *parent) :
             ui->lcdNumber->display((double)incViews());
         }
     });
+    connect(stopButton,&QPushButton::clicked,this,[this] { flag_stop_load_everything = true; });
 
     connect(ui->star_1,&StarLabel::clicked,this,[this] { changedStars(1); });
     connect(ui->star_2,&StarLabel::clicked,this,[this] { changedStars(2); });
@@ -828,7 +829,7 @@ void MViewer::on_actionLoad_everything_slow_triggered()
     if (!ptm) return;
 
     stopButton->setEnabled(true);
-    connect(stopButton,&QPushButton::clicked,this,[this] { flag_stop_load_everything = true; });
+    flag_stop_load_everything = false;
 
     double passed = 0, spd = 0, est, prg = 0, all = (double)(ptm->GetAllImages().size());
     double dp = 100.f / all;
@@ -864,7 +865,6 @@ void MViewer::on_actionLoad_everything_slow_triggered()
                                                  (flag_stop_load_everything?"Cancelled by user":"Finished")));
 
     flag_stop_load_everything = false;
-    disconnect(stopButton,&QPushButton::clicked,0,0);
     stopButton->setEnabled(false);
 }
 
@@ -1333,15 +1333,31 @@ void MViewer::selectIEFileDialog(bool import)
     QTextStream strm(&fl);
     ThumbnailModel* ptm = dynamic_cast<ThumbnailModel*>(ui->listView->model());
     updateTags();
+
     MImpExpModule mod(&tags_cache,(ptm? &(ptm->GetAllImages()) : nullptr));
+    mod.setProgressBar([this] (double v) {
+        this->progressBar->setValue(floor(v));
+        QCoreApplication::processEvents();
+        return !flag_stop_load_everything;
+    });
+
+    stopButton->setEnabled(true);
+    flag_stop_load_everything = false;
+    progressBar->setValue(0);
 
     bool ok = import?
                 mod.dataImport(s,strm,[this] (auto fn) { this->createStatRecord(fn); }) :
                 mod.dataExport(s,strm);
     if (current_l.valid) updateTags(current_l.filename);
 
+    progressBar->setValue(100);
+    flag_stop_load_everything = false;
+    stopButton->setEnabled(false);
+
     fl.close();
     qDebug() << "[db] " << (import? "Import":"Export") << " data: " << ok;
+
+    if (!ok) QMessageBox::critical(this, tr("Import/Export error"), tr("Unable to finish operation"));
 }
 
 void MViewer::on_actionExport_data_triggered()
