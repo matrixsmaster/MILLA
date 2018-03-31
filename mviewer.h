@@ -28,7 +28,7 @@
 #include "exportform.h"
 #include "mimpexpmodule.h"
 
-#define MILLA_VERSION "ver. 0.1.3"
+#define MILLA_VERSION "ver. 0.1.4"
 #define MILLA_SITE "http://github.com/matrixsmaster/MILLA"
 #define EXTRA_CACHE_SIZE 1500
 #define FACE_CASCADE_FILE "/tmp/face_cascade.xml"
