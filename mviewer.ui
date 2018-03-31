@@ -1432,6 +1432,17 @@
     <property name="title">
      <string>View</string>
     </property>
+    <widget class="QMenu" name="menuSort_thumbnails">
+     <property name="title">
+      <string>Sort thumbnails</string>
+     </property>
+     <addaction name="action_None"/>
+     <addaction name="actionBy_name"/>
+     <addaction name="actionBy_time"/>
+     <addaction name="separator"/>
+     <addaction name="actionDescending"/>
+    </widget>
+    <addaction name="menuSort_thumbnails"/>
     <addaction name="actionFit"/>
     <addaction name="actionShow_faces"/>
     <addaction name="actionShow_linked_image"/>
@@ -1676,6 +1687,53 @@
    </property>
    <property name="shortcut">
     <string>Ctrl+U</string>
+   </property>
+  </action>
+  <action name="action_None">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>-None-</string>
+   </property>
+   <property name="shortcut">
+    <string>Alt+1</string>
+   </property>
+  </action>
+  <action name="actionBy_name">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>By name</string>
+   </property>
+   <property name="shortcut">
+    <string>Alt+2</string>
+   </property>
+  </action>
+  <action name="actionBy_time">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>By time</string>
+   </property>
+   <property name="shortcut">
+    <string>Alt+3</string>
+   </property>
+  </action>
+  <action name="actionDescending">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Descending</string>
+   </property>
+   <property name="shortcut">
+    <string>Alt+4</string>
    </property>
   </action>
  </widget>

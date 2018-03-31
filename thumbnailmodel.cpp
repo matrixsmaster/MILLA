@@ -139,3 +139,26 @@ void ThumbnailModel::clearCache()
         }
     ram_footprint = 0;
 }
+
+void ThumbnailModel::sortBy(ThumbnailModelSort by)
+{
+    if (by == NoSort) return;
+
+    std::sort(images.begin(),images.end(),[by] (const auto &a, const auto &b) {
+        switch (by) {
+        case SortByNameAsc:
+            return (a.fnshort.compare(b.fnshort,Qt::CaseInsensitive) < 0)? true : false;
+
+        case SortByNameDesc:
+            return (a.fnshort.compare(b.fnshort,Qt::CaseInsensitive) < 0)? false : true;
+
+        case SortByTimeAsc:
+            return a.filechanged < b.filechanged;
+
+        case SortByTimeDesc:
+            return a.filechanged > b.filechanged;
+
+        default: return false; //basically to make compiler happy
+        }
+    });
+}

@@ -28,7 +28,7 @@
 #include "exportform.h"
 #include "mimpexpmodule.h"
 
-#define MILLA_VERSION "ver. 0.1.2"
+#define MILLA_VERSION "ver. 0.1.3"
 #define MILLA_SITE "http://github.com/matrixsmaster/MILLA"
 #define EXTRA_CACHE_SIZE 1500
 #define FACE_CASCADE_FILE "/tmp/face_cascade.xml"
@@ -124,6 +124,14 @@ private slots:
 
     void on_actionUpdate_thumbnails_triggered();
 
+    void on_action_None_triggered();
+
+    void on_actionBy_name_triggered();
+
+    void on_actionBy_time_triggered();
+
+    void on_actionDescending_triggered();
+
 private:
     Ui::MViewer *ui;
 
@@ -204,6 +212,8 @@ private:
     void kudos(MImageListRecord const &to, int delta);
 
     void selectIEFileDialog(bool import);
+
+    void updateThumbnailsSorting(ThumbnailModel::ThumbnailModelSort ord, bool desc);
 };
 
 #endif // MVIEWER_H

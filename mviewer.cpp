@@ -527,11 +527,13 @@ void MViewer::on_actionOpen_triggered()
     if (fn.isEmpty()) return;
     bool rec = QMessageBox::question(this, tr("Type of scan"), tr("Do recursive scan?"), QMessageBox::Yes | QMessageBox::No) == QMessageBox::Yes;
     openDirByFile(fn,rec);
+    on_actionDescending_triggered();
 }
 
 void MViewer::on_actionOpen_list_triggered()
 {
     openDirByList(QFileDialog::getOpenFileName(this, tr("Open list of images"), "", tr(MILLA_OPEN_LIST)));
+    on_actionDescending_triggered();
 }
 
 void MViewer::scaleImage(const MImageListRecord &rec, QScrollArea* scrl, QLabel* lbl, double factor)
@@ -1410,4 +1412,68 @@ void MViewer::on_actionUpdate_thumbnails_triggered()
     }
 
     prepareLongProcessing(true);
+}
+
+void MViewer::updateThumbnailsSorting(ThumbnailModel::ThumbnailModelSort ord, bool desc)
+{
+    ThumbnailModel* ptm = dynamic_cast<ThumbnailModel*>(ui->listView->model());
+    if (!ptm) return;
+
+    switch (ord) {
+    case ThumbnailModel::SortByNameAsc:
+        if (desc) ord = ThumbnailModel::SortByNameDesc;
+        break;
+
+    case ThumbnailModel::SortByNameDesc:
+        if (!desc) ord = ThumbnailModel::SortByNameAsc;
+        break;
+
+    case ThumbnailModel::SortByTimeAsc:
+        if (desc) ord = ThumbnailModel::SortByTimeDesc;
+        break;
+
+    case ThumbnailModel::SortByTimeDesc:
+        if (!desc) ord = ThumbnailModel::SortByTimeAsc;
+        break;
+
+    default: break;
+    }
+
+    ptm->sortBy(ord);
+    ui->listView->setLayoutMode(QListView::Batched);
+    ui->listView->setLayoutMode(QListView::SinglePass);
+    ui->listView->repaint();
+}
+
+void MViewer::on_action_None_triggered()
+{
+    ui->action_None->setChecked(true);
+    ui->actionBy_name->setChecked(false);
+    ui->actionBy_time->setChecked(false);
+    updateThumbnailsSorting(ThumbnailModel::NoSort,false);
+}
+
+void MViewer::on_actionBy_name_triggered()
+{
+    ui->action_None->setChecked(false);
+    ui->actionBy_name->setChecked(true);
+    ui->actionBy_time->setChecked(false);
+    updateThumbnailsSorting(ThumbnailModel::SortByNameAsc,ui->actionDescending->isChecked());
+}
+
+void MViewer::on_actionBy_time_triggered()
+{
+    ui->action_None->setChecked(false);
+    ui->actionBy_name->setChecked(false);
+    ui->actionBy_time->setChecked(true);
+    updateThumbnailsSorting(ThumbnailModel::SortByTimeAsc,ui->actionDescending->isChecked());
+}
+
+void MViewer::on_actionDescending_triggered()
+{
+    ThumbnailModel::ThumbnailModelSort ord = ThumbnailModel::NoSort;
+    if (ui->actionBy_name->isChecked()) ord = ThumbnailModel::SortByNameAsc;
+    else if (ui->actionBy_time->isChecked()) ord = ThumbnailModel::SortByTimeAsc;
+
+    updateThumbnailsSorting(ord,ui->actionDescending->isChecked());
 }

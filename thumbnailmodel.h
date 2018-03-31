@@ -8,6 +8,15 @@ class ThumbnailModel : public MImageListModel
     Q_OBJECT
 
 public:
+
+    enum ThumbnailModelSort {
+        NoSort,
+        SortByNameAsc,
+        SortByNameDesc,
+        SortByTimeAsc,
+        SortByTimeDesc
+    };
+
     explicit ThumbnailModel(QStringList files, QObject *parent = 0);
     virtual ~ThumbnailModel();
 
@@ -18,6 +27,8 @@ public:
     void touch(const QModelIndex &index);
 
     void clearCache();
+
+    void sortBy(ThumbnailModelSort by);
 
 protected:
     size_t ram_footprint = 0;
