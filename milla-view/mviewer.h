@@ -20,6 +20,7 @@
 #include <chrono>
 #include "db_format.h"
 #include "plugins.h"
+#include "pluginloader.h"
 #include "cvhelper.h"
 #include "thumbnailmodel.h"
 #include "sresultmodel.h"
@@ -27,7 +28,7 @@
 #include "mimpexpmodule.h"
 #include "facedetector.h"
 
-#define MILLA_VERSION "ver. 0.1.6 next-gen"
+#define MILLA_VERSION "ver. 0.1.7 next-gen"
 #define MILLA_SITE "http://github.com/matrixsmaster/MILLA"
 #define EXTRA_CACHE_SIZE 1500
 #define MILLA_OPEN_FILE "Image Files (*.png *.jpg *.jpeg *.bmp)"
@@ -142,6 +143,7 @@ private slots:
 
 private:
     Ui::MViewer *ui;
+    MillaPluginLoader plugins;
 
     QTimer view_timer;
     QProgressBar* progressBar;

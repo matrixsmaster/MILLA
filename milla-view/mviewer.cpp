@@ -57,12 +57,12 @@ bool MViewer::initDatabase()
     QSqlDatabase db = QSqlDatabase::addDatabase("QSQLITE");
 
     QString fn = QDir::homePath() + DB_FILEPATH;
-    qDebug() << "Storage database filename: " << fn;
+    qDebug() << "[db] Storage filename: " << fn;
     db.setHostName("localhost");
     db.setDatabaseName(fn);
     db.setUserName("user");
     bool ok = db.open();
-    qDebug() << "DB open:  " << ok;
+    qDebug() << "[db] open:  " << ok;
     if (!ok) return false;
 
     QSqlQuery q;
@@ -79,7 +79,7 @@ bool MViewer::initDatabase()
         qDebug() << "[db] Inserting current DB version tag " << DB_VERSION << ": " << ok;
         if (!ok) return false;
     } else {
-        qDebug() << "DB version: " << q.value(0).toInt();
+        qDebug() << "[db] version: " << q.value(0).toInt();
         if (DB_VERSION != q.value(0).toInt()) {
             QMessageBox::critical(this, tr("Fatal error"), tr("DB version mismatch"));
             return false;
@@ -217,9 +217,13 @@ void MViewer::on_pushButton_clicked()
 {
     if (ui->lineEdit->text().isEmpty() || ui->lineEdit->text().contains(',')) return;
 
+    QString ntag = ui->lineEdit->text().trimmed();
+    if (ntag.isEmpty()) return;
+    ntag = ntag.replace('\"','\'');
+
     QSqlQuery q;
     q.prepare("SELECT * FROM tags WHERE tag = (:tg)");
-    q.bindValue(":tg",ui->lineEdit->text());
+    q.bindValue(":tg",ntag);
     if (q.exec() && q.next()) {
         qDebug() << "[db] tag is already defined";
         return;
@@ -235,12 +239,12 @@ void MViewer::on_pushButton_clicked()
     q.clear();
     q.prepare("INSERT INTO tags (key, tag, rating) VALUES (:k, :tg, 0)");
     q.bindValue(":k",key);
-    q.bindValue(":tg",ui->lineEdit->text());
+    q.bindValue(":tg",ntag);
     bool ok = q.exec();
 
-    qDebug() << "[db] Inserting tag " << ui->lineEdit->text() << ": " << ok;
+    qDebug() << "[db] Inserting tag " << ntag << ": " << ok;
     if (ok) {
-        addTag(ui->lineEdit->text(),key);
+        addTag(ntag,key);
         ui->lineEdit->clear();
     }
 }
@@ -1153,7 +1157,7 @@ void MViewer::on_pushButton_2_clicked()
 
     QSqlQuery q;
     q.prepare("UPDATE stats SET notes = :nt WHERE file = :fn");
-    q.bindValue(":nt",ui->plainTextEdit->toPlainText());
+    q.bindValue(":nt",ui->plainTextEdit->toPlainText().replace('\"','\''));
     q.bindValue(":fn",current_l.filename);
     bool ok = q.exec();
     qDebug() << "[db] Setting user notes: " << ok;
