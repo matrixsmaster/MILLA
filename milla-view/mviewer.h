@@ -141,6 +141,8 @@ private slots:
 
     void on_actionDescending_triggered();
 
+    void on_actionList_all_triggered();
+
 private:
     Ui::MViewer *ui;
     MillaPluginLoader plugins;

@@ -1,4 +1,4 @@
 {
-    "Name": "TestPlugin"
+    "Name": "TestPlugin",
+    "ShortDesc": "Simple test generator plugin"
 }
-

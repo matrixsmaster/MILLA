@@ -189,7 +189,7 @@
                   <x>0</x>
                   <y>0</y>
                   <width>286</width>
-                  <height>326</height>
+                  <height>394</height>
                  </rect>
                 </property>
                 <layout class="QHBoxLayout" name="horizontalLayout_11">
@@ -222,7 +222,7 @@
                   <x>0</x>
                   <y>0</y>
                   <width>314</width>
-                  <height>326</height>
+                  <height>394</height>
                  </rect>
                 </property>
                 <layout class="QHBoxLayout" name="horizontalLayout_12">
@@ -1597,11 +1597,24 @@
     <addaction name="actionRefine_search"/>
     <addaction name="actionMatch"/>
    </widget>
+   <widget class="QMenu" name="menuPlugins">
+    <property name="title">
+     <string>Plugins</string>
+    </property>
+    <widget class="QMenu" name="menuGenerators">
+     <property name="title">
+      <string>Generators</string>
+     </property>
+     <addaction name="actionList_all"/>
+    </widget>
+    <addaction name="menuGenerators"/>
+   </widget>
    <addaction name="menuFile"/>
    <addaction name="menuEdit"/>
    <addaction name="menuView"/>
    <addaction name="menuSearch"/>
    <addaction name="menuTools"/>
+   <addaction name="menuPlugins"/>
    <addaction name="menuHelp"/>
   </widget>
   <widget class="QToolBar" name="mainToolBar">
@@ -1854,6 +1867,11 @@
    </property>
    <property name="shortcut">
     <string>Alt+4</string>
+   </property>
+  </action>
+  <action name="actionList_all">
+   <property name="text">
+    <string>List all</string>
    </property>
   </action>
  </widget>

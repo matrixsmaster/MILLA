@@ -25,6 +25,8 @@ MViewer::MViewer(QWidget *parent) :
     stopButton->setEnabled(false);
     ui->statusBar->addPermanentWidget(stopButton);
 
+    plugins.addGeneratorsToMenu(*ui->menuGenerators);
+
     connect(&view_timer,&QTimer::timeout,this,[this] {
         if (progressBar->value() < 100)
             progressBar->setValue(progressBar->value()+1);
@@ -1366,4 +1368,21 @@ void MViewer::on_actionDescending_triggered()
     else if (ui->actionBy_time->isChecked()) ord = ThumbnailModel::SortByTimeAsc;
 
     updateThumbnailsSorting(ord,ui->actionDescending->isChecked());
+}
+
+void MViewer::on_actionList_all_triggered()
+{
+    QStringList gen_nms = plugins.getGeneratorsNames();
+    if (gen_nms.isEmpty()) return;
+
+    QString sout;
+    QTextStream out(&sout);
+    int n = 1;
+    for (auto &i : gen_nms) {
+        out << n << ") ";
+        out << i << ": ";
+        out << plugins.getPluginDescription(i);
+    }
+
+    QMessageBox::information(this,tr("Plugins list: generators"),sout);
 }
