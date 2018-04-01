@@ -47,9 +47,10 @@ ThumbnailModel::~ThumbnailModel()
     qDebug() << "Deleting ThumbnailModel";
 }
 
-void ThumbnailModel::LoadUp(int idx)
+void ThumbnailModel::LoadUp(int idx, bool force_reload)
 {
-    if (images.at(idx).loaded) return;
+    if (!force_reload && images.at(idx).loaded) return;
+
     images[idx].picture = QPixmap(images[idx].filename);
     if (images.at(idx).picture.isNull()) return;
     images[idx].loaded = true;

@@ -1530,6 +1530,7 @@
     <addaction name="separator"/>
     <addaction name="actionLoad_everything_slow"/>
     <addaction name="actionUpdate_thumbnails"/>
+    <addaction name="actionReload_metadata"/>
     <addaction name="separator"/>
     <addaction name="actionExport_data"/>
     <addaction name="actionImport_data"/>
@@ -1819,7 +1820,7 @@
     <string>Update thumbnails</string>
    </property>
    <property name="shortcut">
-    <string>Ctrl+U</string>
+    <string>Ctrl+R</string>
    </property>
   </action>
   <action name="action_None">
@@ -1872,6 +1873,14 @@
   <action name="actionList_all">
    <property name="text">
     <string>List all</string>
+   </property>
+  </action>
+  <action name="actionReload_metadata">
+   <property name="text">
+    <string>Reload metadata</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+U</string>
    </property>
   </action>
  </widget>

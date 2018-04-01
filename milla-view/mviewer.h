@@ -62,6 +62,7 @@ struct MImageExtras {
     cv::Mat hist;
     bool color = true;
     QByteArray sha;
+    qint64 filelen;
 };
 
 namespace Ui {
@@ -143,6 +144,8 @@ private slots:
 
     void on_actionList_all_triggered();
 
+    void on_actionReload_metadata_triggered();
+
 private:
     Ui::MViewer *ui;
     MillaPluginLoader plugins;
@@ -191,13 +194,21 @@ private:
 
     void prepareLongProcessing(bool finish = false);
 
-    bool createStatRecord(QString fn, bool cache_global = false);
+    QByteArray getSHA256(QString const &fn, qint64 *size);
+
+    bool createStatRecord(QString const &fn, bool cache_global = false);
+
+    bool insertStatRecord(QString const &fn, MImageExtras &rec, bool update);
 
     unsigned incViews(bool left = true);
 
     void scaleImage(const MImageListRecord &rec, QScrollArea* scrl, QLabel* lbl, double factor);
 
     QString timePrinter(double sec) const;
+
+    MImageExtras getExtrasFromDB(QString const &fn);
+
+    MImageExtras collectImageExtraData(QString const &fn, QPixmap const &org);
 
     MImageExtras getExtraCacheLine(QString const &fn, bool forceload = false, bool ignore_thumbs = false);
 

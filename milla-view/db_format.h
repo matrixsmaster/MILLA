@@ -32,6 +32,10 @@
 
 #define DBF_STATS_SHORT "file, views, lastview, rating, likes, ntags, tags, notes, sizex, sizey, grayscale, faces, facerects, hist, sha256, length"
 
+#define DBF_STATS_INSERT_KEYS "(:fn, 0, :tm, 0, 0, 0, \"\", \"\", :sx, :sy, :gry, :fcn, :fcr, :hst, :sha, :len)"
+
+#define DBF_STATS_UPDATE_SHORT "sizex = :sx, sizey = :sy, grayscale = :gry, faces = :fcn, facerects = :fcr, hist = :hst, sha256 = :sha, length = :len"
+
 #define DBF_TAGS "key UNSIGNED INT, tag TEXT, rating UNSIGNED BIGINT"
 
 #define DBF_TAGS_SHORT "key, tag, rating"

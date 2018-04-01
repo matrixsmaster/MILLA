@@ -20,7 +20,7 @@ public:
     explicit ThumbnailModel(QStringList files, QObject *parent = 0);
     virtual ~ThumbnailModel();
 
-    void LoadUp(int idx);
+    void LoadUp(int idx, bool force_reload = false);
 
     void GC(int skip = -1);
 

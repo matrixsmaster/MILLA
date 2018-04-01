@@ -251,12 +251,27 @@ void MViewer::on_pushButton_clicked()
     }
 }
 
-bool MViewer::createStatRecord(QString fn, bool cache_global)
+QByteArray MViewer::getSHA256(QString const &fn, qint64* size)
 {
-    QSqlQuery qa;
-    qa.prepare("SELECT views FROM stats WHERE file = (:fn)");
-    qa.bindValue(":fn",fn);
-    if (qa.exec() && qa.next()) {
+    QCryptographicHash hash(QCryptographicHash::Sha256);
+    QByteArray shasum;
+    QFile mfile(fn);
+    mfile.open(QIODevice::ReadOnly);
+    if (hash.addData(&mfile))
+        shasum = hash.result();
+    else
+        qDebug() << "ALERT: Unable to calculate SHA256 of file " << fn;
+    if (size) *size = mfile.size();
+    mfile.close();
+    return shasum;
+}
+
+bool MViewer::createStatRecord(QString const &fn, bool cache_global)
+{
+    QSqlQuery q;
+    q.prepare("SELECT views FROM stats WHERE file = (:fn)");
+    q.bindValue(":fn",fn);
+    if (q.exec() && q.next()) {
         qDebug() << "[db] createStatRecord() called for known record " << fn;
         return false;
     }
@@ -267,46 +282,44 @@ bool MViewer::createStatRecord(QString fn, bool cache_global)
         return false;
     }
 
+    bool ok = insertStatRecord(fn,ext,false);
+    qDebug() << "[db] Creating new statistics record: " << ok;
+
+    checkExtraCache();
+    return true;
+}
+
+bool MViewer::insertStatRecord(QString const &fn, MImageExtras &rec, bool update)
+{
     int fcn = 0;
     QString fcdat;
-    for (auto &i : ext.rois)
+    for (auto &i : rec.rois)
         if (i.kind == MROI_FACE_FRONTAL) {
             fcn++;
             fcdat += QString::asprintf("%d,%d,%d,%d,",i.x,i.y,i.w,i.h);
         }
 
-    QByteArray harr = qCompress(CVHelper::storeMat(ext.hist));
+    QByteArray harr = qCompress(CVHelper::storeMat(rec.hist));
     qDebug() << "[db] Final harr length =" << harr.size();
 
-    QCryptographicHash hash(QCryptographicHash::Sha256);
-    QByteArray shasum;
-    QFile mfile(fn);
-    mfile.open(QIODevice::ReadOnly);
-    if (hash.addData(&mfile))
-        shasum = hash.result();
-    else
-        qDebug() << "ALERT: Unable to calculate SHA256 of file " << fn;
-    mfile.close();
-
     QSqlQuery q;
-    q.prepare("INSERT INTO stats (" DBF_STATS_SHORT ") VALUES "
-              "(:fn, 0, :tm, 0, 0, 0, \"\", \"\", :sx, :sy, :gry, :fcn, :fcr, :hst, :sha, :len)");
+    if (update)
+        q.prepare("UPDATE stats SET " DBF_STATS_UPDATE_SHORT " WHERE file = :fn");
+    else
+        q.prepare("INSERT INTO stats (" DBF_STATS_SHORT ") VALUES " DBF_STATS_INSERT_KEYS);
+
     q.bindValue(":fn",fn);
     q.bindValue(":tm",(uint)time(NULL));
-    q.bindValue(":sx",ext.picsize.width());
-    q.bindValue(":sy",ext.picsize.height());
-    q.bindValue(":gry",ext.color? 0:1);
+    q.bindValue(":sx",rec.picsize.width());
+    q.bindValue(":sy",rec.picsize.height());
+    q.bindValue(":gry",rec.color? 0:1);
     q.bindValue(":fcn",fcn);
     q.bindValue(":fcr",fcdat);
     q.bindValue(":hst",harr);
-    q.bindValue(":sha",shasum);
-    q.bindValue(":len",mfile.size());
+    q.bindValue(":sha",rec.sha);
+    q.bindValue(":len",rec.filelen);
 
-    bool ok = q.exec();
-    qDebug() << "[db] Creating new statistics record: " << ok;
-    checkExtraCache();
-
-    return true;
+    return q.exec();
 }
 
 unsigned MViewer::incViews(bool left)
@@ -643,111 +656,136 @@ void MViewer::on_actionMatch_triggered()
     searchResults(lst);
 }
 
-MImageExtras MViewer::getExtraCacheLine(QString const &fn, bool forceload, bool ignore_thumbs)
+MImageExtras MViewer::getExtrasFromDB(QString const &fn)
+{
+    MImageExtras res;
+    QSqlQuery q;
+    q.prepare("SELECT sizex, sizey, grayscale, faces, facerects, hist, sha256, length FROM stats WHERE file = (:fn)");
+    q.bindValue(":fn",fn);;
+    if (!q.exec() || !q.next()) return res;
+
+    res.picsize = QSize(q.value(0).toUInt(), q.value(1).toUInt());
+    res.color = !(q.value(2).toInt());
+    QStringList flst = q.value(4).toString().split(',',QString::SkipEmptyParts);
+    for (auto k = flst.begin(); k != flst.end();) {
+        MROI r;
+        r.kind = MROI_FACE_FRONTAL;
+        r.x = k->toInt(); k++;
+        r.y = k->toInt(); k++;
+        r.w = k->toInt(); k++;
+        r.h = k->toInt(); k++;
+        res.rois.push_back(r);
+    }
+    if (q.value(5).canConvert(QVariant::ByteArray))
+        res.hist = CVHelper::loadMat(qUncompress(q.value(5).toByteArray()));
+    if (q.value(6).canConvert(QVariant::ByteArray))
+        res.sha = q.value(6).toByteArray();
+    if (q.value(7).canConvert(QVariant::UInt))
+        res.filelen = q.value(7).toUInt();
+
+    res.valid = true;
+    return res;
+}
+
+MImageExtras MViewer::collectImageExtraData(QString const &fn, QPixmap const &org)
 {
     using namespace cv;
+    MImageExtras res;
 
+    //convert Pixmap into Mat
+    QImage orgm(org.toImage());
+    if (orgm.isNull()) return res;
+    Mat in = CVHelper::slowConvert(orgm);
+
+    res.picsize = org.size();
+
+    //image histogram (3D)
+    int histSize[] = {64, 64, 64};
+    float rranges[] = {0, 256};
+    const float* ranges[] = {rranges, rranges, rranges};
+    int channels[] = {0, 1, 2};
+    calcHist(&in,1,channels,Mat(),res.hist,3,histSize,ranges,true,false);
+
+    res.color = false;
+    //grayscale detection: fast approach
+    for (int k = 0; k < res.hist.size[0]; k++) {
+        float a = res.hist.at<float>(k,0,0);
+        float b = res.hist.at<float>(0,k,0);
+        float c = res.hist.at<float>(0,0,k);
+        if (a != b || b != c || c != a) {
+            res.color = true;
+            break;
+        }
+    }
+    if (!res.color && in.isContinuous()) {
+        //grayscale detection: slow approach, as we're still not completely sure
+        uchar* _ptr = in.ptr();
+        for (int k = 0; k < in.rows && !res.color; k++)
+            for (int kk = 0; kk < in.cols && !res.color; kk++) {
+                if (_ptr[0] != _ptr[1] || _ptr[1] != _ptr[2] || _ptr[2] != _ptr[0]) {
+                    res.color = true;
+                    qDebug() << "[grsdetect] Deep scan mismatch: " << _ptr[0] << _ptr[1] << _ptr[2];
+                }
+                _ptr += 3;
+            }
+    }
+
+    //face detector
+    std::vector<cv::Rect> faces;
+    facedetector.detectFaces(in,&faces);
+    for (auto &i : faces) {
+        MROI roi;
+        roi.kind = MROI_FACE_FRONTAL;
+        roi.x = i.x;
+        roi.y = i.y;
+        roi.w = i.width;
+        roi.h = i.height;
+        res.rois.push_back(roi);
+    }
+
+    //finally, SHA-256 and length
+    res.sha = getSHA256(fn,&(res.filelen));
+
+    //now this entry is valid
+    res.valid = true;
+    return res;
+}
+
+MImageExtras MViewer::getExtraCacheLine(QString const &fn, bool forceload, bool ignore_thumbs)
+{
     if (extra_cache.count(fn))
         return extra_cache[fn];
 
-    MImageExtras res;
-    QSqlQuery q;
-    q.prepare("SELECT sizex, sizey, grayscale, faces, facerects, hist, sha256 FROM stats WHERE file = (:fn)");
-    q.bindValue(":fn",fn);;
-    if (q.exec() && q.next()) {
-        res.picsize = QSize(q.value(0).toUInt(), q.value(1).toUInt());
-        res.color = !(q.value(2).toInt());
-        QStringList flst = q.value(4).toString().split(',',QString::SkipEmptyParts);
-        for (auto k = flst.begin(); k != flst.end();) {
-            MROI r;
-            r.kind = MROI_FACE_FRONTAL;
-            r.x = k->toInt(); k++;
-            r.y = k->toInt(); k++;
-            r.w = k->toInt(); k++;
-            r.h = k->toInt(); k++;
-            res.rois.push_back(r);
-        }
-        if (q.value(5).canConvert(QVariant::ByteArray))
-            res.hist = CVHelper::loadMat(qUncompress(q.value(5).toByteArray()));
-        if (q.value(6).canConvert(QVariant::ByteArray))
-            res.sha = q.value(6).toByteArray();
-
-    } else {
-        QPixmap org;
-
-        //retreive image to analyze
-        ThumbnailModel* ptm = dynamic_cast<ThumbnailModel*>(ui->listView->model());
-        if (ptm && !ignore_thumbs) {
-            size_t idx = 0;
-            for (auto &i : ptm->GetAllImages()) {
-                if (i.filename == fn) {
-                    if (forceload) ptm->LoadUp(idx);
-                    if (i.loaded) org = i.picture;
-                    break;
-                }
-                idx++;
-            }
-
-        } else if (forceload) {
-            org.load(fn);
-
-        }
-        if (org.isNull()) return res;
-
-        //convert Pixmap into Mat
-        QImage orgm(org.toImage());
-        if (orgm.isNull()) return res;
-        Mat in = CVHelper::slowConvert(orgm);
-
-        res.picsize = org.size();
-
-        //image histogram (3D)
-        int histSize[] = {64, 64, 64};
-        float rranges[] = {0, 256};
-        const float* ranges[] = {rranges, rranges, rranges};
-        int channels[] = {0, 1, 2};
-        calcHist(&in,1,channels,Mat(),res.hist,3,histSize,ranges,true,false);
-
-        res.color = false;
-        //grayscale detection: fast approach
-        for (int k = 0; k < res.hist.size[0]; k++) {
-            float a = res.hist.at<float>(k,0,0);
-            float b = res.hist.at<float>(0,k,0);
-            float c = res.hist.at<float>(0,0,k);
-            if (a != b || b != c || c != a) {
-                res.color = true;
-                break;
-            }
-        }
-        if (!res.color && in.isContinuous()) {
-            //grayscale detection: slow approach, as we're still not completely sure
-            uchar* _ptr = in.ptr();
-            for (int k = 0; k < in.rows && !res.color; k++)
-                for (int kk = 0; kk < in.cols && !res.color; kk++) {
-                    if (_ptr[0] != _ptr[1] || _ptr[1] != _ptr[2] || _ptr[2] != _ptr[0]) {
-                        res.color = true;
-                        qDebug() << "[grsdetect] Deep scan mismatch: " << _ptr[0] << _ptr[1] << _ptr[2];
-                    }
-                    _ptr += 3;
-                }
-        }
-
-        //face detector
-        std::vector<cv::Rect> faces;
-        facedetector.detectFaces(in,&faces);
-        for (auto &i : faces) {
-            MROI roi;
-            roi.kind = MROI_FACE_FRONTAL;
-            roi.x = i.x;
-            roi.y = i.y;
-            roi.w = i.width;
-            roi.h = i.height;
-            res.rois.push_back(roi);
-        }
+    MImageExtras res = getExtrasFromDB(fn);
+    if (res.valid) {
+        extra_cache[fn] = res;
+        return res;
     }
 
-    res.valid = true;
-    extra_cache[fn] = res;
+    QPixmap org;
+
+    //retreive image
+    ThumbnailModel* ptm = dynamic_cast<ThumbnailModel*>(ui->listView->model());
+    if (ptm && !ignore_thumbs) {
+        size_t idx = 0;
+        for (auto &i : ptm->GetAllImages()) {
+            if (i.filename == fn) {
+                if (forceload) ptm->LoadUp(idx);
+                if (i.loaded) org = i.picture;
+                break;
+            }
+            idx++;
+        }
+
+    } else if (forceload) {
+        org.load(fn);
+
+    }
+    if (org.isNull()) return res;
+
+    res = collectImageExtraData(fn,org);
+    if (res.valid) extra_cache[fn] = res;
+
     return res;
 }
 
@@ -1299,7 +1337,7 @@ void MViewer::on_actionUpdate_thumbnails_triggered()
     int m = ptm->GetAllImages().size();
     for (int i = 0; i < m && !flag_stop_load_everything; i++) {
         progressBar->setValue(floor((double)i / (double)m * 100.f));
-        ptm->LoadUp(i);
+        ptm->LoadUp(i,true);
         QCoreApplication::processEvents();
     }
 
@@ -1385,4 +1423,42 @@ void MViewer::on_actionList_all_triggered()
     }
 
     QMessageBox::information(this,tr("Plugins list: generators"),sout);
+}
+
+void MViewer::on_actionReload_metadata_triggered()
+{
+    ThumbnailModel* ptm = dynamic_cast<ThumbnailModel*>(ui->listView->model());
+    if (!ptm) return;
+
+    prepareLongProcessing();
+
+    QSqlQuery q;
+    double prg = 0, dp = 100.f / (double)(ptm->GetAllImages().size());
+    for (auto &i: ptm->GetAllImages()) {
+        prg += dp;
+        progressBar->setValue(floor(prg));
+        QCoreApplication::processEvents();
+
+        MImageExtras ex = getExtrasFromDB(i.filename);
+        if (!ex.valid) continue; //we haven't scanned this file yet
+
+        bool ok = false;
+        qint64 sz;
+        QByteArray sha = getSHA256(i.filename,&sz); //current, "real" file
+        if (!sha.isEmpty() && sz == ex.filelen && sha == ex.sha) ok = true;
+
+        if (ok) continue;
+        ui->statusBar->showMessage("Updating "+i.fnshort);
+
+        QPixmap pic(i.filename);
+        ex = collectImageExtraData(i.filename,pic);
+        ok = insertStatRecord(i.filename,ex,true);
+        qDebug() << "File " << i.filename << " has changed. Updated: " << ok;
+
+        if (ok) extra_cache.erase(i.filename);
+    }
+
+    checkExtraCache();
+    prepareLongProcessing(true);
+    ui->statusBar->showMessage(QString());
 }
