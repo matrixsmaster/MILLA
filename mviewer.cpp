@@ -42,26 +42,11 @@ MViewer::MViewer(QWidget *parent) :
     connect(ui->star_5,&StarLabel::clicked,this,[this] { changedStars(5); });
 
     loadingMovie = new QMovie(":/loading_icon.gif");
-
-    using namespace cv;
-
-    face_cascade = NULL;
-    QFile test(FACE_CASCADE_FILE);
-    if (test.exists()) test.remove();
-    if (QFile::copy(":/face_cascade.xml",FACE_CASCADE_FILE)) {
-        face_cascade = new CascadeClassifier();
-        if (!face_cascade->load(FACE_CASCADE_FILE)) {
-            qDebug() << "Unable to load cascade from " << FACE_CASCADE_FILE;
-            delete face_cascade;
-            face_cascade = NULL;
-        }
-        test.remove();
-    }
 }
 
 MViewer::~MViewer()
 {
-    if (face_cascade) delete face_cascade;
+    facedetector.Finalize();
     if (loadingMovie) delete loadingMovie;
     QSqlDatabase::database().close();
     delete ui;
@@ -93,8 +78,13 @@ bool MViewer::initDatabase()
         ok = qq.exec();
         qDebug() << "[db] Inserting current DB version tag " << DB_VERSION << ": " << ok;
         if (!ok) return false;
-    } else
+    } else {
         qDebug() << "DB version: " << q.value(0).toInt();
+        if (DB_VERSION != q.value(0).toInt()) {
+            QMessageBox::critical(this, tr("Fatal error"), tr("DB version mismatch"));
+            return false;
+        }
+    }
 
     q.clear();
     ok = DB_CORRECT_TABLE_CHECK(q,"'stats'");
@@ -279,7 +269,7 @@ bool MViewer::createStatRecord(QString fn, bool cache_global)
             fcdat += QString::asprintf("%d,%d,%d,%d,",i.x,i.y,i.w,i.h);
         }
 
-    QByteArray harr = qCompress(storeMat(ext.hist));
+    QByteArray harr = qCompress(CVHelper::storeMat(ext.hist));
     qDebug() << "[db] Final harr length =" << harr.size();
 
     QCryptographicHash hash(QCryptographicHash::Sha256);
@@ -606,90 +596,6 @@ QString MViewer::timePrinter(double sec) const
     return res;
 }
 
-cv::Mat MViewer::quickConvert(QImage &in) const //FIXME: not always working
-{
-    if (in.format() != QImage::Format_RGB888) {
-        in = in.convertToFormat(QImage::Format_RGB888);
-        qDebug() << "converting";
-    }
-    return cv::Mat(in.size().height(),in.size().width(),CV_8UC3,in.bits());
-}
-
-cv::Mat MViewer::slowConvert(QImage const &in) const
-{
-    using namespace cv;
-
-    QImage n;
-    if (in.format() != QImage::Format_RGB888) {
-        qDebug() << "converting";
-        n = in.convertToFormat(QImage::Format_RGB888);
-    } else
-        n = in;
-
-    Mat r(n.size().height(),n.size().width(),CV_8UC3);
-    for (int j,i = 0; i < r.rows; i++) {
-        uchar* ptr = n.scanLine(i);
-        for (j = 0; j < r.cols; j++) {
-            r.at<Vec3b>(Point(j,i)) = Vec3b(*(ptr+2),*(ptr+1),*(ptr));
-            ptr += 3;
-        }
-    }
-
-    return r;
-}
-
-QByteArray MViewer::storeMat(cv::Mat const &in) const
-{
-    QByteArray harr;
-    harr.append((char*)&(in.cols),sizeof(in.cols));
-    harr.append((char*)&(in.rows),sizeof(in.rows));
-    harr.append((char*)&(in.dims),sizeof(in.dims));
-
-    int typ = in.type();
-    harr.append((char*)&(typ),sizeof(typ));
-
-    for (int i = 0; i < in.dims; i++)
-        harr.append((char*)&(in.size[i]),sizeof(in.size[i]));
-
-    size_t tmp = in.elemSize() * in.total();
-    harr.append((char*)&tmp,sizeof(tmp));
-    harr.append((char*)in.ptr(),tmp);
-
-    return harr;
-}
-
-cv::Mat MViewer::loadMat(QByteArray const &arr) const
-{
-    cv::Mat res;
-    const char* ptr = arr.constData();
-    const int* iptr = (const int*)ptr;
-    const size_t* uptr;
-
-    int cols = *iptr++;
-    int rows = *iptr++;
-    int dims = *iptr++;
-    int type = *iptr++;
-
-    if (rows < 0 && cols < 0) {
-        res.create(dims,iptr,type);
-        iptr += dims;
-    } else
-        res.create(rows,cols,type);
-
-    uptr = (const size_t*)iptr;
-    size_t tot = *uptr;
-    if (tot != res.elemSize() * res.total()) {
-        qDebug() << "[db] ALERT: matrix size invalid";
-        return res;
-    }
-    uptr++;
-
-    ptr = (const char*)uptr;
-    memcpy(res.ptr(),ptr,tot);
-
-    return res;
-}
-
 void MViewer::on_actionMatch_triggered()
 {
     using namespace cv;
@@ -756,7 +662,7 @@ MImageExtras MViewer::getExtraCacheLine(QString const &fn, bool forceload, bool 
             res.rois.push_back(r);
         }
         if (q.value(5).canConvert(QVariant::ByteArray))
-            res.hist = loadMat(qUncompress(q.value(5).toByteArray()));
+            res.hist = CVHelper::loadMat(qUncompress(q.value(5).toByteArray()));
         if (q.value(6).canConvert(QVariant::ByteArray))
             res.sha = q.value(6).toByteArray();
 
@@ -785,7 +691,7 @@ MImageExtras MViewer::getExtraCacheLine(QString const &fn, bool forceload, bool 
         //convert Pixmap into Mat
         QImage orgm(org.toImage());
         if (orgm.isNull()) return res;
-        Mat in = slowConvert(orgm);
+        Mat in = CVHelper::slowConvert(orgm);
 
         res.picsize = org.size();
 
@@ -822,7 +728,7 @@ MImageExtras MViewer::getExtraCacheLine(QString const &fn, bool forceload, bool 
 
         //face detector
         std::vector<cv::Rect> faces;
-        detectFaces(in,&faces);
+        facedetector.detectFaces(in,&faces);
         for (auto &i : faces) {
             MROI roi;
             roi.kind = MROI_FACE_FRONTAL;
@@ -837,30 +743,6 @@ MImageExtras MViewer::getExtraCacheLine(QString const &fn, bool forceload, bool 
     res.valid = true;
     extra_cache[fn] = res;
     return res;
-}
-
-void MViewer::detectFaces(const cv::Mat &inp, std::vector<cv::Rect>* store)
-{
-    using namespace cv;
-
-    if (!face_cascade) return;
-
-    std::vector<Rect> items;
-    Mat work;
-
-    try {
-        cvtColor(inp,work,CV_BGR2GRAY);
-        equalizeHist(work,work);
-        face_cascade->detectMultiScale(work,items,1.1,3,0,Size(32,32));
-    } catch (...) {
-        qDebug() << "Error";
-        return;
-    }
-    qDebug() << items.size() << " faces detected";
-
-    if (store) store->insert(store->begin(),items.begin(),items.end());
-
-    return;
 }
 
 void MViewer::on_actionLoad_everything_slow_triggered()

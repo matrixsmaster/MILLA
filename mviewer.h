@@ -14,26 +14,34 @@
 #include <QTimer>
 #include <QPainter>
 #include <QMovie>
-#include <QtSql/QSqlDatabase>
 #include <QCryptographicHash>
 #include <QInputDialog>
-#include <opencv2/opencv.hpp>
-#include <opencv2/features2d/features2d.hpp>
-#include <opencv2/objdetect/objdetect.hpp>
-#include <opencv2/highgui/highgui.hpp>
 #include <ctime>
 #include <chrono>
+#include "db_format.h"
+#include "plugins.h"
+#include "cvhelper.h"
 #include "thumbnailmodel.h"
 #include "sresultmodel.h"
 #include "exportform.h"
 #include "mimpexpmodule.h"
+#include "facedetector.h"
 
-#define MILLA_VERSION "ver. 0.1.5"
+#define MILLA_VERSION "ver. 0.1.6 next-gen"
 #define MILLA_SITE "http://github.com/matrixsmaster/MILLA"
 #define EXTRA_CACHE_SIZE 1500
-#define FACE_CASCADE_FILE "/tmp/face_cascade.xml"
 #define MILLA_OPEN_FILE "Image Files (*.png *.jpg *.jpeg *.bmp)"
 #define MILLA_OPEN_LIST "Text Files [txt,lst] (*.txt *.lst)"
+
+/* A note for future self:
+ * This file SHOULD be separated. It IS in this messy state only because MILLA is
+ * mostly a research software.
+ * But as soon, as some functionality seems to be complete, it should be
+ * extracted, encapsulated and moved into its own module.
+ * Just like ImportExportModule and FaceDetector did.
+ *
+ * Thank you in advance, future me!
+ * */
 
 enum MROIType {
     MROI_GENERIC = 0,
@@ -145,7 +153,7 @@ private:
     double scaleFactor = 1;
     MImageListRecord current_l, current_r;
 
-    cv::CascadeClassifier* face_cascade = nullptr;
+    FaceDetector facedetector;
     std::map<QString,MImageExtras> extra_cache;
     MTagCache tags_cache;
 
@@ -187,17 +195,7 @@ private:
 
     QString timePrinter(double sec) const;
 
-    cv::Mat quickConvert(QImage &in) const;
-
-    cv::Mat slowConvert(QImage const &in) const;
-
-    QByteArray storeMat(cv::Mat const &in) const;
-
-    cv::Mat loadMat(QByteArray const &arr) const;
-
     MImageExtras getExtraCacheLine(QString const &fn, bool forceload = false, bool ignore_thumbs = false);
-
-    void detectFaces(const cv::Mat &inp, std::vector<cv::Rect> *store);
 
     void updateCurrentTags();
 

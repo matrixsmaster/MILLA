@@ -20,7 +20,9 @@ SOURCES += main.cpp\
     mimagelistmodel.cpp \
     starlabel.cpp \
     exportform.cpp \
-    mimpexpmodule.cpp
+    mimpexpmodule.cpp \
+    facedetector.cpp \
+    cvhelper.cpp
 
 HEADERS  += mviewer.h \
     thumbnailmodel.h \
@@ -30,7 +32,10 @@ HEADERS  += mviewer.h \
     db_format.h \
     starlabel.h \
     exportform.h \
-    mimpexpmodule.h
+    mimpexpmodule.h \
+    plugins.h \
+    facedetector.h \
+    cvhelper.h
 
 FORMS    += mviewer.ui \
     searchform.ui \

@@ -1,6 +1,8 @@
 #ifndef DB_FORMAT_H
 #define DB_FORMAT_H
 
+#include <QtSql/QSqlDatabase>
+
 #define DB_FILEPATH "/.milla/storage.db"
 
 #define DB_VERSION 1
