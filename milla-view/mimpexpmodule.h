@@ -11,7 +11,7 @@
 #include "mimagelistmodel.h"
 #include "exportform.h"
 
-typedef std::map<QString,std::pair<int,bool>> MTagCache;
+typedef std::map<QString,std::pair<unsigned,bool>> MTagCache;
 
 //workaround bug with 'unrecognizable' std::function
 typedef std::function<bool(QString)> initRecCB;

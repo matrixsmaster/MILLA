@@ -56,53 +56,41 @@ MViewer::~MViewer()
     delete ui;
 }
 
-void MViewer::addTag(QString const &tg, int key, bool check)
+void MViewer::cleanUp()
+{
+    extra_cache.clear();
+    current_l = MImageListRecord();
+    current_r = MImageListRecord();
+}
+
+void MViewer::addTag(QString const &tg, unsigned key, bool check)
 {
     ui->listWidget->addItem(tg);
     QListWidgetItem* i = ui->listWidget->item(ui->listWidget->count()-1);
     if (!i) return;
     i->setFlags(i->flags() | Qt::ItemIsUserCheckable);
     i->setCheckState(check? Qt::Checked : Qt::Unchecked);
-    tags_cache[tg] = std::pair<int,bool>(key,check);
+    tags_cache[tg] = std::pair<unsigned,bool>(key,check);
 }
 
-void MViewer::updateTags(QString fn)
+void MViewer::updateTags(QString const &fn)
 {
-    QSqlQuery q,qq;
-    bool ok = q.exec("SELECT tag, key FROM tags ORDER BY rating DESC");
-    qDebug() << "[db] Read whole tags table: " << ok;
-    if (!ok) return;
-
     ui->listWidget->clear();
     tags_cache.clear();
 
-    QStringList tlst;
-    if (!fn.isEmpty()) {
-        qq.prepare("SELECT tags FROM stats WHERE file = :fn");
-        qq.bindValue(":fn",fn);
-        if (qq.exec() && qq.next())
-            tlst = qq.value(0).toString().split(',',QString::SkipEmptyParts);
-    }
-
-    bool c;
-    while (q.next()) {
-        c = (!tlst.empty() && tlst.contains(q.value(1).toString()));
-        addTag(q.value(0).toString(),q.value(1).toInt(),c);
-    }
+    MTagsCheckList l = db.getFileTags(fn);
+    for (auto &i : l)
+        addTag(std::get<0>(i),std::get<1>(i),std::get<2>(i));
 }
 
-void MViewer::updateStars(QString fn)
+void MViewer::updateFileTags()
 {
-    int n = 5;
+    if (current_l.valid) db.updateFileTags(current_l.filename,tags_cache);
+}
 
-    if (!fn.isEmpty()) {
-        QSqlQuery q;
-        q.prepare("SELECT rating FROM stats WHERE file = :fn");
-        q.bindValue(":fn",fn);
-        if (q.exec() && q.next()) n = q.value(0).toInt();
-        else n = 0;
-    }
-
+void MViewer::updateStars(QString const &fn)
+{
+    int n = db.getFileRating(fn);
     ui->star_1->setStarActivated(n > 0);
     ui->star_2->setStarActivated(n > 1);
     ui->star_3->setStarActivated(n > 2);
@@ -113,16 +101,7 @@ void MViewer::updateStars(QString fn)
 void MViewer::changedStars(int n)
 {
     if (!current_l.valid) return;
-    if (n < 0) n = 0;
-    if (n > 5) n = 5;
-
-    QSqlQuery q;
-    q.prepare("UPDATE stats SET rating = :r WHERE file = :fn");
-    q.bindValue(":r",n);
-    q.bindValue(":fn",current_l.filename);
-    bool ok = q.exec();
-    qDebug() << "[db] Rating update: " << ok;
-
+    db.updateFileRating(current_l.filename,n);
     updateStars(current_l.filename);
 }
 
@@ -168,17 +147,14 @@ void MViewer::on_pushButton_clicked()
 
 bool MViewer::createStatRecord(QString const &fn, bool cache_global)
 {
-    QSqlQuery q;
-    q.prepare("SELECT views FROM stats WHERE file = (:fn)");
-    q.bindValue(":fn",fn);
-    if (q.exec() && q.next()) {
-        qDebug() << "[db] createStatRecord() called for known record " << fn;
+    if (db.isStatRecordExists(fn)) {
+        qDebug() << "ALERT: createStatRecord() called for known file";
         return false;
     }
 
     MImageExtras ext = getExtraCacheLine(fn,true,cache_global);
     if (!ext.valid) {
-        qDebug() << "[ALERT] INVALID EXTRA DATA RETURNED FOR " << fn;
+        qDebug() << "ALERT: invalid extra data returned for " << fn;
         return false;
     }
 
@@ -189,92 +165,47 @@ bool MViewer::createStatRecord(QString const &fn, bool cache_global)
     return true;
 }
 
-unsigned MViewer::incViews(bool left)
-{
-    if ((left && !current_l.valid) || (!left && !current_r.valid)) return 0;
-    QString fn = (left? current_l : current_r).filename;
-    qDebug() << "Incrementing views counter for " << fn;
-
-    QSqlQuery q;
-    q.prepare("SELECT views FROM stats WHERE file = (:fn)");
-    q.bindValue(":fn",fn);
-
-    unsigned v = 0;
-    if (q.exec() && q.next()) v = q.value(0).toUInt();
-    else if (!createStatRecord(fn)) return 0;
-    v++;
-
-    q.clear();
-    q.prepare("UPDATE stats SET views = :v, lastview = :tm WHERE file = :fn");
-    q.bindValue(":v",v);
-    q.bindValue(":tm",(uint)time(NULL));
-    q.bindValue(":fn",fn);
-    bool ok = q.exec();
-    qDebug() << "[db] Updating views: " << ok;
-    if (!ok) qDebug() << "[db] " << q.lastError().text();
-
-    if (left && (history.cur == history.files.end())) {
-        if (history.files.empty() || history.files.back() != current_l.filename) {
-            history.files.push_back(current_l.filename);
-            history.cur = history.files.end();
-        }
-    }
-
-    return v;
-}
-
-void MViewer::leftImageMetaUpdate()
-{
-    if (current_l.valid) {
-        updateTags(current_l.filename);
-        updateStars(current_l.filename);
-        if (ui->actionShow_linked_image->isChecked())
-            displayLinkedImages(current_l.filename);
-
-        QSqlQuery q;
-        q.prepare("SELECT views, notes FROM stats WHERE file = :fn");
-        q.bindValue(":fn",current_l.filename);
-        if (q.exec() && q.next()) {
-            ui->lcdNumber->display((double)q.value(0).toUInt());
-            ui->plainTextEdit->setPlainText(q.value(1).toString());
-        } else {
-            ui->lcdNumber->display(0);
-            ui->plainTextEdit->clear();
-        }
-    }
-    kudos(current_l,0);
-
-    ui->radio_settags->setChecked(true);
-    progressBar->setValue(0);
-    ui->statusBar->showMessage("");
-}
-
-void MViewer::showSelectedImage()
-{
-    QModelIndex idx = ui->listView->selectionModel()->selectedIndexes().first();
-    ThumbnailModel* ptm = dynamic_cast<ThumbnailModel*>(ui->listView->model());
-    if (ptm) ptm->LoadUp(idx.row());
-    else return;
-    ptm->touch(idx);
-
-    current_l = idx.data(MImageListModel::FullDataRole).value<MImageListRecord>();
-    scaleImage(current_l,ui->scrollArea,ui->label,1);
-    leftImageMetaUpdate();
-    checkExtraCache();
-
-    view_timer.start(20);
-}
-
-void MViewer::cleanUp()
-{
-    extra_cache.clear();
-    current_l = MImageListRecord();
-    current_r = MImageListRecord();
-}
-
 void MViewer::checkExtraCache()
 {
     if (extra_cache.size() > EXTRA_CACHE_SIZE) extra_cache.clear();
+}
+
+MImageExtras MViewer::getExtraCacheLine(QString const &fn, bool forceload, bool ignore_thumbs)
+{
+    if (extra_cache.count(fn))
+        return extra_cache[fn];
+
+    MImageExtras res = db.getExtrasFromDB(fn);
+    if (res.valid) {
+        extra_cache[fn] = res;
+        return res;
+    }
+
+    QPixmap org;
+
+    //retreive image
+    ThumbnailModel* ptm = dynamic_cast<ThumbnailModel*>(ui->listView->model());
+    if (ptm && !ignore_thumbs) {
+        size_t idx = 0;
+        for (auto &i : ptm->GetAllImages()) {
+            if (i.filename == fn) {
+                if (forceload) ptm->LoadUp(idx);
+                if (i.loaded) org = i.picture;
+                break;
+            }
+            idx++;
+        }
+
+    } else if (forceload) {
+        org.load(fn);
+
+    }
+    if (org.isNull()) return res;
+
+    res = mCV.collectImageExtraData(fn,org);
+    if (res.valid) extra_cache[fn] = res;
+
+    return res;
 }
 
 void MViewer::showImageList(QStringList const &lst)
@@ -305,6 +236,108 @@ void MViewer::showImageList(QStringList const &lst)
     history.files.clear();
     history.cur = history.files.begin();
     ui->statusBar->showMessage(QString::asprintf("%d images",lst.size()));
+}
+
+void MViewer::showSelectedImage()
+{
+    QModelIndex idx = ui->listView->selectionModel()->selectedIndexes().first();
+    ThumbnailModel* ptm = dynamic_cast<ThumbnailModel*>(ui->listView->model());
+    if (ptm) ptm->LoadUp(idx.row());
+    else return;
+    ptm->touch(idx);
+
+    current_l = idx.data(MImageListModel::FullDataRole).value<MImageListRecord>();
+    scaleImage(current_l,ui->scrollArea,ui->label,1);
+    leftImageMetaUpdate();
+    checkExtraCache();
+
+    view_timer.start(20);
+}
+
+void MViewer::scaleImage(const MImageListRecord &rec, QScrollArea* scrl, QLabel* lbl, double factor)
+{
+    if (!rec.valid) return;
+
+    scaleFactor *= factor;
+    if (scaleFactor <= FLT_EPSILON) scaleFactor = 1;
+
+    scrl->setWidgetResizable(false);
+    lbl->setPixmap(QPixmap());
+    lbl->setText("");
+    lbl->updateGeometry();
+    scrl->updateGeometry();
+    scrl->setWidgetResizable(true);
+
+    if (ui->actionFit->isChecked())
+        lbl->setPixmap(rec.picture.scaled(lbl->size(),Qt::KeepAspectRatio,Qt::SmoothTransformation));
+
+    else {
+        QSize nsz = rec.picture.size() * scaleFactor;
+        MImageExtras extr = getExtraCacheLine(rec.filename);
+
+        if (ui->actionShow_faces->isChecked() && extr.valid && !extr.rois.empty()) {
+            QImage inq(rec.picture.scaled(nsz,Qt::KeepAspectRatio,Qt::SmoothTransformation).toImage());
+            QPainter painter(&inq);
+            QPen paintpen(Qt::red);
+            paintpen.setWidth(2);
+            painter.setPen(paintpen);
+
+            for (auto &i : extr.rois) {
+                if (i.kind == MROI_FACE_FRONTAL)
+                    painter.drawRect(QRect(i.x,i.y,i.w,i.h));
+            }
+
+            lbl->setPixmap(QPixmap::fromImage(inq));
+
+        } else
+            lbl->setPixmap(rec.picture.scaled(nsz,Qt::KeepAspectRatio,Qt::SmoothTransformation));
+    }
+
+}
+
+unsigned MViewer::incViews(bool left)
+{
+    if ((left && !current_l.valid) || (!left && !current_r.valid)) return 0;
+    QString fn = (left? current_l : current_r).filename;
+    qDebug() << "Incrementing views counter for " << fn;
+
+    bool ok;
+    unsigned v = db.getFileViews(fn,ok);
+    if (!ok) {
+        //first time watching, let's create a record
+        if (!createStatRecord(fn)) return 0;
+    }
+    v++;
+    if (!db.updateFileViews(fn,v)) return 0;
+
+    if (left && (history.cur == history.files.end())) {
+        if (history.files.empty() || history.files.back() != current_l.filename) {
+            history.files.push_back(current_l.filename);
+            history.cur = history.files.end();
+        }
+    }
+
+    return v;
+}
+
+void MViewer::leftImageMetaUpdate()
+{
+    if (current_l.valid) {
+        updateTags(current_l.filename);
+        updateStars(current_l.filename);
+        if (ui->actionShow_linked_image->isChecked())
+            displayLinkedImages(current_l.filename);
+
+        bool ok;
+        ui->lcdNumber->display((double)db.getFileViews(current_l.filename,ok));
+        if (ok) ui->plainTextEdit->setPlainText(db.getFileNotes(current_l.filename));
+        else ui->plainTextEdit->clear();
+    }
+    kudos(current_l,0);
+
+    ui->radio_settags->setChecked(true);
+    progressBar->setValue(0);
+    ui->statusBar->showMessage("");
 }
 
 bool MViewer::isLoadableFile(QString const &path, QString *canonicalPath)
@@ -426,47 +459,6 @@ void MViewer::on_actionOpen_list_triggered()
     on_actionDescending_triggered();
 }
 
-void MViewer::scaleImage(const MImageListRecord &rec, QScrollArea* scrl, QLabel* lbl, double factor)
-{
-    if (!rec.valid) return;
-
-    scaleFactor *= factor;
-    if (scaleFactor <= FLT_EPSILON) scaleFactor = 1;
-
-    scrl->setWidgetResizable(false);
-    lbl->setPixmap(QPixmap());
-    lbl->setText("");
-    lbl->updateGeometry();
-    scrl->updateGeometry();
-    scrl->setWidgetResizable(true);
-
-    if (ui->actionFit->isChecked())
-        lbl->setPixmap(rec.picture.scaled(lbl->size(),Qt::KeepAspectRatio,Qt::SmoothTransformation));
-
-    else {
-        QSize nsz = rec.picture.size() * scaleFactor;
-        MImageExtras extr = getExtraCacheLine(rec.filename);
-
-        if (ui->actionShow_faces->isChecked() && extr.valid && !extr.rois.empty()) {
-            QImage inq(rec.picture.scaled(nsz,Qt::KeepAspectRatio,Qt::SmoothTransformation).toImage());
-            QPainter painter(&inq);
-            QPen paintpen(Qt::red);
-            paintpen.setWidth(2);
-            painter.setPen(paintpen);
-
-            for (auto &i : extr.rois) {
-                if (i.kind == MROI_FACE_FRONTAL)
-                    painter.drawRect(QRect(i.x,i.y,i.w,i.h));
-            }
-
-            lbl->setPixmap(QPixmap::fromImage(inq));
-
-        } else
-            lbl->setPixmap(rec.picture.scaled(nsz,Qt::KeepAspectRatio,Qt::SmoothTransformation));
-    }
-
-}
-
 void MViewer::on_actionFit_triggered()
 {
     if (!ui->actionFit->isChecked()) scaleFactor = 1;
@@ -513,44 +505,6 @@ void MViewer::on_actionMatch_triggered()
     }
 
     searchResults(lst);
-}
-
-MImageExtras MViewer::getExtraCacheLine(QString const &fn, bool forceload, bool ignore_thumbs)
-{
-    if (extra_cache.count(fn))
-        return extra_cache[fn];
-
-    MImageExtras res = db.getExtrasFromDB(fn);
-    if (res.valid) {
-        extra_cache[fn] = res;
-        return res;
-    }
-
-    QPixmap org;
-
-    //retreive image
-    ThumbnailModel* ptm = dynamic_cast<ThumbnailModel*>(ui->listView->model());
-    if (ptm && !ignore_thumbs) {
-        size_t idx = 0;
-        for (auto &i : ptm->GetAllImages()) {
-            if (i.filename == fn) {
-                if (forceload) ptm->LoadUp(idx);
-                if (i.loaded) org = i.picture;
-                break;
-            }
-            idx++;
-        }
-
-    } else if (forceload) {
-        org.load(fn);
-
-    }
-    if (org.isNull()) return res;
-
-    res = mCV.collectImageExtraData(fn,org);
-    if (res.valid) extra_cache[fn] = res;
-
-    return res;
 }
 
 void MViewer::on_actionLoad_everything_slow_triggered()
@@ -620,11 +574,6 @@ void MViewer::on_listWidget_itemClicked(QListWidgetItem *item)
     if (db.updateTags(item->text(),now))
         tags_cache[item->text()].second = now;
     updateFileTags();
-}
-
-void MViewer::updateFileTags()
-{
-    if (current_l.valid) db.updateFileTags(current_l.filename,tags_cache);
 }
 
 void MViewer::on_radio_search_toggled(bool checked)
@@ -1008,8 +957,6 @@ void MViewer::on_actionReload_metadata_triggered()
     if (!ptm) return;
 
     prepareLongProcessing();
-
-    QSqlQuery q;
     double prg = 0, dp = 100.f / (double)(ptm->GetAllImages().size());
     for (auto &i: ptm->GetAllImages()) {
         prg += dp;

@@ -22,7 +22,7 @@ QString MImpExpModule::tagsLineConvert(QString in, bool encode)
 
         } else {
             bool ok;
-            int n = i.toInt(&ok);
+            unsigned n = i.toUInt(&ok);
             if (ok) {
                 auto j = std::find_if(foreign_cache->begin(),foreign_cache->end(),[n] (auto &it) {
                     return (it.second.first == n); });

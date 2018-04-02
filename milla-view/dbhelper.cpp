@@ -103,6 +103,14 @@ QByteArray DBHelper::getSHA256(QString const &fn, qint64* size)
     return shasum;
 }
 
+bool DBHelper::isStatRecordExists(QString const &fn)
+{
+    QSqlQuery q;
+    q.prepare("SELECT views FROM stats WHERE file = (:fn)");
+    q.bindValue(":fn",fn);
+    return (q.exec() && q.next());
+}
+
 bool DBHelper::updateStatRecord(QString const &fn, MImageExtras &rec, bool update)
 {
     int fcn = 0;
@@ -194,6 +202,86 @@ bool DBHelper::insertTag(QString const &ntag, unsigned &key)
     return ok;
 }
 
+int DBHelper::getFileRating(QString const &fn)
+{
+    int n = 5;
+    if (fn.isEmpty()) return n;
+
+    QSqlQuery q;
+    q.prepare("SELECT rating FROM stats WHERE file = :fn");
+    q.bindValue(":fn",fn);
+    if (q.exec() && q.next()) n = q.value(0).toInt();
+    else n = 0;
+    return n;
+}
+
+bool DBHelper::updateFileRating(QString const &fn, int n)
+{
+    if (n < 0) n = 0;
+    if (n > 5) n = 5;
+
+    QSqlQuery q;
+    q.prepare("UPDATE stats SET rating = :r WHERE file = :fn");
+    q.bindValue(":r",n);
+    q.bindValue(":fn",fn);
+    bool ok = q.exec();
+
+    qDebug() << "[db] Rating update: " << ok;
+    return ok;
+}
+
+unsigned DBHelper::getFileViews(QString const &fn, bool &ok)
+{
+    QSqlQuery q;
+    q.prepare("SELECT views FROM stats WHERE file = (:fn)");
+    q.bindValue(":fn",fn);
+
+    unsigned n = 0;
+    ok = (q.exec() && q.next());
+    if (ok) n = q.value(0).toUInt();
+
+    return n;
+}
+
+bool DBHelper::updateFileViews(QString const &fn, unsigned n)
+{
+    QSqlQuery q;
+    q.prepare("UPDATE stats SET views = :v, lastview = :tm WHERE file = :fn");
+    q.bindValue(":v",n);
+    q.bindValue(":tm",(uint)time(NULL));
+    q.bindValue(":fn",fn);
+    bool ok = q.exec();
+
+    qDebug() << "[db] Updating views: " << ok;
+    return ok;
+}
+
+MTagsCheckList DBHelper::getFileTags(QString const &fn)
+{
+    MTagsCheckList out;
+    QSqlQuery q,qq;
+    QStringList tlst;
+
+    bool ok = q.exec("SELECT tag, key FROM tags ORDER BY rating DESC");
+    qDebug() << "[db] Read whole tags table: " << ok;
+    if (!ok) return out;
+
+    if (!fn.isEmpty()) {
+        qq.prepare("SELECT tags FROM stats WHERE file = :fn");
+        qq.bindValue(":fn",fn);
+        if (qq.exec() && qq.next())
+            tlst = qq.value(0).toString().split(',',QString::SkipEmptyParts);
+    }
+
+    bool c;
+    while (q.next()) {
+        c = (!tlst.empty() && tlst.contains(q.value(1).toString()));
+        out.push_back(std::tuple<QString,unsigned,bool>(q.value(0).toString(),q.value(1).toUInt(),c));
+    }
+
+    return out;
+}
+
 bool DBHelper::updateTags(QString const &tag, bool checked)
 {
     QSqlQuery q;
@@ -261,6 +349,15 @@ int DBHelper::updateFileKudos(QString const &fn, int delta)
     }
 
     return n;
+}
+
+QString DBHelper::getFileNotes(QString const &fn)
+{
+    QSqlQuery q;
+    q.prepare("SELECT notes FROM stats WHERE file = :fn");
+    q.bindValue(":fn",fn);
+    if (q.exec() && q.next()) return q.value(0).toString();
+    else return QString();
 }
 
 bool DBHelper::updateFileNotes(QString const &fn, QString &notes)
@@ -373,7 +470,7 @@ QStringList DBHelper::parametricSearch(SearchFormData flt, QList<MImageListRecor
 {
     QSqlQuery q;
     size_t area;
-    std::multimap<size_t,QString> tmap;
+    std::multimap<int,QString> tmap;
     std::set<QString> tlst;
 
     for (auto &i : from) {

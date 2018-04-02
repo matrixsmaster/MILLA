@@ -46,6 +46,7 @@ FORMS    += mviewer.ui \
     exportform.ui
 
 CONFIG   += c++14
+QMAKE_CXXFLAGS  += -Wextra
 
 LIBS     += -lopencv_core -lopencv_imgproc -lopencv_features2d -lopencv_flann -lopencv_objdetect -lopencv_highgui
 

@@ -158,9 +158,33 @@ private:
 
     void cleanUp();
 
+    void addTag(QString const &tg, unsigned key, bool check = false);
+
+    void updateTags(QString const &fn = QString());
+
+    void updateFileTags();
+
+    void updateStars(QString const &fn = QString());
+
+    void changedStars(int n);
+
+    void prepareLongProcessing(bool finish = false);
+
+    bool createStatRecord(QString const &fn, bool cache_global = false);
+
     void checkExtraCache();
 
+    MImageExtras getExtraCacheLine(QString const &fn, bool forceload = false, bool ignore_thumbs = false);
+
     void showImageList(QStringList const &lst);
+
+    void showSelectedImage();
+
+    void scaleImage(const MImageListRecord &rec, QScrollArea* scrl, QLabel* lbl, double factor);
+
+    unsigned incViews(bool left = true);
+
+    void leftImageMetaUpdate();
 
     bool isLoadableFile(QString const &path, QString* canonicalPath);
 
@@ -169,30 +193,6 @@ private:
     void openDirByFile(QString const &fileName, bool recursive = false);
 
     void openDirByList(QString const &fileName);
-
-    void leftImageMetaUpdate();
-
-    void showSelectedImage();
-
-    void addTag(QString const &tg, int key, bool check = false);
-
-    void updateTags(QString fn = QString());
-
-    void updateStars(QString fn = QString());
-
-    void changedStars(int n);
-
-    void prepareLongProcessing(bool finish = false);
-
-    bool createStatRecord(QString const &fn, bool cache_global = false);
-
-    unsigned incViews(bool left = true);
-
-    void scaleImage(const MImageListRecord &rec, QScrollArea* scrl, QLabel* lbl, double factor);
-
-    MImageExtras getExtraCacheLine(QString const &fn, bool forceload = false, bool ignore_thumbs = false);
-
-    void updateFileTags();
 
     void resultsPresentation(QStringList lst, QListView *view, int tabIndex);
 
