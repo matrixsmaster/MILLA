@@ -1353,7 +1353,7 @@ void MViewer::on_actionUpdate_thumbnails_triggered()
     prepareLongProcessing(true);
 }
 
-void MViewer::updateThumbnailsSorting(ThumbnailModel::ThumbnailModelSort ord, bool desc)
+void MViewer::updateThumbnailsOrder(ThumbnailModel::ThumbnailModelSort ord, bool desc)
 {
     ThumbnailModel* ptm = dynamic_cast<ThumbnailModel*>(ui->listView->model());
     if (!ptm) return;
@@ -1389,7 +1389,7 @@ void MViewer::on_action_None_triggered()
     ui->action_None->setChecked(true);
     ui->actionBy_name->setChecked(false);
     ui->actionBy_time->setChecked(false);
-    updateThumbnailsSorting(ThumbnailModel::NoSort,false);
+    updateThumbnailsOrder(ThumbnailModel::NoSort,false);
 }
 
 void MViewer::on_actionBy_name_triggered()
@@ -1397,7 +1397,7 @@ void MViewer::on_actionBy_name_triggered()
     ui->action_None->setChecked(false);
     ui->actionBy_name->setChecked(true);
     ui->actionBy_time->setChecked(false);
-    updateThumbnailsSorting(ThumbnailModel::SortByNameAsc,ui->actionDescending->isChecked());
+    updateThumbnailsOrder(ThumbnailModel::SortByNameAsc,ui->actionDescending->isChecked());
 }
 
 void MViewer::on_actionBy_time_triggered()
@@ -1405,7 +1405,7 @@ void MViewer::on_actionBy_time_triggered()
     ui->action_None->setChecked(false);
     ui->actionBy_name->setChecked(false);
     ui->actionBy_time->setChecked(true);
-    updateThumbnailsSorting(ThumbnailModel::SortByTimeAsc,ui->actionDescending->isChecked());
+    updateThumbnailsOrder(ThumbnailModel::SortByTimeAsc,ui->actionDescending->isChecked());
 }
 
 void MViewer::on_actionDescending_triggered()
@@ -1414,7 +1414,7 @@ void MViewer::on_actionDescending_triggered()
     if (ui->actionBy_name->isChecked()) ord = ThumbnailModel::SortByNameAsc;
     else if (ui->actionBy_time->isChecked()) ord = ThumbnailModel::SortByTimeAsc;
 
-    updateThumbnailsSorting(ord,ui->actionDescending->isChecked());
+    updateThumbnailsOrder(ord,ui->actionDescending->isChecked());
 }
 
 void MViewer::on_actionList_all_triggered()
@@ -1447,6 +1447,7 @@ void MViewer::on_actionReload_metadata_triggered()
         prg += dp;
         progressBar->setValue(floor(prg));
         QCoreApplication::processEvents();
+        if (flag_stop_load_everything) break;
 
         MImageExtras ex = getExtrasFromDB(i.filename);
         if (!ex.valid) continue; //we haven't scanned this file yet
@@ -1472,26 +1473,106 @@ void MViewer::on_actionReload_metadata_triggered()
     ui->statusBar->showMessage(QString());
 }
 
-void MViewer::on_actionSanitize_DB_triggered()
+void MViewer::sanitizeLinks()
 {
-    QSqlQuery q;
-    if (!q.exec("SELECT file FROM stats") || !q.next()) {
-        qDebug() << "[db] Unable to load list of all known files";
+    QSqlQuery q,qa;
+    QSet<QByteArray> known_shas;
+    QList<std::pair<QByteArray,QByteArray>> to_remove;
+
+    prepareLongProcessing();
+
+    if (!q.exec("SELECT COUNT(left) FROM links") || !qa.exec("SELECT left, right FROM links")) {
+        qDebug() << "[db] Unable to load links table";
         return;
     }
 
+    double prg = 0, dp = q.next()? 50.f / (double)(q.value(0).toInt()) : 0;
+
+    while (qa.next()) {
+        prg += dp;
+        progressBar->setValue(floor(prg));
+        QCoreApplication::processEvents();
+        if (flag_stop_load_everything) break;
+
+        if (known_shas.contains(qa.value(0).toByteArray()) && known_shas.contains(qa.value(1).toByteArray()))
+            continue;
+        q.clear();
+        q.prepare("SELECT file FROM stats WHERE sha256 = :sha1 OR sha256 = :sha2");
+        q.bindValue(":sha1",qa.value(0).toByteArray());
+        q.bindValue(":sha2",qa.value(1).toByteArray());
+        if (q.exec() && q.next() && q.next()) { //there must be two consecutive records
+            known_shas.insert(qa.value(0).toByteArray());
+            known_shas.insert(qa.value(1).toByteArray());
+            continue;
+        }
+
+        qDebug() << "[Sanitizer] Lost file with sha " << qa.value(0).toByteArray().toHex();
+        to_remove.push_back(std::pair<QByteArray,QByteArray>(qa.value(0).toByteArray(),qa.value(1).toByteArray()));
+    }
+
+    qDebug() << "[Sanitizer] " << to_remove.size() << " records scheduled for removal";
+
+    prg = 50;
+    dp = 50.f / (double)(to_remove.size());
+
+    for (auto &i : to_remove) {
+        q.clear();
+        q.prepare("DELETE FROM links WHERE left = :sha1 AND right = :sha2");
+        q.bindValue(":sha1",i.first);;
+        q.bindValue(":sha2",i.second);;
+        if (!q.exec()) {
+            qDebug() << "[db] Failed to remove link record";
+            break;
+        }
+
+        prg += dp;
+        progressBar->setValue(floor(prg));
+        QCoreApplication::processEvents();
+        if (flag_stop_load_everything) break;
+    }
+
+    prepareLongProcessing(true);
+}
+
+void MViewer::on_actionSanitize_DB_triggered()
+{
+    QSqlQuery q;
+    if (!q.exec("SELECT file FROM stats")) {
+        qDebug() << "[db] Unable to load list of all known files";
+        return;
+    }
+    QStringList all;
+    while (q.next()) all.push_back(q.value(0).toString());
+    if (all.empty()) return;
+
+    //step 1. check all links
+    sanitizeLinks();
     //TODO
+    qDebug() << "[Sanitizer] Done.";
+    ui->statusBar->showMessage("Done");
 }
 
 void MViewer::on_actionPrevious_triggered()
 {
     if (!ui->listView->model()) return;
+    if (ui->listView->currentIndex().row() < 1) return;
 
+    MImageListModel* ptr = dynamic_cast<MImageListModel*>(ui->listView->model());
+    if (!ptr) return;
+
+    ui->listView->setCurrentIndex(ptr->getRecordIndex(ui->listView->currentIndex().row() - 1));
 }
 
 void MViewer::on_actionNext_triggered()
 {
-    //
+    if (!ui->listView->model()) return;
+
+    MImageListModel* ptr = dynamic_cast<MImageListModel*>(ui->listView->model());
+    if (!ptr) return;
+
+    if (ui->listView->currentIndex().row() + 1 >= ptr->GetAllImages().size()) return;
+
+    ui->listView->setCurrentIndex(ptr->getRecordIndex(ui->listView->currentIndex().row() + 1));
 }
 
 void MViewer::on_actionPrevious_2_triggered()

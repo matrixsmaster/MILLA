@@ -242,7 +242,9 @@ private:
 
     void selectIEFileDialog(bool import);
 
-    void updateThumbnailsSorting(ThumbnailModel::ThumbnailModelSort ord, bool desc);
+    void updateThumbnailsOrder(ThumbnailModel::ThumbnailModelSort ord, bool desc);
+
+    void sanitizeLinks();
 };
 
 #endif // MVIEWER_H
