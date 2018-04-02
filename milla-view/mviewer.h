@@ -28,7 +28,7 @@
 #include "mimpexpmodule.h"
 #include "facedetector.h"
 
-#define MILLA_VERSION "ver. 0.1.7 next-gen"
+#define MILLA_VERSION "ver. 0.1.8"
 #define MILLA_SITE "http://github.com/matrixsmaster/MILLA"
 #define EXTRA_CACHE_SIZE 1500
 #define MILLA_OPEN_FILE "Image Files (*.png *.jpg *.jpeg *.bmp)"
@@ -63,6 +63,11 @@ struct MImageExtras {
     bool color = true;
     QByteArray sha;
     qint64 filelen;
+};
+
+struct MHistory {
+    QStringList files;
+    QStringList::iterator cur;
 };
 
 namespace Ui {
@@ -146,6 +151,16 @@ private slots:
 
     void on_actionReload_metadata_triggered();
 
+    void on_actionSanitize_DB_triggered();
+
+    void on_actionPrevious_triggered();
+
+    void on_actionNext_triggered();
+
+    void on_actionPrevious_2_triggered();
+
+    void on_actionNext_2_triggered();
+
 private:
     Ui::MViewer *ui;
     MillaPluginLoader plugins;
@@ -163,6 +178,7 @@ private:
     FaceDetector facedetector;
     std::map<QString,MImageExtras> extra_cache;
     MTagCache tags_cache;
+    MHistory history;
 
     bool initDatabase();
 
@@ -182,7 +198,7 @@ private:
 
     void leftImageMetaUpdate();
 
-    void showNextImage();
+    void showSelectedImage();
 
     void addTag(QString const &tg, int key, bool check = false);
 

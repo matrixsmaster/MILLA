@@ -1563,6 +1563,17 @@
      <addaction name="separator"/>
      <addaction name="actionDescending"/>
     </widget>
+    <widget class="QMenu" name="menuHistory">
+     <property name="title">
+      <string>History</string>
+     </property>
+     <addaction name="actionPrevious_2"/>
+     <addaction name="actionNext_2"/>
+    </widget>
+    <addaction name="actionNext"/>
+    <addaction name="actionPrevious"/>
+    <addaction name="menuHistory"/>
+    <addaction name="separator"/>
     <addaction name="menuSort_thumbnails"/>
     <addaction name="actionFit"/>
     <addaction name="actionShow_faces"/>
@@ -1575,6 +1586,7 @@
     </property>
     <addaction name="actionSwap_images"/>
     <addaction name="actionClear_image_cache"/>
+    <addaction name="actionSanitize_DB"/>
    </widget>
    <widget class="QMenu" name="menuHelp">
     <property name="title">
@@ -1881,6 +1893,43 @@
    </property>
    <property name="shortcut">
     <string>Ctrl+U</string>
+   </property>
+  </action>
+  <action name="actionSanitize_DB">
+   <property name="text">
+    <string>Sanitize DB</string>
+   </property>
+  </action>
+  <action name="actionPrevious">
+   <property name="text">
+    <string>Previous image</string>
+   </property>
+   <property name="shortcut">
+    <string>Left</string>
+   </property>
+  </action>
+  <action name="actionNext">
+   <property name="text">
+    <string>Next image</string>
+   </property>
+   <property name="shortcut">
+    <string>Right</string>
+   </property>
+  </action>
+  <action name="actionPrevious_2">
+   <property name="text">
+    <string>Previous</string>
+   </property>
+   <property name="shortcut">
+    <string>Alt+Left</string>
+   </property>
+  </action>
+  <action name="actionNext_2">
+   <property name="text">
+    <string>Next</string>
+   </property>
+   <property name="shortcut">
+    <string>Alt+Right</string>
    </property>
   </action>
  </widget>

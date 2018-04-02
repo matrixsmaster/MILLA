@@ -346,6 +346,13 @@ unsigned MViewer::incViews(bool left)
     qDebug() << "[db] Updating views: " << ok;
     if (!ok) qDebug() << "[db] " << q.lastError().text();
 
+    if (left && (history.cur == history.files.end())) {
+        if (history.files.empty() || history.files.back() != current_l.filename) {
+            history.files.push_back(current_l.filename);
+            history.cur = history.files.end();
+        }
+    }
+
     return v;
 }
 
@@ -375,7 +382,7 @@ void MViewer::leftImageMetaUpdate()
     ui->statusBar->showMessage("");
 }
 
-void MViewer::showNextImage()
+void MViewer::showSelectedImage()
 {
     QModelIndex idx = ui->listView->selectionModel()->selectedIndexes().first();
     ThumbnailModel* ptm = dynamic_cast<ThumbnailModel*>(ui->listView->model());
@@ -421,13 +428,15 @@ void MViewer::showImageList(QStringList const &lst)
     ui->listView->setSpacing(purelist? 5:10);
     ui->listView->setContextMenuPolicy(Qt::CustomContextMenu);
 
-    connect(ui->listView->selectionModel(),&QItemSelectionModel::selectionChanged,[this] { showNextImage(); });
+    connect(ui->listView->selectionModel(),&QItemSelectionModel::selectionChanged,[this] { showSelectedImage(); });
     connect(ui->listView,&QListView::customContextMenuRequested,this,[this] {
         current_r = ui->listView->selectionModel()->selectedIndexes().first().data(MImageListModel::FullDataRole).value<MImageListRecord>();
         scaleImage(current_r,ui->scrollArea_2,ui->label_2,1);
         incViews(false);
     });
 
+    history.files.clear();
+    history.cur = history.files.begin();
     ui->statusBar->showMessage(QString::asprintf("%d images",lst.size()));
 }
 
@@ -1461,4 +1470,50 @@ void MViewer::on_actionReload_metadata_triggered()
     checkExtraCache();
     prepareLongProcessing(true);
     ui->statusBar->showMessage(QString());
+}
+
+void MViewer::on_actionSanitize_DB_triggered()
+{
+    QSqlQuery q;
+    if (!q.exec("SELECT file FROM stats") || !q.next()) {
+        qDebug() << "[db] Unable to load list of all known files";
+        return;
+    }
+
+    //TODO
+}
+
+void MViewer::on_actionPrevious_triggered()
+{
+    if (!ui->listView->model()) return;
+
+}
+
+void MViewer::on_actionNext_triggered()
+{
+    //
+}
+
+void MViewer::on_actionPrevious_2_triggered()
+{
+    if (history.files.empty() || history.cur == history.files.begin()) return;
+    if (history.cur == history.files.end()) history.cur--;
+    history.cur--;
+
+    ThumbnailModel* ptm = dynamic_cast<ThumbnailModel*>(ui->listView->model());
+    if (!ptm || history.cur->isEmpty()) return;
+
+    ui->listView->setCurrentIndex(ptm->getRecordIndex(*history.cur));
+}
+
+void MViewer::on_actionNext_2_triggered()
+{
+    if (history.files.empty() || history.cur == history.files.end()) return;
+    history.cur++;
+    if (history.cur == history.files.end()) return;
+
+    ThumbnailModel* ptm = dynamic_cast<ThumbnailModel*>(ui->listView->model());
+    if (!ptm || history.cur->isEmpty()) return;
+
+    ui->listView->setCurrentIndex(ptm->getRecordIndex(*history.cur));
 }

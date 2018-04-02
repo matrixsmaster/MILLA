@@ -19,6 +19,13 @@ public:
     virtual bool config(QString cfg);
     virtual QPixmap generate();
     virtual void update();
+
+private:
+    QSize mysize;
+    QColor mycolor;
+    QPixmap myimage;
+
+    void core();
 };
 
 #endif // TESTPLUGIN_H
