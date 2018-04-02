@@ -8,7 +8,8 @@ MViewer::MViewer(QWidget *parent) :
 {
     ui->setupUi(this);
 
-    if (!initDatabase()) {
+    if (!db.initDatabase()) {
+        QMessageBox::critical(this, tr("Fatal error"), tr("Unable to initialize database"));
         qDebug() << "FATAL: Unable to initialize database " DB_FILEPATH;
 
         connect(&view_timer,&QTimer::timeout,this,[this] { QApplication::exit(1); });
@@ -44,82 +45,15 @@ MViewer::MViewer(QWidget *parent) :
     connect(ui->star_5,&StarLabel::clicked,this,[this] { changedStars(5); });
 
     loadingMovie = new QMovie(":/loading_icon.gif");
+
+    updateTags();
 }
 
 MViewer::~MViewer()
 {
-    facedetector.Finalize();
     if (loadingMovie) delete loadingMovie;
     QSqlDatabase::database().close();
     delete ui;
-}
-
-bool MViewer::initDatabase()
-{
-    QSqlDatabase db = QSqlDatabase::addDatabase("QSQLITE");
-
-    QString fn = QDir::homePath() + DB_FILEPATH;
-    qDebug() << "[db] Storage filename: " << fn;
-    db.setHostName("localhost");
-    db.setDatabaseName(fn);
-    db.setUserName("user");
-    bool ok = db.open();
-    qDebug() << "[db] open:  " << ok;
-    if (!ok) return false;
-
-    QSqlQuery q;
-    ok = q.exec("SELECT version FROM meta") && q.next();
-    qDebug() << "[db] Read meta table: " << ok;
-    if (!ok) {
-        QSqlQuery qq;
-        ok = qq.exec("CREATE TABLE meta (" DBF_META ")");
-        qDebug() << "[db] Create new meta table: " << ok;
-        qq.clear();
-        qq.prepare("INSERT INTO meta (version) VALUES (:ver)");
-        qq.bindValue(":ver",DB_VERSION);
-        ok = qq.exec();
-        qDebug() << "[db] Inserting current DB version tag " << DB_VERSION << ": " << ok;
-        if (!ok) return false;
-    } else {
-        qDebug() << "[db] version: " << q.value(0).toInt();
-        if (DB_VERSION != q.value(0).toInt()) {
-            QMessageBox::critical(this, tr("Fatal error"), tr("DB version mismatch"));
-            return false;
-        }
-    }
-
-    q.clear();
-    ok = DB_CORRECT_TABLE_CHECK(q,"'stats'");
-    qDebug() << "[db] Read stats table: " << ok;
-    if (!ok) {
-        QSqlQuery qq;
-        ok = qq.exec("CREATE TABLE stats (" DBF_STATS ")");
-        qDebug() << "[db] Create new stats table: " << ok;
-        if (!ok) return false;
-    }
-
-    q.clear();
-    ok = DB_CORRECT_TABLE_CHECK(q,"'tags'");
-    qDebug() << "[db] Read tags table: " << ok;
-    if (!ok) {
-        QSqlQuery qq;
-        ok = qq.exec("CREATE TABLE tags (" DBF_TAGS ")");
-        qDebug() << "[db] Create new tags table: " << ok;
-        if (!ok) return false;
-    } else
-        updateTags();
-
-    q.clear();
-    ok = DB_CORRECT_TABLE_CHECK(q,"'links'");
-    qDebug() << "[db] Read links table: " << ok;
-    if (!ok) {
-        QSqlQuery qq;
-        ok = qq.exec("CREATE TABLE links (" DBF_LINKS ")");
-        qDebug() << "[db] Create new links table: " << ok;
-        if (!ok) return false;
-    }
-
-    return ok;
 }
 
 void MViewer::addTag(QString const &tg, int key, bool check)
@@ -225,47 +159,11 @@ void MViewer::on_pushButton_clicked()
     if (ntag.isEmpty()) return;
     ntag = ntag.replace('\"','\'');
 
-    QSqlQuery q;
-    q.prepare("SELECT * FROM tags WHERE tag = (:tg)");
-    q.bindValue(":tg",ntag);
-    if (q.exec() && q.next()) {
-        qDebug() << "[db] tag is already defined";
-        return;
-    }
-
-    q.clear();
-    if (!q.exec("SELECT MAX(key) FROM tags") || !q.next()) {
-        qDebug() << "[db] ERROR: unable to get max key value from tags table";
-        return;
-    }
-    unsigned key = q.value(0).toUInt() + 1;
-
-    q.clear();
-    q.prepare("INSERT INTO tags (key, tag, rating) VALUES (:k, :tg, 0)");
-    q.bindValue(":k",key);
-    q.bindValue(":tg",ntag);
-    bool ok = q.exec();
-
-    qDebug() << "[db] Inserting tag " << ntag << ": " << ok;
-    if (ok) {
+    unsigned key;
+    if (db.insertTag(ntag,key)) {
         addTag(ntag,key);
         ui->lineEdit->clear();
     }
-}
-
-QByteArray MViewer::getSHA256(QString const &fn, qint64* size)
-{
-    QCryptographicHash hash(QCryptographicHash::Sha256);
-    QByteArray shasum;
-    QFile mfile(fn);
-    mfile.open(QIODevice::ReadOnly);
-    if (hash.addData(&mfile))
-        shasum = hash.result();
-    else
-        qDebug() << "ALERT: Unable to calculate SHA256 of file " << fn;
-    if (size) *size = mfile.size();
-    mfile.close();
-    return shasum;
 }
 
 bool MViewer::createStatRecord(QString const &fn, bool cache_global)
@@ -284,44 +182,11 @@ bool MViewer::createStatRecord(QString const &fn, bool cache_global)
         return false;
     }
 
-    bool ok = insertStatRecord(fn,ext,false);
+    bool ok = db.updateStatRecord(fn,ext,false);
     qDebug() << "[db] Creating new statistics record: " << ok;
 
     checkExtraCache();
     return true;
-}
-
-bool MViewer::insertStatRecord(QString const &fn, MImageExtras &rec, bool update)
-{
-    int fcn = 0;
-    QString fcdat;
-    for (auto &i : rec.rois)
-        if (i.kind == MROI_FACE_FRONTAL) {
-            fcn++;
-            fcdat += QString::asprintf("%d,%d,%d,%d,",i.x,i.y,i.w,i.h);
-        }
-
-    QByteArray harr = qCompress(CVHelper::storeMat(rec.hist));
-    qDebug() << "[db] Final harr length =" << harr.size();
-
-    QSqlQuery q;
-    if (update)
-        q.prepare("UPDATE stats SET " DBF_STATS_UPDATE_SHORT " WHERE file = :fn");
-    else
-        q.prepare("INSERT INTO stats (" DBF_STATS_SHORT ") VALUES " DBF_STATS_INSERT_KEYS);
-
-    q.bindValue(":fn",fn);
-    q.bindValue(":tm",(uint)time(NULL));
-    q.bindValue(":sx",rec.picsize.width());
-    q.bindValue(":sy",rec.picsize.height());
-    q.bindValue(":gry",rec.color? 0:1);
-    q.bindValue(":fcn",fcn);
-    q.bindValue(":fcr",fcdat);
-    q.bindValue(":hst",harr);
-    q.bindValue(":sha",rec.sha);
-    q.bindValue(":len",rec.filelen);
-
-    return q.exec();
 }
 
 unsigned MViewer::incViews(bool left)
@@ -609,23 +474,6 @@ void MViewer::on_actionFit_triggered()
     scaleImage(current_r,ui->scrollArea_2,ui->label_2,1);
 }
 
-QString MViewer::timePrinter(double sec) const
-{
-    QString res;
-    double ehr = floor(sec / 3600.f);
-    if (ehr > 0) {
-        res += QString::asprintf("%.0f hrs ",ehr);
-        sec -= ehr * 3600.f;
-    }
-    double emn = floor(sec / 60.f);
-    if (emn > 0) {
-        res += QString::asprintf("%.0f min ",emn);
-        sec -= emn * 60.f;
-    }
-    res += QString::asprintf("%.1f sec",sec);
-    return res;
-}
-
 void MViewer::on_actionMatch_triggered()
 {
     using namespace cv;
@@ -667,107 +515,12 @@ void MViewer::on_actionMatch_triggered()
     searchResults(lst);
 }
 
-MImageExtras MViewer::getExtrasFromDB(QString const &fn)
-{
-    MImageExtras res;
-    QSqlQuery q;
-    q.prepare("SELECT sizex, sizey, grayscale, faces, facerects, hist, sha256, length FROM stats WHERE file = (:fn)");
-    q.bindValue(":fn",fn);;
-    if (!q.exec() || !q.next()) return res;
-
-    res.picsize = QSize(q.value(0).toUInt(), q.value(1).toUInt());
-    res.color = !(q.value(2).toInt());
-    QStringList flst = q.value(4).toString().split(',',QString::SkipEmptyParts);
-    for (auto k = flst.begin(); k != flst.end();) {
-        MROI r;
-        r.kind = MROI_FACE_FRONTAL;
-        r.x = k->toInt(); k++;
-        r.y = k->toInt(); k++;
-        r.w = k->toInt(); k++;
-        r.h = k->toInt(); k++;
-        res.rois.push_back(r);
-    }
-    if (q.value(5).canConvert(QVariant::ByteArray))
-        res.hist = CVHelper::loadMat(qUncompress(q.value(5).toByteArray()));
-    if (q.value(6).canConvert(QVariant::ByteArray))
-        res.sha = q.value(6).toByteArray();
-    if (q.value(7).canConvert(QVariant::UInt))
-        res.filelen = q.value(7).toUInt();
-
-    res.valid = true;
-    return res;
-}
-
-MImageExtras MViewer::collectImageExtraData(QString const &fn, QPixmap const &org)
-{
-    using namespace cv;
-    MImageExtras res;
-
-    //convert Pixmap into Mat
-    QImage orgm(org.toImage());
-    if (orgm.isNull()) return res;
-    Mat in = CVHelper::slowConvert(orgm);
-
-    res.picsize = org.size();
-
-    //image histogram (3D)
-    int histSize[] = {64, 64, 64};
-    float rranges[] = {0, 256};
-    const float* ranges[] = {rranges, rranges, rranges};
-    int channels[] = {0, 1, 2};
-    calcHist(&in,1,channels,Mat(),res.hist,3,histSize,ranges,true,false);
-
-    res.color = false;
-    //grayscale detection: fast approach
-    for (int k = 0; k < res.hist.size[0]; k++) {
-        float a = res.hist.at<float>(k,0,0);
-        float b = res.hist.at<float>(0,k,0);
-        float c = res.hist.at<float>(0,0,k);
-        if (a != b || b != c || c != a) {
-            res.color = true;
-            break;
-        }
-    }
-    if (!res.color && in.isContinuous()) {
-        //grayscale detection: slow approach, as we're still not completely sure
-        uchar* _ptr = in.ptr();
-        for (int k = 0; k < in.rows && !res.color; k++)
-            for (int kk = 0; kk < in.cols && !res.color; kk++) {
-                if (_ptr[0] != _ptr[1] || _ptr[1] != _ptr[2] || _ptr[2] != _ptr[0]) {
-                    res.color = true;
-                    qDebug() << "[grsdetect] Deep scan mismatch: " << _ptr[0] << _ptr[1] << _ptr[2];
-                }
-                _ptr += 3;
-            }
-    }
-
-    //face detector
-    std::vector<cv::Rect> faces;
-    facedetector.detectFaces(in,&faces);
-    for (auto &i : faces) {
-        MROI roi;
-        roi.kind = MROI_FACE_FRONTAL;
-        roi.x = i.x;
-        roi.y = i.y;
-        roi.w = i.width;
-        roi.h = i.height;
-        res.rois.push_back(roi);
-    }
-
-    //finally, SHA-256 and length
-    res.sha = getSHA256(fn,&(res.filelen));
-
-    //now this entry is valid
-    res.valid = true;
-    return res;
-}
-
 MImageExtras MViewer::getExtraCacheLine(QString const &fn, bool forceload, bool ignore_thumbs)
 {
     if (extra_cache.count(fn))
         return extra_cache[fn];
 
-    MImageExtras res = getExtrasFromDB(fn);
+    MImageExtras res = db.getExtrasFromDB(fn);
     if (res.valid) {
         extra_cache[fn] = res;
         return res;
@@ -794,7 +547,7 @@ MImageExtras MViewer::getExtraCacheLine(QString const &fn, bool forceload, bool 
     }
     if (org.isNull()) return res;
 
-    res = collectImageExtraData(fn,org);
+    res = mCV.collectImageExtraData(fn,org);
     if (res.valid) extra_cache[fn] = res;
 
     return res;
@@ -827,14 +580,14 @@ void MViewer::on_actionLoad_everything_slow_triggered()
         progressBar->setValue(floor(prg));
         ui->statusBar->showMessage(QString::asprintf("Objects: %.0f; Elapsed: %s; Processed: %lu; Speed: %.2f img/sec; Remaining: %s",
                                                      all,
-                                                     timePrinter(passed).toStdString().c_str(),
+                                                     DBHelper::timePrinter(passed).toStdString().c_str(),
                                                      k,spd,
-                                                     timePrinter(est).toStdString().c_str()));
+                                                     DBHelper::timePrinter(est).toStdString().c_str()));
     }
 
     ui->statusBar->showMessage(QString::asprintf("Objects: %.0f; Elapsed: %s; Speed: %.2f img/sec. %s.",
                                                  all,
-                                                 timePrinter(passed).toStdString().c_str(),
+                                                 DBHelper::timePrinter(passed).toStdString().c_str(),
                                                  spd,
                                                  (flag_stop_load_everything?"Cancelled by user":"Finished")));
     prepareLongProcessing(true);
@@ -864,47 +617,14 @@ void MViewer::on_listWidget_itemClicked(QListWidgetItem *item)
         return;
     }
 
-    QSqlQuery q;
-    q.prepare("SELECT rating FROM tags WHERE tag = :tg");
-    q.bindValue(":tg",item->text());
-    if (q.exec() && q.next()) {
-        uint rat = q.value(0).toUInt();
-        if (now) rat++;
-        else if (rat) rat--;
+    if (db.updateTags(item->text(),now))
         tags_cache[item->text()].second = now;
-
-        q.clear();
-        q.prepare("UPDATE tags SET rating = :rat WHERE tag = :tg");
-        q.bindValue(":rat",rat);
-        q.bindValue(":tg",item->text());
-        bool ok = q.exec();
-        qDebug() << "[db] Updating rating to " << rat << " for tag " << item->text() << ":" << ok;
-
-        updateCurrentTags();
-
-    } else
-        qDebug() << "ALERT: partially known tag " << item->text();
+    updateFileTags();
 }
 
-void MViewer::updateCurrentTags()
+void MViewer::updateFileTags()
 {
-    if (!current_l.valid) return;
-
-    QString tgs;
-    int ntg = 0;
-    for (auto &i : tags_cache)
-        if (i.second.second) {
-            tgs += QString::asprintf("%d,",i.second.first);
-            ntg++;
-        }
-
-    QSqlQuery q;
-    q.prepare("UPDATE stats SET ntags = :ntg, tags = :tgs WHERE file = :fn");
-    q.bindValue(":ntg",ntg);
-    q.bindValue(":tgs",tgs);
-    q.bindValue(":fn",current_l.filename);
-    bool ok = q.exec();
-    qDebug() << "[db] Updating tags: " << ok;
+    if (current_l.valid) db.updateFileTags(current_l.filename,tags_cache);
 }
 
 void MViewer::on_radio_search_toggled(bool checked)
@@ -980,55 +700,7 @@ void MViewer::searchByTag()
 {
     ThumbnailModel* ptm = dynamic_cast<ThumbnailModel*>(ui->listView->model());
     if (!ptm) return;
-    QList<MImageListRecord> &imgs = ptm->GetAllImages();
-    QSqlQuery q;
-    std::map<QString,QList<int> > targ;
-    QList<int> goal;
-    QStringList found;
-
-    for (auto &i : tags_cache) {
-        if (!i.second.second) continue;
-        goal.push_back(i.second.first);
-
-        q.clear();
-        q.prepare("SELECT file,tags FROM stats WHERE tags LIKE :t OR INSTR( tags, :i ) > 0");
-        q.bindValue(":t",QString::asprintf("%d,%%",i.second.first));
-        q.bindValue(":i",QString::asprintf(",%d,",i.second.first));
-        if (!q.exec()) {
-            qDebug() << "Select tag " << i.second.first << " failed";
-            continue;
-        }
-        //qDebug() << q.lastQuery();
-
-        while (q.next()) {
-            qDebug() << "TAG " << i.second.first << " FOUND: " << q.value(0).toString();
-            QList<int> l;
-            QStringList _l = q.value(1).toString().split(",",QString::SkipEmptyParts);
-            for (auto &j : _l) l.push_back(j.toInt());
-            targ[q.value(0).toString()] = l;
-        }
-    }
-
-    qDebug() << "Target list size: " << targ.size();
-
-    for (auto &i : targ) {
-        bool k = true;
-        for (auto &j : goal)
-            if (!i.second.contains(j)) {
-                k = false;
-                break;
-            }
-        if (!k) continue;
-
-        auto w = std::find_if(imgs.begin(),imgs.end(),[&] (const MImageListRecord& a) { return (a.filename == i.first); });
-        if (w == imgs.end()) {
-            qDebug() << "File " << i.first << " isn't among currently loaded ones";
-            continue;
-        }
-
-        found.push_back(i.first);
-    }
-    searchResults(found);
+    searchResults(db.tagSearch(tags_cache,(ptm? &(ptm->GetAllImages()) : nullptr)));
 }
 
 void MViewer::on_actionJump_to_triggered()
@@ -1055,58 +727,7 @@ void MViewer::on_actionRefine_search_triggered()
         ptm = dynamic_cast<MImageListModel*>(ui->listView_2->model()? ui->listView_2->model() : ui->listView->model());
     if (!ptm) return;
 
-    QSqlQuery q;
-    size_t area;
-    std::multimap<size_t,QString> tmap;
-    std::set<QString> tlst;
-
-    for (auto &i : ptm->GetAllImages()) {
-        q.clear();
-        q.prepare("SELECT rating, likes, views, faces, grayscale, sizex, sizey, ntags, notes FROM stats WHERE file = :fn");
-        q.bindValue(":fn",i.filename);
-        if (q.exec() && q.next()) {
-            if (flt.rating > q.value(0).toInt()) continue;
-            if (flt.kudos > q.value(1).toInt()) continue;
-            if (q.value(2).toUInt() < flt.minviews || q.value(2).toUInt() > flt.maxviews) continue;
-            if (q.value(3).toInt() < flt.minface || q.value(3).toInt() > flt.maxface) continue;
-            if (flt.colors > -1 && flt.colors != (q.value(4).toInt()>0)) continue;
-            if (i.filechanged < flt.minmtime || i.filechanged > flt.maxmtime) continue;
-            if (flt.wo_tags && q.value(7).toInt()) continue;
-            if (flt.w_notes && q.value(8).toString().isEmpty()) continue;
-
-            area = q.value(5).toUInt() * q.value(6).toUInt();
-            if (area < flt.minsize || area > flt.maxsize) continue;
-
-            switch (flt.sort) {
-            case SRFRM_RATING: tmap.insert(std::pair<int,QString>(q.value(0).toInt(), i.filename)); break;
-            case SRFRM_KUDOS: tmap.insert(std::pair<int,QString>(q.value(1).toInt(), i.filename)); break;
-            case SRFRM_VIEWS: tmap.insert(std::pair<int,QString>(q.value(2).toUInt(), i.filename)); break;
-            case SRFRM_DATE: tmap.insert(std::pair<int,QString>(i.filechanged, i.filename)); break;
-            case SRFRM_FACES: tmap.insert(std::pair<int,QString>(q.value(3).toInt(), i.filename)); break;
-            default: tlst.insert(i.filename);
-            }
-        }
-
-        if (tlst.size() + tmap.size() >= flt.maxresults) break;
-    }
-
-    QStringList out;
-
-    qDebug() << "Start of list";
-    if (flt.sort == SRFRM_NAME) {
-        for (auto &i : tlst) {
-            qDebug() << i;
-            out.push_back(i);
-        }
-    } else {
-        for (auto i = tmap.rbegin(); i != tmap.rend(); ++i) {
-            qDebug() << "key: " << i->first << "; val = " << i->second;
-            out.push_back(i->second);
-        }
-    }
-    qDebug() << "End of list";
-
-    searchResults(out);
+    searchResults(db.parametricSearch(flt,ptm->GetAllImages()));
 }
 
 void MViewer::on_actionSwap_images_triggered()
@@ -1137,23 +758,8 @@ void MViewer::on_actionLink_left_to_right_triggered()
     MImageExtras extr = getExtraCacheLine(current_r.filename);
     if (!extl.valid || !extr.valid || extl.sha.isEmpty() || extr.sha.isEmpty()) return;
 
-    QSqlQuery q;
-    q.prepare("SELECT * FROM links WHERE left = :sl AND right = :sr");
-    q.bindValue(":sl",extl.sha);
-    q.bindValue(":sr",extr.sha);
-    if (q.exec() && q.next()) {
-        ui->statusBar->showMessage("Already linked");
-        return;
-    }
-
-    q.clear();
-    q.prepare("INSERT INTO links (left, right) VALUES (:sl, :sr)");
-    q.bindValue(":sl",extl.sha);
-    q.bindValue(":sr",extr.sha);
-    bool ok = q.exec();
-
-    qDebug() << "[db] Inserting link: " << ok;
-    if (ok) ui->statusBar->showMessage("Linked");
+    if (db.createLinkBetweenImages(extl.sha,extr.sha)) ui->statusBar->showMessage("Linked");
+    else ui->statusBar->showMessage("Unable to link images");
 }
 
 void MViewer::on_actionLink_bidirectional_triggered()
@@ -1169,22 +775,7 @@ void MViewer::displayLinkedImages(QString const &fn)
     MImageExtras extr = getExtraCacheLine(fn);
     if (!extr.valid) return;
 
-    QSqlQuery q;
-    q.prepare("SELECT right FROM links WHERE left = :sha");
-    q.bindValue(":sha",extr.sha);
-    if (!q.exec()) return;
-
-    QStringList out;
-    while (q.next()) {
-        if (!q.value(0).canConvert(QVariant::ByteArray)) continue;
-
-        QSqlQuery qq;
-        qq.prepare("SELECT file FROM stats WHERE sha256 = :sha");
-        qq.bindValue(":sha",q.value(0).toByteArray());
-        if (qq.exec() && qq.next())
-            out.push_back(qq.value(0).toString());
-    }
-
+    QStringList out = db.getLinkedImages(extr.sha);
     resultsPresentation(out,ui->listView_3,2);
     connect(ui->listView_3->selectionModel(),&QItemSelectionModel::selectionChanged,[this] {
         current_r = ui->listView_3->selectionModel()->selectedIndexes().first().data(MImageListModel::FullDataRole).value<MImageListRecord>();
@@ -1204,14 +795,8 @@ void MViewer::on_actionAbout_triggered()
 
 void MViewer::on_pushButton_2_clicked()
 {
-    if (!current_l.valid) return;
-
-    QSqlQuery q;
-    q.prepare("UPDATE stats SET notes = :nt WHERE file = :fn");
-    q.bindValue(":nt",ui->plainTextEdit->toPlainText().replace('\"','\''));
-    q.bindValue(":fn",current_l.filename);
-    bool ok = q.exec();
-    qDebug() << "[db] Setting user notes: " << ok;
+    if (current_l.valid)
+        db.updateFileNotes(current_l.filename,ui->plainTextEdit->toPlainText().replace('\"','\''));
 }
 
 void MViewer::on_actionKudos_to_left_image_triggered()
@@ -1228,27 +813,7 @@ void MViewer::kudos(MImageListRecord const &to, int delta)
 {
     ui->lcdNumber_2->display(0);
     if (!to.valid) return;
-
-    int n = delta;
-    QSqlQuery q;
-    q.prepare("SELECT likes FROM stats WHERE file = :fn");
-    q.bindValue(":fn",to.filename);
-
-    if (!q.exec() || !q.next()) return;
-
-    n += q.value(0).toInt();
-
-    bool ok = true;
-    if (delta) {
-        q.clear();
-        q.prepare("UPDATE stats SET likes = :lk WHERE file = :fn");
-        q.bindValue(":lk",n);
-        q.bindValue(":fn",to.filename);
-        ok = q.exec();
-        qDebug() << "[db] Updating likes: " << ok;
-    }
-
-    if (ok) ui->lcdNumber_2->display(n);
+    ui->lcdNumber_2->display(db.updateFileKudos(to.filename,delta));
 }
 
 void MViewer::on_actionLeft_image_triggered()
@@ -1452,20 +1017,20 @@ void MViewer::on_actionReload_metadata_triggered()
         QCoreApplication::processEvents();
         if (flag_stop_load_everything) break;
 
-        MImageExtras ex = getExtrasFromDB(i.filename);
+        MImageExtras ex = db.getExtrasFromDB(i.filename);
         if (!ex.valid) continue; //we haven't scanned this file yet
 
         bool ok = false;
         qint64 sz;
-        QByteArray sha = getSHA256(i.filename,&sz); //current, "real" file
+        QByteArray sha = DBHelper::getSHA256(i.filename,&sz); //current, "real" file
         if (!sha.isEmpty() && sz == ex.filelen && sha == ex.sha) ok = true;
 
         if (ok) continue;
         ui->statusBar->showMessage("Updating "+i.fnshort);
 
         QPixmap pic(i.filename);
-        ex = collectImageExtraData(i.filename,pic);
-        ok = insertStatRecord(i.filename,ex,true);
+        ex = mCV.collectImageExtraData(i.filename,pic);
+        ok = db.updateStatRecord(i.filename,ex);
         qDebug() << "File " << i.filename << " has changed. Updated: " << ok;
 
         if (ok) extra_cache.erase(i.filename);
@@ -1476,137 +1041,26 @@ void MViewer::on_actionReload_metadata_triggered()
     ui->statusBar->showMessage(QString());
 }
 
-void MViewer::sanitizeLinks()
-{
-    QSqlQuery q,qa;
-    QSet<QByteArray> known_shas;
-    QList<std::pair<QByteArray,QByteArray>> to_remove;
-
-    if (!q.exec("SELECT COUNT(left) FROM links") || !qa.exec("SELECT left, right FROM links")) {
-        qDebug() << "[db] Unable to load links table";
-        return;
-    }
-
-    prepareLongProcessing();
-    ui->statusBar->showMessage("Checking links...");
-    double prg = 0, dp = q.next()? 50.f / (double)(q.value(0).toInt()) : 0;
-
-    while (qa.next()) {
-        prg += dp;
-        progressBar->setValue(floor(prg));
-        QCoreApplication::processEvents();
-        if (flag_stop_load_everything) return;
-
-        if (known_shas.contains(qa.value(0).toByteArray()) && known_shas.contains(qa.value(1).toByteArray()))
-            continue;
-        q.clear();
-        q.prepare("SELECT file FROM stats WHERE sha256 = :sha1 OR sha256 = :sha2");
-        q.bindValue(":sha1",qa.value(0).toByteArray());
-        q.bindValue(":sha2",qa.value(1).toByteArray());
-        if (q.exec() && q.next() && q.next()) { //there must be two consecutive records
-            known_shas.insert(qa.value(0).toByteArray());
-            known_shas.insert(qa.value(1).toByteArray());
-            continue;
-        }
-
-        qDebug() << "[Sanitizer] Lost file with sha " << qa.value(0).toByteArray().toHex();
-        to_remove.push_back(std::pair<QByteArray,QByteArray>(qa.value(0).toByteArray(),qa.value(1).toByteArray()));
-    }
-
-    qDebug() << "[Sanitizer] " << to_remove.size() << " records scheduled for removal";
-
-    prg = 50;
-    dp = 50.f / (double)(to_remove.size());
-
-    for (auto &i : to_remove) {
-        q.clear();
-        q.prepare("DELETE FROM links WHERE left = :sha1 AND right = :sha2");
-        q.bindValue(":sha1",i.first);;
-        q.bindValue(":sha2",i.second);;
-        if (!q.exec()) {
-            qDebug() << "[db] Failed to remove link record";
-            break;
-        }
-
-        prg += dp;
-        progressBar->setValue(floor(prg));
-        QCoreApplication::processEvents();
-        if (flag_stop_load_everything) return;
-    }
-
-    prepareLongProcessing(true);
-}
-
-void MViewer::sanitizeTags()
-{
-    QSqlQuery q,qa,qw;
-    if (!q.exec("SELECT COUNT(tags) FROM stats") || !qa.exec("SELECT tags FROM stats")) {
-        qDebug() << "[db] Unable to query stats table for tags listing";
-        return;
-    }
-    if (!qw.exec("SELECT COUNT(key) FROM tags")) {
-        qDebug() << "[db] Unable to query tags table";
-        return;
-    }
-
-    prepareLongProcessing();
-    ui->statusBar->showMessage("Checking tags...");
-    double prg = 0, dp = q.next()? 50.f / (double)(q.value(0).toInt()) : 0;
-
-    std::map<unsigned,int> used_tags;
-    while (qa.next()) {
-        prg += dp;
-        progressBar->setValue(floor(prg));
-        QCoreApplication::processEvents();
-        if (flag_stop_load_everything) return;
-
-        if (qa.value(0).toString().isEmpty()) continue;
-        QStringList ls = qa.value(0).toString().split(',',QString::SkipEmptyParts);
-        if (ls.isEmpty()) continue;
-
-        for (auto &j : ls) {
-            unsigned ji = j.toUInt();
-            if (used_tags.count(ji)) used_tags[ji]++;
-            else used_tags[ji] = 1;
-        }
-    }
-
-    qDebug() << "[Sanitizer] " << used_tags.size() << " tags currently in use";
-
-    prg = 50;
-    dp = qw.next()? 50.f / (double)(qw.value(0).toInt()) : 0;
-
-    for (auto &i : used_tags) {
-        int n;
-        unsigned k = i.first;
-        if (!used_tags.count(k)) n = 0;
-        else n = used_tags.at(k);
-
-        q.clear();
-        q.prepare("UPDATE tags SET rating = :n WHERE key = :k");
-        q.bindValue(":n",n);
-        q.bindValue(":k",k);
-        if (!q.exec()) {
-            qDebug() << "[db] Failed to update tag record";
-            break;
-        }
-
-        prg += dp;
-        progressBar->setValue(floor(prg));
-        QCoreApplication::processEvents();
-        if (flag_stop_load_everything) return;
-    }
-
-    prepareLongProcessing(true);
-}
-
 void MViewer::on_actionSanitize_DB_triggered()
 {
     //step 1. check all links
-    sanitizeLinks();
+    prepareLongProcessing();
+    ui->statusBar->showMessage("Checking links...");
+    db.sanitizeLinks([this] (double p) {
+        progressBar->setValue(floor(p));
+        QCoreApplication::processEvents();
+        return !flag_stop_load_everything;
+    });
+    prepareLongProcessing(true);
 
     //step 2. renew tags ratings
-    sanitizeTags();
+    prepareLongProcessing();
+    ui->statusBar->showMessage("Checking tags...");
+    db.sanitizeTags([this] (double p) {
+        progressBar->setValue(floor(p));
+        QCoreApplication::processEvents();
+        return !flag_stop_load_everything;
+    });
 
     qDebug() << "[Sanitizer] Done.";
     prepareLongProcessing(true);

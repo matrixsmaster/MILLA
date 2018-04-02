@@ -14,21 +14,17 @@
 #include <QTimer>
 #include <QPainter>
 #include <QMovie>
-#include <QCryptographicHash>
 #include <QInputDialog>
 #include <ctime>
 #include <chrono>
-#include "db_format.h"
-#include "plugins.h"
 #include "pluginloader.h"
-#include "cvhelper.h"
+#include "dbhelper.h"
 #include "thumbnailmodel.h"
 #include "sresultmodel.h"
 #include "exportform.h"
 #include "mimpexpmodule.h"
-#include "facedetector.h"
 
-#define MILLA_VERSION "ver. 0.1.9"
+#define MILLA_VERSION "ver. 0.1.10"
 #define MILLA_SITE "http://github.com/matrixsmaster/MILLA"
 #define EXTRA_CACHE_SIZE 1500
 #define MILLA_OPEN_FILE "Image Files (*.png *.jpg *.jpeg *.bmp)"
@@ -43,27 +39,6 @@
  *
  * Thank you in advance, future me!
  * */
-
-enum MROIType {
-    MROI_GENERIC = 0,
-    MROI_FACE_FRONTAL,
-    MROI_INVALID // terminator
-};
-
-struct MROI {
-    MROIType kind = MROI_GENERIC;
-    int x = 0, y = 0, w = 0, h = 0;
-};
-
-struct MImageExtras {
-    bool valid = false;
-    QSize picsize;
-    std::vector<MROI> rois;
-    cv::Mat hist;
-    bool color = true;
-    QByteArray sha;
-    qint64 filelen;
-};
 
 struct MHistory {
     QStringList files;
@@ -163,6 +138,8 @@ private slots:
 
 private:
     Ui::MViewer *ui;
+    DBHelper db;
+    CVHelper mCV;
     MillaPluginLoader plugins;
 
     QTimer view_timer;
@@ -175,12 +152,9 @@ private:
     double scaleFactor = 1;
     MImageListRecord current_l, current_r;
 
-    FaceDetector facedetector;
     std::map<QString,MImageExtras> extra_cache;
     MTagCache tags_cache;
     MHistory history;
-
-    bool initDatabase();
 
     void cleanUp();
 
@@ -210,25 +184,15 @@ private:
 
     void prepareLongProcessing(bool finish = false);
 
-    QByteArray getSHA256(QString const &fn, qint64 *size);
-
     bool createStatRecord(QString const &fn, bool cache_global = false);
-
-    bool insertStatRecord(QString const &fn, MImageExtras &rec, bool update);
 
     unsigned incViews(bool left = true);
 
     void scaleImage(const MImageListRecord &rec, QScrollArea* scrl, QLabel* lbl, double factor);
 
-    QString timePrinter(double sec) const;
-
-    MImageExtras getExtrasFromDB(QString const &fn);
-
-    MImageExtras collectImageExtraData(QString const &fn, QPixmap const &org);
-
     MImageExtras getExtraCacheLine(QString const &fn, bool forceload = false, bool ignore_thumbs = false);
 
-    void updateCurrentTags();
+    void updateFileTags();
 
     void resultsPresentation(QStringList lst, QListView *view, int tabIndex);
 
@@ -243,10 +207,6 @@ private:
     void selectIEFileDialog(bool import);
 
     void updateThumbnailsOrder(ThumbnailModel::ThumbnailModelSort ord, bool desc);
-
-    void sanitizeLinks();
-
-    void sanitizeTags();
 };
 
 #endif // MVIEWER_H

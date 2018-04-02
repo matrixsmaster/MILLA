@@ -1,4 +1,10 @@
 #include "cvhelper.h"
+#include "dbhelper.h"
+
+CVHelper::~CVHelper()
+{
+    facedetector.Finalize();
+}
 
 cv::Mat CVHelper::quickConvert(QImage &in) //FIXME: not always working
 {
@@ -81,5 +87,69 @@ cv::Mat CVHelper::loadMat(QByteArray const &arr)
     ptr = (const char*)uptr;
     memcpy(res.ptr(),ptr,tot);
 
+    return res;
+}
+
+MImageExtras CVHelper::collectImageExtraData(QString const &fn, QPixmap const &org)
+{
+    using namespace cv;
+    MImageExtras res;
+
+    //convert Pixmap into Mat
+    QImage orgm(org.toImage());
+    if (orgm.isNull()) return res;
+    Mat in = CVHelper::slowConvert(orgm);
+
+    res.picsize = org.size();
+
+    //image histogram (3D)
+    int histSize[] = {64, 64, 64};
+    float rranges[] = {0, 256};
+    const float* ranges[] = {rranges, rranges, rranges};
+    int channels[] = {0, 1, 2};
+    calcHist(&in,1,channels,Mat(),res.hist,3,histSize,ranges,true,false);
+
+    res.color = false;
+    //grayscale detection: fast approach
+    for (int k = 0; k < res.hist.size[0]; k++) {
+        float a = res.hist.at<float>(k,0,0);
+        float b = res.hist.at<float>(0,k,0);
+        float c = res.hist.at<float>(0,0,k);
+        if (a != b || b != c || c != a) {
+            res.color = true;
+            break;
+        }
+    }
+    if (!res.color && in.isContinuous()) {
+        //grayscale detection: slow approach, as we're still not completely sure
+        uchar* _ptr = in.ptr();
+        for (int k = 0; k < in.rows && !res.color; k++)
+            for (int kk = 0; kk < in.cols && !res.color; kk++) {
+                if (_ptr[0] != _ptr[1] || _ptr[1] != _ptr[2] || _ptr[2] != _ptr[0]) {
+                    res.color = true;
+                    qDebug() << "[grsdetect] Deep scan mismatch: " << _ptr[0] << _ptr[1] << _ptr[2];
+                }
+                _ptr += 3;
+            }
+    }
+
+    //face detector
+    std::vector<cv::Rect> faces;
+    facedetector.detectFaces(in,&faces);
+    for (auto &i : faces) {
+        MROI roi;
+        roi.kind = MROI_FACE_FRONTAL;
+        roi.x = i.x;
+        roi.y = i.y;
+        roi.w = i.width;
+        roi.h = i.height;
+        res.rois.push_back(roi);
+    }
+
+    //finally, SHA-256 and length
+    res.sha = DBHelper::getSHA256(fn,&(res.filelen));
+
+    //now this entry is valid
+    res.valid = true;
     return res;
 }

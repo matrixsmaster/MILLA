@@ -23,7 +23,8 @@ SOURCES += main.cpp\
     mimpexpmodule.cpp \
     facedetector.cpp \
     cvhelper.cpp \
-    pluginloader.cpp
+    pluginloader.cpp \
+    dbhelper.cpp
 
 HEADERS  += mviewer.h \
     thumbnailmodel.h \
@@ -37,7 +38,8 @@ HEADERS  += mviewer.h \
     plugins.h \
     facedetector.h \
     cvhelper.h \
-    pluginloader.h
+    pluginloader.h \
+    dbhelper.h
 
 FORMS    += mviewer.ui \
     searchform.ui \
