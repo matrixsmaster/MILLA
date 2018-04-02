@@ -167,7 +167,7 @@ bool MViewer::createStatRecord(QString const &fn, bool cache_global)
 
 void MViewer::checkExtraCache()
 {
-    if (extra_cache.size() > EXTRA_CACHE_SIZE) extra_cache.clear();
+    if (extra_cache.size() > MILLA_EXTRA_CACHE_SIZE) extra_cache.clear();
 }
 
 MImageExtras MViewer::getExtraCacheLine(QString const &fn, bool forceload, bool ignore_thumbs)
@@ -561,7 +561,8 @@ void MViewer::on_listWidget_itemClicked(QListWidgetItem *item)
     if (ui->radio_search->isChecked()) {
         //search by tag instead of change tags
         tags_cache[item->text()].second = now;
-        searchByTag();
+        ThumbnailModel* ptm = dynamic_cast<ThumbnailModel*>(ui->listView->model());
+        searchResults(db.tagSearch(tags_cache,(ptm? &(ptm->GetAllImages()) : nullptr)));
         return;
     }
 
@@ -643,13 +644,6 @@ void MViewer::searchResults(QStringList lst)
             incViews(false);
         }
     });
-}
-
-void MViewer::searchByTag()
-{
-    ThumbnailModel* ptm = dynamic_cast<ThumbnailModel*>(ui->listView->model());
-    if (!ptm) return;
-    searchResults(db.tagSearch(tags_cache,(ptm? &(ptm->GetAllImages()) : nullptr)));
 }
 
 void MViewer::on_actionJump_to_triggered()

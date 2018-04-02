@@ -13,6 +13,8 @@
 
 #define DBF_META "version INT"
 
+#define DBF_THUMBS "file TEXT, mtime UNSIGNED INT, thumb BLOB"
+
 #define DBF_STATS " file TEXT, \
                     views UNSIGNED BIGINT, \
                     lastview UNSIGNED INT, \

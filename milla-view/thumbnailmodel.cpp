@@ -1,34 +1,16 @@
 #include "thumbnailmodel.h"
+#include "dbhelper.h"
 
 ThumbnailModel::ThumbnailModel(QStringList files, QObject *parent)
     : MImageListModel(parent)
 {
     QSqlQuery q;
-    bool ok = q.exec("SELECT * FROM thumbs LIMIT 1");
-    qDebug() << "[db] Read thumbs table: " << ok;
-    if (!ok) {
-        QSqlQuery qq;
-        ok = qq.exec("CREATE TABLE thumbs (file TEXT, mtime UNSIGNED INT, thumb BLOB)");
-        qDebug() << "[db] Create new thumbs table: " << ok;
-    }
 
     for (auto &i : files) {
         MImageListRecord rec;
         rec.filename = i;
         rec.valid = true;
-
-        if (ok) {
-            QSqlQuery qq;
-            qq.prepare("SELECT thumb, mtime FROM thumbs WHERE file = (:fn)");
-            qq.bindValue(":fn",i);
-
-            if (qq.exec() && qq.next() && qq.value(0).canConvert(QVariant::ByteArray) && qq.value(1).canConvert(QVariant::UInt)) {
-                qDebug() << "Loaded thumbnail for " << i;
-                rec.thumb.loadFromData(qq.value(0).toByteArray());
-                rec.filechanged = qq.value(1).toUInt();
-                rec.modified = false;
-            }
-        }
+        DBHelper::getThumbnail(rec);
 
         if (rec.modified) {
             rec.thumb = QPixmap(THUMBNAILSIZE,THUMBNAILSIZE);
@@ -69,34 +51,8 @@ void ThumbnailModel::LoadUp(int idx, bool force_reload)
     QByteArray arr;
     QBuffer dat(&arr);
     dat.open(QBuffer::WriteOnly);
-    bool ok = images.at(idx).thumb.save(&dat,"png");
-
-    QSqlQuery qq;
-    qq.prepare("SELECT thumb FROM thumbs WHERE file = (:fn)");
-    qq.bindValue(":fn",images.at(idx).filename);
-    bool mod = qq.exec() && qq.next();
-
-    if (ok) {
-        QSqlQuery q;
-        QString act;
-        ok = false;
-
-        if (!mod) {
-            q.prepare("INSERT INTO thumbs (file, mtime, thumb) VALUES (:fn, :mtm, :thm)");
-            act = "Inserting";
-        } else {
-            q.prepare("UPDATE thumbs SET thumb = :thm, mtime = :mtm WHERE file = :fn");
-            act = "Updating";
-        }
-        q.bindValue(":fn",images.at(idx).filename);
-        q.bindValue(":mtm",fi.lastModified().toTime_t());
-        q.bindValue(":thm",arr);
-        ok = q.exec();
-
-        qDebug() << "[db] " << act << " record for " << images.at(idx).fnshort << ": " << ok;
-        if (ok) images[idx].modified = false;
-        else qDebug() << q.lastError();
-    }
+    if (images.at(idx).thumb.save(&dat,"png"))
+        DBHelper::updateThumbnail(images[idx],arr);
 }
 
 void ThumbnailModel::GC(int skip)

@@ -24,20 +24,21 @@
 #include "exportform.h"
 #include "mimpexpmodule.h"
 
-#define MILLA_VERSION "ver. 0.1.10"
+#define MILLA_VERSION "ver. 0.1.11"
 #define MILLA_SITE "http://github.com/matrixsmaster/MILLA"
-#define EXTRA_CACHE_SIZE 1500
+#define MILLA_EXTRA_CACHE_SIZE 1500
 #define MILLA_OPEN_FILE "Image Files (*.png *.jpg *.jpeg *.bmp)"
 #define MILLA_OPEN_LIST "Text Files [txt,lst] (*.txt *.lst)"
 
 /* A note for future self:
  * This file SHOULD be separated. It IS in this messy state only because MILLA is
- * mostly a research software.
+ * mostly an experimental project.
  * But as soon, as some functionality seems to be complete, it should be
  * extracted, encapsulated and moved into its own module.
- * Just like ImportExportModule and FaceDetector did.
+ * Just like ImportExportModule, FaceDetector and DBHelper did.
  *
  * Thank you in advance, future me!
+ * Signed, present me.
  * */
 
 struct MHistory {
@@ -197,8 +198,6 @@ private:
     void resultsPresentation(QStringList lst, QListView *view, int tabIndex);
 
     void searchResults(QStringList lst);
-
-    void searchByTag();
 
     void displayLinkedImages(QString const &fn);
 

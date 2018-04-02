@@ -1,9 +1,5 @@
 #include "dbhelper.h"
 
-DBHelper::DBHelper()
-{
-}
-
 bool DBHelper::initDatabase()
 {
     QSqlDatabase db = QSqlDatabase::addDatabase("QSQLITE");
@@ -68,6 +64,15 @@ bool DBHelper::initDatabase()
         if (!ok) return false;
     }
 
+    q.clear();
+    ok = DB_CORRECT_TABLE_CHECK(q,"'thumbs'");
+    qDebug() << "[db] Read thumbs table: " << ok;
+    if (!ok) {
+        QSqlQuery qq;
+        ok = qq.exec("CREATE TABLE thumbs (" DBF_THUMBS ")");
+        qDebug() << "[db] Create new thumbs table: " << ok;
+    }
+
     return ok;
 }
 
@@ -101,6 +106,49 @@ QByteArray DBHelper::getSHA256(QString const &fn, qint64* size)
     if (size) *size = mfile.size();
     mfile.close();
     return shasum;
+}
+
+bool DBHelper::getThumbnail(MImageListRecord &rec)
+{
+    QSqlQuery q;
+    q.prepare("SELECT thumb, mtime FROM thumbs WHERE file = (:fn)");
+    q.bindValue(":fn",rec.filename);
+
+    if (q.exec() && q.next() && q.value(0).canConvert(QVariant::ByteArray) && q.value(1).canConvert(QVariant::UInt)) {
+        qDebug() << "[db] Loaded thumbnail for " << rec.filename;
+        rec.thumb.loadFromData(q.value(0).toByteArray());
+        rec.filechanged = q.value(1).toUInt();
+        rec.modified = false;
+        return true;
+    }
+    return false;
+}
+
+bool DBHelper::updateThumbnail(MImageListRecord &rec, QByteArray const &png)
+{
+    QSqlQuery q;
+    QString act;
+    q.prepare("SELECT mtime FROM thumbs WHERE file = (:fn)");
+    q.bindValue(":fn",rec.filename);
+    bool mod = q.exec() && q.next();
+
+    if (!mod) {
+        q.prepare("INSERT INTO thumbs (file, mtime, thumb) VALUES (:fn, :mtm, :thm)");
+        act = "Inserting";
+    } else {
+        q.prepare("UPDATE thumbs SET thumb = :thm, mtime = :mtm WHERE file = :fn");
+        act = "Updating";
+    }
+    q.bindValue(":fn",rec.filename);
+    q.bindValue(":mtm",(qlonglong)(rec.filechanged));
+    q.bindValue(":thm",png);
+    bool ok = q.exec();
+
+    qDebug() << "[db] " << act << " record for " << rec.fnshort << ": " << ok;
+    if (ok) rec.modified = false;
+    else qDebug() << q.lastError();
+
+    return ok;
 }
 
 bool DBHelper::isStatRecordExists(QString const &fn)

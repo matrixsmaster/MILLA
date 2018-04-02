@@ -15,7 +15,7 @@ typedef QList<std::tuple<QString,unsigned,bool>> MTagsCheckList;
 class DBHelper
 {
 public:
-    DBHelper();
+    DBHelper() {}
     virtual ~DBHelper() {}
 
     bool initDatabase();
@@ -24,45 +24,49 @@ public:
 
     static QByteArray getSHA256(QString const &fn, qint64 *size);
 
-    bool isStatRecordExists(QString const &fn);
+    static bool getThumbnail(MImageListRecord &rec);
 
-    bool updateStatRecord(QString const &fn, MImageExtras &rec, bool update = true);
+    static bool updateThumbnail(MImageListRecord &rec, QByteArray const &png);
 
-    MImageExtras getExtrasFromDB(QString const &fn);
+    static bool isStatRecordExists(QString const &fn);
 
-    bool insertTag(QString const &ntag, unsigned &key);
+    static bool updateStatRecord(QString const &fn, MImageExtras &rec, bool update = true);
 
-    int getFileRating(QString const &fn);
+    static MImageExtras getExtrasFromDB(QString const &fn);
 
-    bool updateFileRating(QString const &fn, int n);
+    static bool insertTag(QString const &ntag, unsigned &key);
 
-    unsigned getFileViews(QString const &fn, bool &ok);
+    static int getFileRating(QString const &fn);
 
-    bool updateFileViews(QString const &fn, unsigned n);
+    static bool updateFileRating(QString const &fn, int n);
 
-    MTagsCheckList getFileTags(QString const &fn);
+    static unsigned getFileViews(QString const &fn, bool &ok);
 
-    bool updateTags(QString const &tag, bool checked);
+    static bool updateFileViews(QString const &fn, unsigned n);
 
-    bool updateFileTags(QString const &fn, MTagCache const &cache);
+    static MTagsCheckList getFileTags(QString const &fn);
 
-    int updateFileKudos(QString const &fn, int delta);
+    static bool updateTags(QString const &tag, bool checked);
 
-    QString getFileNotes(QString const &fn);
+    static bool updateFileTags(QString const &fn, MTagCache const &cache);
 
-    bool updateFileNotes(QString const &fn, QString &notes);
+    static int updateFileKudos(QString const &fn, int delta);
 
-    bool createLinkBetweenImages(QByteArray const &left, QByteArray const &right);
+    static QString getFileNotes(QString const &fn);
 
-    QStringList getLinkedImages(QByteArray const &sha);
+    static bool updateFileNotes(QString const &fn, QString &notes);
 
-    QStringList tagSearch(MTagCache const &cache, QList<MImageListRecord>* within = nullptr);
+    static bool createLinkBetweenImages(QByteArray const &left, QByteArray const &right);
 
-    QStringList parametricSearch(SearchFormData flt, QList<MImageListRecord> const &from);
+    static QStringList getLinkedImages(QByteArray const &sha);
 
-    void sanitizeLinks(progressCB progress_cb);
+    static QStringList tagSearch(MTagCache const &cache, QList<MImageListRecord>* within = nullptr);
 
-    void sanitizeTags(progressCB progress_cb);
+    static QStringList parametricSearch(SearchFormData flt, QList<MImageListRecord> const &from);
+
+    static void sanitizeLinks(progressCB progress_cb);
+
+    static void sanitizeTags(progressCB progress_cb);
 };
 
 #endif // DBHELPER_H
