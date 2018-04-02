@@ -201,9 +201,11 @@ void MViewer::prepareLongProcessing(bool finish)
     if (finish) {
         QApplication::restoreOverrideCursor();
         loadingMovie->stop();
-        ui->statusBar->removeWidget(loadingLabel);
-        delete loadingLabel;
-        loadingLabel = nullptr;
+        if (loadingLabel) {
+            ui->statusBar->removeWidget(loadingLabel);
+            delete loadingLabel;
+            loadingLabel = nullptr;
+        }
 
     } else {
         QApplication::setOverrideCursor(Qt::WaitCursor);
@@ -1324,6 +1326,7 @@ void MViewer::selectIEFileDialog(bool import)
     qDebug() << "[db] " << (import? "Import":"Export") << " data: " << ok;
 
     if (!ok) QMessageBox::critical(this, tr("Import/Export error"), tr("Unable to finish operation"));
+    else ui->statusBar->showMessage("Import/export operation finished");
 }
 
 void MViewer::on_actionExport_data_triggered()
@@ -1479,20 +1482,20 @@ void MViewer::sanitizeLinks()
     QSet<QByteArray> known_shas;
     QList<std::pair<QByteArray,QByteArray>> to_remove;
 
-    prepareLongProcessing();
-
     if (!q.exec("SELECT COUNT(left) FROM links") || !qa.exec("SELECT left, right FROM links")) {
         qDebug() << "[db] Unable to load links table";
         return;
     }
 
+    prepareLongProcessing();
+    ui->statusBar->showMessage("Checking links...");
     double prg = 0, dp = q.next()? 50.f / (double)(q.value(0).toInt()) : 0;
 
     while (qa.next()) {
         prg += dp;
         progressBar->setValue(floor(prg));
         QCoreApplication::processEvents();
-        if (flag_stop_load_everything) break;
+        if (flag_stop_load_everything) return;
 
         if (known_shas.contains(qa.value(0).toByteArray()) && known_shas.contains(qa.value(1).toByteArray()))
             continue;
@@ -1528,7 +1531,70 @@ void MViewer::sanitizeLinks()
         prg += dp;
         progressBar->setValue(floor(prg));
         QCoreApplication::processEvents();
-        if (flag_stop_load_everything) break;
+        if (flag_stop_load_everything) return;
+    }
+
+    prepareLongProcessing(true);
+}
+
+void MViewer::sanitizeTags()
+{
+    QSqlQuery q,qa,qw;
+    if (!q.exec("SELECT COUNT(tags) FROM stats") || !qa.exec("SELECT tags FROM stats")) {
+        qDebug() << "[db] Unable to query stats table for tags listing";
+        return;
+    }
+    if (!qw.exec("SELECT COUNT(key) FROM tags")) {
+        qDebug() << "[db] Unable to query tags table";
+        return;
+    }
+
+    prepareLongProcessing();
+    ui->statusBar->showMessage("Checking tags...");
+    double prg = 0, dp = q.next()? 50.f / (double)(q.value(0).toInt()) : 0;
+
+    std::map<unsigned,int> used_tags;
+    while (qa.next()) {
+        prg += dp;
+        progressBar->setValue(floor(prg));
+        QCoreApplication::processEvents();
+        if (flag_stop_load_everything) return;
+
+        if (qa.value(0).toString().isEmpty()) continue;
+        QStringList ls = qa.value(0).toString().split(',',QString::SkipEmptyParts);
+        if (ls.isEmpty()) continue;
+
+        for (auto &j : ls) {
+            unsigned ji = j.toUInt();
+            if (used_tags.count(ji)) used_tags[ji]++;
+            else used_tags[ji] = 1;
+        }
+    }
+
+    qDebug() << "[Sanitizer] " << used_tags.size() << " tags currently in use";
+
+    prg = 50;
+    dp = qw.next()? 50.f / (double)(qw.value(0).toInt()) : 0;
+
+    for (auto &i : used_tags) {
+        int n;
+        unsigned k = i.first;
+        if (!used_tags.count(k)) n = 0;
+        else n = used_tags.at(k);
+
+        q.clear();
+        q.prepare("UPDATE tags SET rating = :n WHERE key = :k");
+        q.bindValue(":n",n);
+        q.bindValue(":k",k);
+        if (!q.exec()) {
+            qDebug() << "[db] Failed to update tag record";
+            break;
+        }
+
+        prg += dp;
+        progressBar->setValue(floor(prg));
+        QCoreApplication::processEvents();
+        if (flag_stop_load_everything) return;
     }
 
     prepareLongProcessing(true);
@@ -1536,19 +1602,14 @@ void MViewer::sanitizeLinks()
 
 void MViewer::on_actionSanitize_DB_triggered()
 {
-    QSqlQuery q;
-    if (!q.exec("SELECT file FROM stats")) {
-        qDebug() << "[db] Unable to load list of all known files";
-        return;
-    }
-    QStringList all;
-    while (q.next()) all.push_back(q.value(0).toString());
-    if (all.empty()) return;
-
     //step 1. check all links
     sanitizeLinks();
-    //TODO
+
+    //step 2. renew tags ratings
+    sanitizeTags();
+
     qDebug() << "[Sanitizer] Done.";
+    prepareLongProcessing(true);
     ui->statusBar->showMessage("Done");
 }
 

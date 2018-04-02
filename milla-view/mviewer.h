@@ -28,7 +28,7 @@
 #include "mimpexpmodule.h"
 #include "facedetector.h"
 
-#define MILLA_VERSION "ver. 0.1.8"
+#define MILLA_VERSION "ver. 0.1.9"
 #define MILLA_SITE "http://github.com/matrixsmaster/MILLA"
 #define EXTRA_CACHE_SIZE 1500
 #define MILLA_OPEN_FILE "Image Files (*.png *.jpg *.jpeg *.bmp)"
@@ -245,6 +245,8 @@ private:
     void updateThumbnailsOrder(ThumbnailModel::ThumbnailModelSort ord, bool desc);
 
     void sanitizeLinks();
+
+    void sanitizeTags();
 };
 
 #endif // MVIEWER_H
