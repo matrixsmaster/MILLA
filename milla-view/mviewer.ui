@@ -1527,6 +1527,7 @@
     <addaction name="actionOpen_list"/>
     <addaction name="separator"/>
     <addaction name="actionJump_to"/>
+    <addaction name="actionRandom_image"/>
     <addaction name="separator"/>
     <addaction name="actionLoad_everything_slow"/>
     <addaction name="actionUpdate_thumbnails"/>
@@ -1605,8 +1606,9 @@
      <addaction name="actionLeft_image"/>
      <addaction name="actionRight_image"/>
     </widget>
-    <addaction name="menuShow_in"/>
     <addaction name="actionGlobal_search"/>
+    <addaction name="menuShow_in"/>
+    <addaction name="separator"/>
     <addaction name="actionClear_results"/>
     <addaction name="actionRefine_search"/>
     <addaction name="actionMatch"/>
@@ -1939,6 +1941,17 @@
    </property>
    <property name="text">
     <string>Global search</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+G</string>
+   </property>
+  </action>
+  <action name="actionRandom_image">
+   <property name="text">
+    <string>Random image</string>
+   </property>
+   <property name="shortcut">
+    <string>R</string>
    </property>
   </action>
  </widget>

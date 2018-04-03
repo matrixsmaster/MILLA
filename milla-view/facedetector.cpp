@@ -1,11 +1,12 @@
 #include "facedetector.h"
 
-cv::CascadeClassifier* FaceDetector::face_cascade = nullptr;
+using namespace cv;
+using namespace std;
+
+CascadeClassifier* FaceDetector::face_cascade = nullptr;
 
 FaceDetector::FaceDetector()
 {
-    using namespace cv;
-
     if (!face_cascade) {
         QFile test(FACE_CASCADE_FILE);
         if (test.exists()) test.remove();
@@ -21,13 +22,11 @@ FaceDetector::FaceDetector()
     }
 }
 
-void FaceDetector::detectFaces(const cv::Mat &inp, std::vector<cv::Rect>* store)
+void FaceDetector::detectFaces(const Mat &inp, vector<Rect>* store)
 {
-    using namespace cv;
-
     if (!face_cascade) return;
 
-    std::vector<Rect> items;
+    vector<Rect> items;
     Mat work;
 
     try {

@@ -573,7 +573,18 @@ QStringList DBHelper::parametricSearch(SearchFormData flt, QList<MImageListRecor
     return out;
 }
 
-void DBHelper::sanitizeLinks(progressCB progress_cb)
+QStringList DBHelper::getAllFiles()
+{
+    QSqlQuery q;
+    QStringList out;
+
+    if (!q.exec("SELECT file FROM stats")) return out;
+    while (q.next()) out.push_back(q.value(0).toString());
+
+    return out;
+}
+
+void DBHelper::sanitizeLinks(ProgressCB progress_cb)
 {
     QSqlQuery q,qa;
     QSet<QByteArray> known_shas;
@@ -626,7 +637,7 @@ void DBHelper::sanitizeLinks(progressCB progress_cb)
     }
 }
 
-void DBHelper::sanitizeTags(progressCB progress_cb)
+void DBHelper::sanitizeTags(ProgressCB progress_cb)
 {
     QSqlQuery q,qa,qw;
     if (!q.exec("SELECT COUNT(tags) FROM stats") || !qa.exec("SELECT tags FROM stats")) {

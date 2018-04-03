@@ -24,7 +24,8 @@ SOURCES += main.cpp\
     facedetector.cpp \
     cvhelper.cpp \
     pluginloader.cpp \
-    dbhelper.cpp
+    dbhelper.cpp \
+    mmatcher.cpp
 
 HEADERS  += mviewer.h \
     thumbnailmodel.h \
@@ -39,7 +40,8 @@ HEADERS  += mviewer.h \
     facedetector.h \
     cvhelper.h \
     pluginloader.h \
-    dbhelper.h
+    dbhelper.h \
+    mmatcher.h
 
 FORMS    += mviewer.ui \
     searchform.ui \

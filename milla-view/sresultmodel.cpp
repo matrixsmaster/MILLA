@@ -52,7 +52,7 @@ void SResultModel::Loader()
         j.valid = true;
     }
 
-    beginInsertRows(QModelIndex(),0,images.size());
+    beginInsertRows(QModelIndex(),images.size(),images.size());
     endInsertRows();
 
     if (curitem != images.end()) timer.start(RESULTUPDATETIMEOUT);

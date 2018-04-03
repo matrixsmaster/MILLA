@@ -64,9 +64,11 @@ public:
 
     static QStringList parametricSearch(SearchFormData flt, QList<MImageListRecord> const &from);
 
-    static void sanitizeLinks(progressCB progress_cb);
+    static QStringList getAllFiles();
 
-    static void sanitizeTags(progressCB progress_cb);
+    static void sanitizeLinks(ProgressCB progress_cb);
+
+    static void sanitizeTags(ProgressCB progress_cb);
 };
 
 #endif // DBHELPER_H

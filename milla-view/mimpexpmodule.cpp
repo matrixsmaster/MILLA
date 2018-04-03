@@ -117,7 +117,7 @@ bool MImpExpModule::dataExport(ExportFormData const &s, QTextStream &f)
     return true;
 }
 
-bool MImpExpModule::dataImport(ExportFormData const &d, QTextStream &f, initRecCB init_rec_callback)
+bool MImpExpModule::dataImport(ExportFormData const &d, QTextStream &f, InitRecCB init_rec_callback)
 {
     QSqlQuery q;
 

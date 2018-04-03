@@ -16,6 +16,7 @@
 #include <QMovie>
 #include <QInputDialog>
 #include <ctime>
+#include <cstdlib>
 #include <chrono>
 #include "pluginloader.h"
 #include "dbhelper.h"
@@ -23,8 +24,9 @@
 #include "sresultmodel.h"
 #include "exportform.h"
 #include "mimpexpmodule.h"
+#include "mmatcher.h"
 
-#define MILLA_VERSION "ver. 0.1.12"
+#define MILLA_VERSION "ver. 0.1.13"
 #define MILLA_SITE "http://github.com/matrixsmaster/MILLA"
 #define MILLA_EXTRA_CACHE_SIZE 1500
 #define MILLA_OPEN_FILE "Image Files (*.png *.jpg *.jpeg *.bmp)"
@@ -139,6 +141,8 @@ private slots:
 
     void on_actionNext_2_triggered();
 
+    void on_actionRandom_image_triggered();
+
 private:
     Ui::MViewer *ui;
     DBHelper db;
@@ -208,6 +212,8 @@ private:
     void selectIEFileDialog(bool import);
 
     void updateThumbnailsOrder(ThumbnailModel::ThumbnailModelSort ord, bool desc);
+
+    void historyShowCurrent();
 };
 
 #endif // MVIEWER_H

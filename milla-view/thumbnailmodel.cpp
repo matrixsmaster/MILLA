@@ -95,7 +95,7 @@ void ThumbnailModel::sortBy(ThumbnailModelSort by)
 {
     if (by == NoSort) return;
 
-    beginInsertRows(QModelIndex(),0,images.size());
+    beginInsertRows(QModelIndex(),images.size(),images.size());
 
     std::sort(images.begin(),images.end(),[by] (const auto &a, const auto &b) {
         switch (by) {

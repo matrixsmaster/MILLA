@@ -46,6 +46,7 @@ MViewer::MViewer(QWidget *parent) :
 
     loadingMovie = new QMovie(":/loading_icon.gif");
 
+    cleanUp();
     updateTags();
 }
 
@@ -61,6 +62,8 @@ void MViewer::cleanUp()
     extra_cache.clear();
     current_l = MImageListRecord();
     current_r = MImageListRecord();
+    history.files.clear();
+    history.cur = history.files.begin();
 }
 
 void MViewer::addTag(QString const &tg, unsigned key, bool check)
@@ -177,18 +180,19 @@ void MViewer::checkExtraCache()
 
 MImageExtras MViewer::getExtraCacheLine(QString const &fn, bool forceload, bool ignore_thumbs)
 {
+    //is it already cached?
     if (extra_cache.count(fn))
         return extra_cache[fn];
 
+    //let's try to query DB
     MImageExtras res = db.getExtrasFromDB(fn);
     if (res.valid) {
-        extra_cache[fn] = res;
+        extra_cache[fn] = res; //cache query result
         return res;
     }
 
+    //retreive original image
     QPixmap org;
-
-    //retreive image
     ThumbnailModel* ptm = dynamic_cast<ThumbnailModel*>(ui->listView->model());
     if (ptm && !ignore_thumbs) {
         size_t idx = 0;
@@ -200,13 +204,13 @@ MImageExtras MViewer::getExtraCacheLine(QString const &fn, bool forceload, bool 
             }
             idx++;
         }
-
-    } else if (forceload) {
+    } else if (forceload)
         org.load(fn);
 
-    }
+    //check retrieval
     if (org.isNull()) return res;
 
+    //compute metadata and cache up results
     res = mCV.collectImageExtraData(fn,org);
     if (res.valid) extra_cache[fn] = res;
 
@@ -238,8 +242,6 @@ void MViewer::showImageList(QStringList const &lst)
         incViews(false);
     });
 
-    history.files.clear();
-    history.cur = history.files.begin();
     ui->statusBar->showMessage(QString::asprintf("%d images",lst.size()));
 }
 
@@ -319,6 +321,8 @@ unsigned MViewer::incViews(bool left)
         if (history.files.empty() || history.files.back() != current_l.filename) {
             history.files.push_back(current_l.filename);
             history.cur = history.files.end();
+
+            qDebug() << "history size now" << history.files.size() << "; we just pushed " << current_l.filename;
         }
     }
 
@@ -427,15 +431,12 @@ void MViewer::processArguments()
         }
 
     } else {
-
         cleanUp();
-
         QStringList lst;
         QString cpath;
         for (auto &i : args) {
             if (isLoadableFile(i,&cpath)) lst.push_back(cpath);
         }
-
         showImageList(lst);
     }
 
@@ -473,40 +474,35 @@ void MViewer::on_actionFit_triggered()
 
 void MViewer::on_actionMatch_triggered()
 {
-    using namespace cv;
-
-    if (!current_l.valid || !ui->listView->model()) return;
-
-    ThumbnailModel* ptm = dynamic_cast<ThumbnailModel*>(ui->listView->model());
-    if (!ptm) return;
+    if (!current_l.valid) return;
 
     MImageExtras orig = getExtraCacheLine(current_l.filename);
     if (!orig.valid) return;
-    QSize orig_size = current_l.picture.size();
-    double orig_area = orig_size.width() * orig_size.height();
 
-    MImageExtras cur;
-    std::map<double,MImageListRecord*> targets;
+    SResultModel* mdl = static_cast<SResultModel*>(ui->listView_2->model());
+//    mdl->beginResetModel();
+//    ui->listView_2->reset();
+//    mdl->endResetModel();
+    ui->listView_2->setModel(nullptr);
+    //ui->listView_2->setCurrentIndex(QModelIndex());
+    delete mdl;
 
-    for (auto &i : ptm->GetAllImages()) {
-        if (current_l.filename == i.filename) continue;
-
-        cur = getExtraCacheLine(i.filename);
-        if (!cur.valid) continue;
-
-        double cur_area = cur.picsize.width() * cur.picsize.height();
-        if (orig_area / cur_area > 2 || cur_area / orig_area > 2) continue;
-
-        double corr = compareHist(orig.hist,cur.hist,CV_COMP_CORREL);
-        qDebug() << "Correlation with " << i.filename << ":  " << corr;
-
-        if (corr > 0) targets[corr] = &i;
-    }
-
+    MMatcher match(orig,current_l.filename,MILLA_MAXMATCH_RESULTS);
     QStringList lst;
-    int k = 0;
-    for (auto i = targets.rbegin(); i != targets.rend() && k < MILLA_MAXMATCH_RESULTS; ++i,k++) {
-        lst.push_back(i->second->filename);
+
+    if (ui->actionGlobal_search->isChecked()) {
+        prepareLongProcessing();
+        lst = match.GlobalMatcher([this] (double p) {
+            progressBar->setValue(floor(p));
+            QCoreApplication::processEvents();
+            return !flag_stop_load_everything;
+        });
+        prepareLongProcessing(true);
+
+    } else {
+        ThumbnailModel* ptm = dynamic_cast<ThumbnailModel*>(ui->listView->model());
+        if (!ptm) return;
+        lst = match.LocalMatcher(ptm->GetAllImages(),[this] (auto s) { return this->getExtraCacheLine(s); });
     }
 
     searchResults(lst);
@@ -566,12 +562,14 @@ void MViewer::on_listWidget_itemClicked(QListWidgetItem *item)
     if (ui->radio_search->isChecked()) {
         //search by tag instead of change tags
         tags_cache[item->text()].second = now;
+
         ThumbnailModel* ptm;
         if (ui->actionGlobal_search->isChecked()) ptm = nullptr;
         else {
             ptm = dynamic_cast<ThumbnailModel*>(ui->listView->model());
             if (!ptm) return;
         }
+
         searchResults(db.tagSearch(tags_cache,(ptm? &(ptm->GetAllImages()):nullptr),MILLA_MAXTAG_RESULTS));
         return;
     }
@@ -1000,7 +998,7 @@ void MViewer::on_actionReload_metadata_triggered()
 
 void MViewer::on_actionSanitize_DB_triggered()
 {
-    progressCB cb = ([this] (double p) {
+    ProgressCB cb = ([this] (double p) {
         progressBar->setValue(floor(p));
         QCoreApplication::processEvents();
         return !flag_stop_load_everything;
@@ -1050,11 +1048,7 @@ void MViewer::on_actionPrevious_2_triggered()
     if (history.files.empty() || history.cur == history.files.begin()) return;
     if (history.cur == history.files.end()) history.cur--;
     history.cur--;
-
-    ThumbnailModel* ptm = dynamic_cast<ThumbnailModel*>(ui->listView->model());
-    if (!ptm || history.cur->isEmpty()) return;
-
-    ui->listView->setCurrentIndex(ptm->getRecordIndex(*history.cur));
+    historyShowCurrent();
 }
 
 void MViewer::on_actionNext_2_triggered()
@@ -1062,9 +1056,26 @@ void MViewer::on_actionNext_2_triggered()
     if (history.files.empty() || history.cur == history.files.end()) return;
     history.cur++;
     if (history.cur == history.files.end()) return;
+    historyShowCurrent();
+}
 
+void MViewer::historyShowCurrent()
+{
     ThumbnailModel* ptm = dynamic_cast<ThumbnailModel*>(ui->listView->model());
-    if (!ptm || history.cur->isEmpty()) return;
+    if (ptm && !history.cur->isEmpty()) {
+        QModelIndex idx = ptm->getRecordIndex(*history.cur);
+        if (idx.isValid()) ui->listView->setCurrentIndex(idx);
 
-    ui->listView->setCurrentIndex(ptm->getRecordIndex(*history.cur));
+    } else {
+        //TODO: load arbitary file?
+    }
+}
+
+void MViewer::on_actionRandom_image_triggered()
+{
+    ThumbnailModel* ptm = dynamic_cast<ThumbnailModel*>(ui->listView->model());
+    if (!ptm || ptm->GetAllImages().empty()) return;
+    double idx = (double)random() / (double)RAND_MAX * (double)(ptm->GetAllImages().size());
+    qDebug() << "Randomly selecting item " << idx;
+    ui->listView->setCurrentIndex(ptm->getRecordIndex(floor(idx)));
 }

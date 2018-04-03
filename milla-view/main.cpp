@@ -4,6 +4,7 @@
 int main(int argc, char *argv[])
 {
     QApplication a(argc, argv);
+    srandom(time(NULL));
 
     MViewer w;
     w.show();
