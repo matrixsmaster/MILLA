@@ -239,7 +239,7 @@ void MViewer::showImageList(QStringList const &lst)
     connect(ui->listView->selectionModel(),&QItemSelectionModel::selectionChanged,[this] { showSelectedImage(); });
     connect(ui->listView,&QListView::customContextMenuRequested,this,[this] {
         current_r = ui->listView->selectionModel()->selectedIndexes().first().data(MImageListModel::FullDataRole).value<MImageListRecord>();
-        scaleImage(current_r,ui->scrollArea_2,ui->label_2,1);
+        scaleImage(current_r,ui->scrollArea_2,ui->label_2,ui->label_4,1);
         incViews(false);
     });
 
@@ -255,14 +255,14 @@ void MViewer::showSelectedImage()
     ptm->touch(idx);
 
     current_l = idx.data(MImageListModel::FullDataRole).value<MImageListRecord>();
-    scaleImage(current_l,ui->scrollArea,ui->label,1);
+    scaleImage(current_l,ui->scrollArea,ui->label,ui->label_3,1);
     leftImageMetaUpdate();
     checkExtraCache();
 
     view_timer.start(20);
 }
 
-void MViewer::scaleImage(const MImageListRecord &rec, QScrollArea* scrl, QLabel* lbl, double factor)
+void MViewer::scaleImage(const MImageListRecord &rec, QScrollArea* scrl, QLabel* lbl, QLabel* inflbl, double factor)
 {
     if (!rec.valid) return;
 
@@ -275,6 +275,10 @@ void MViewer::scaleImage(const MImageListRecord &rec, QScrollArea* scrl, QLabel*
     lbl->updateGeometry();
     scrl->updateGeometry();
     scrl->setWidgetResizable(true);
+    inflbl->setText(QString::asprintf("%s: %d x %d",
+                                      rec.fnshort.toStdString().c_str(),
+                                      rec.picture.size().width(),
+                                      rec.picture.size().height()));
 
     if (ui->actionFit->isChecked())
         lbl->setPixmap(rec.picture.scaled(lbl->size(),Qt::KeepAspectRatio,Qt::SmoothTransformation));
@@ -469,8 +473,8 @@ void MViewer::on_actionOpen_list_triggered()
 void MViewer::on_actionFit_triggered()
 {
     if (!ui->actionFit->isChecked()) scaleFactor = 1;
-    scaleImage(current_l,ui->scrollArea,ui->label,1);
-    scaleImage(current_r,ui->scrollArea_2,ui->label_2,1);
+    scaleImage(current_l,ui->scrollArea,ui->label,ui->label_3,1);
+    scaleImage(current_r,ui->scrollArea_2,ui->label_2,ui->label_4,1);
 }
 
 void MViewer::on_actionMatch_triggered()
@@ -653,12 +657,12 @@ void MViewer::searchResults(QStringList lst)
         MImageListRecord _r = ui->listView_2->selectionModel()->selectedIndexes().first().data(MImageListModel::FullDataRole).value<MImageListRecord>();
         if (ui->actionLeft_image->isChecked()) {
             current_l = _r;
-            scaleImage(current_l,ui->scrollArea,ui->label,1);
+            scaleImage(current_l,ui->scrollArea,ui->label,ui->label_3,1);
             leftImageMetaUpdate();
             ui->lcdNumber->display((double)incViews());
         } else {
             current_r = _r;
-            scaleImage(current_r,ui->scrollArea_2,ui->label_2,1);
+            scaleImage(current_r,ui->scrollArea_2,ui->label_2,ui->label_4,1);
             incViews(false);
         }
     });
@@ -696,8 +700,8 @@ void MViewer::on_actionSwap_images_triggered()
     MImageListRecord tmp(current_l);
     current_l = current_r;
     current_r = tmp;
-    scaleImage(current_l,ui->scrollArea,ui->label,1);
-    scaleImage(current_r,ui->scrollArea_2,ui->label_2,1);
+    scaleImage(current_l,ui->scrollArea,ui->label,ui->label_3,1);
+    scaleImage(current_r,ui->scrollArea_2,ui->label_2,ui->label_4,1);
     leftImageMetaUpdate();
 }
 
@@ -740,7 +744,7 @@ void MViewer::displayLinkedImages(QString const &fn)
     resultsPresentation(out,ui->listView_3,2);
     connect(ui->listView_3->selectionModel(),&QItemSelectionModel::selectionChanged,[this] {
         current_r = ui->listView_3->selectionModel()->selectedIndexes().first().data(MImageListModel::FullDataRole).value<MImageListRecord>();
-        scaleImage(current_r,ui->scrollArea_2,ui->label_2,1);
+        scaleImage(current_r,ui->scrollArea_2,ui->label_2,ui->label_4,1);
         incViews(false);
     });
 }

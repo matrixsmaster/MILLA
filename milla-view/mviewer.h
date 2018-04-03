@@ -26,7 +26,7 @@
 #include "mimpexpmodule.h"
 #include "mmatcher.h"
 
-#define MILLA_VERSION "ver. 0.1.14"
+#define MILLA_VERSION "ver. 0.1.15"
 #define MILLA_SITE "http://github.com/matrixsmaster/MILLA"
 #define MILLA_EXTRA_CACHE_SIZE 1500
 #define MILLA_OPEN_FILE "Image Files (*.png *.jpg *.jpeg *.bmp)"
@@ -187,7 +187,7 @@ private:
 
     void showSelectedImage();
 
-    void scaleImage(const MImageListRecord &rec, QScrollArea* scrl, QLabel* lbl, double factor);
+    void scaleImage(const MImageListRecord &rec, QScrollArea* scrl, QLabel* lbl, QLabel* inflbl, double factor);
 
     unsigned incViews(bool left = true);
 
