@@ -77,8 +77,9 @@ void MViewer::addTag(QString const &tg, unsigned key, bool check)
     else
         i->setFlags(i->flags() | Qt::ItemIsUserCheckable);
 
-    i->setCheckState(check? Qt::Checked : Qt::Unchecked);
-    tags_cache[tg] = std::pair<unsigned,bool>(key,check);
+    Qt::CheckState checkst = check? Qt::Checked : Qt::Unchecked;
+    i->setCheckState(checkst);
+    tags_cache[tg] = std::pair<unsigned,Qt::CheckState>(key,checkst);
 }
 
 void MViewer::updateTags(QString const &fn)
@@ -555,8 +556,8 @@ void MViewer::on_listWidget_itemClicked(QListWidgetItem *item)
         return;
     }
 
-    bool was = tags_cache[item->text()].second;
-    bool now = item->checkState() == Qt::Checked;
+    Qt::CheckState was = tags_cache[item->text()].second;
+    Qt::CheckState now = item->checkState();
     if (was == now) return;
 
     if (ui->radio_search->isChecked()) {
@@ -576,7 +577,7 @@ void MViewer::on_listWidget_itemClicked(QListWidgetItem *item)
 
     if (!current_l.valid) {
         //revert change
-        item->setCheckState(was? Qt::Checked : Qt::Unchecked);
+        item->setCheckState(Qt::Unchecked);
         return;
     }
 

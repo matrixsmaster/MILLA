@@ -463,15 +463,22 @@ QStringList DBHelper::tagSearch(MTagCache const &cache, QList<MImageListRecord>*
 {
     QSqlQuery q;
     std::map<QString,QList<int>> targ;
-    QList<int> goal;
+    QList<int> goal,exclude;
     QStringList found;
 
     for (auto &i : cache) {
-        if (!i.second.second) continue;
-        goal.push_back(i.second.first);
+        if (i.second.second == Qt::Unchecked) continue;
 
         q.clear();
-        q.prepare("SELECT file,tags FROM stats WHERE tags LIKE :t OR INSTR( tags, :i ) > 0");
+        if (i.second.second == Qt::Checked) {
+            goal.push_back(i.second.first);
+            q.prepare("SELECT file,tags FROM stats WHERE tags LIKE :t OR INSTR( tags, :i ) > 0");
+
+        } else {
+            exclude.push_back(i.second.first);
+            q.prepare("SELECT file,tags FROM stats WHERE LENGTH( tags ) > 0 AND tags NOT LIKE :t AND INSTR( tags, :i ) <= 0");
+        }
+
         q.bindValue(":t",QString::asprintf("%d,%%",i.second.first));
         q.bindValue(":i",QString::asprintf(",%d,",i.second.first));
         if (!q.exec()) {
@@ -480,7 +487,7 @@ QStringList DBHelper::tagSearch(MTagCache const &cache, QList<MImageListRecord>*
         }
 
         while (q.next()) {
-            qDebug() << "TAG " << i.second.first << " FOUND: " << q.value(0).toString();
+            //qDebug() << "TAG " << i.second.first << " FOUND: " << q.value(0).toString();
             QList<int> l;
             QStringList _l = q.value(1).toString().split(",",QString::SkipEmptyParts);
             for (auto &j : _l) l.push_back(j.toInt());
@@ -492,13 +499,22 @@ QStringList DBHelper::tagSearch(MTagCache const &cache, QList<MImageListRecord>*
 
     for (auto &i : targ) {
         bool k = true;
+        //inclusions
         for (auto &j : goal)
             if (!i.second.contains(j)) {
                 k = false;
                 break;
             }
         if (!k) continue;
+        //exclusions
+        for (auto &j : exclude)
+            if (i.second.contains(j)) {
+                k = false;
+                break;
+            }
+        if (!k) continue;
 
+        //check limiting factor - currently loaded images
         if (within) {
             auto w = std::find_if(within->begin(),within->end(),[&] (const MImageListRecord& a) { return (a.filename == i.first); });
             if (w == within->end()) {
