@@ -505,7 +505,7 @@ void MViewer::on_actionMatch_triggered()
 
     QStringList lst;
     int k = 0;
-    for (auto i = targets.rbegin(); i != targets.rend() && k < 10; ++i,k++) { //TODO: move k into settings
+    for (auto i = targets.rbegin(); i != targets.rend() && k < MILLA_MAXMATCH_RESULTS; ++i,k++) {
         lst.push_back(i->second->filename);
     }
 
@@ -572,7 +572,7 @@ void MViewer::on_listWidget_itemClicked(QListWidgetItem *item)
             ptm = dynamic_cast<ThumbnailModel*>(ui->listView->model());
             if (!ptm) return;
         }
-        searchResults(db.tagSearch(tags_cache,(ptm? &(ptm->GetAllImages()) : nullptr)));
+        searchResults(db.tagSearch(tags_cache,(ptm? &(ptm->GetAllImages()):nullptr),MILLA_MAXTAG_RESULTS));
         return;
     }
 
@@ -641,6 +641,7 @@ void MViewer::resultsPresentation(QStringList lst, QListView* view, int tabIndex
     view->setViewMode(QListView::ListMode);
     view->setFlow(QListView::LeftToRight);
     view->setWrapping(false);
+    view->setWordWrap(true);
 
     ui->tabWidget->setCurrentIndex(tabIndex);
 }
@@ -908,9 +909,6 @@ void MViewer::updateThumbnailsOrder(ThumbnailModel::ThumbnailModelSort ord, bool
     }
 
     ptm->sortBy(ord);
-    ui->listView->setLayoutMode(QListView::Batched);
-    ui->listView->setLayoutMode(QListView::SinglePass);
-    ui->listView->repaint();
 }
 
 void MViewer::on_action_None_triggered()

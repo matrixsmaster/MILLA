@@ -60,7 +60,7 @@ public:
 
     static QStringList getLinkedImages(QByteArray const &sha);
 
-    static QStringList tagSearch(MTagCache const &cache, QList<MImageListRecord>* within = nullptr);
+    static QStringList tagSearch(MTagCache const &cache, QList<MImageListRecord>* within = nullptr, int maxitems = 0);
 
     static QStringList parametricSearch(SearchFormData flt, QList<MImageListRecord> const &from);
 

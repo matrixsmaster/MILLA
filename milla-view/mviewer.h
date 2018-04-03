@@ -24,11 +24,13 @@
 #include "exportform.h"
 #include "mimpexpmodule.h"
 
-#define MILLA_VERSION "ver. 0.1.11"
+#define MILLA_VERSION "ver. 0.1.12"
 #define MILLA_SITE "http://github.com/matrixsmaster/MILLA"
 #define MILLA_EXTRA_CACHE_SIZE 1500
 #define MILLA_OPEN_FILE "Image Files (*.png *.jpg *.jpeg *.bmp)"
 #define MILLA_OPEN_LIST "Text Files [txt,lst] (*.txt *.lst)"
+#define MILLA_MAXMATCH_RESULTS 10
+#define MILLA_MAXTAG_RESULTS 300
 
 /* A note for future self:
  * This file SHOULD be separated. It IS in this messy state only because MILLA is

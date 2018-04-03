@@ -95,6 +95,8 @@ void ThumbnailModel::sortBy(ThumbnailModelSort by)
 {
     if (by == NoSort) return;
 
+    beginInsertRows(QModelIndex(),0,images.size());
+
     std::sort(images.begin(),images.end(),[by] (const auto &a, const auto &b) {
         switch (by) {
         case SortByNameAsc:
@@ -112,4 +114,6 @@ void ThumbnailModel::sortBy(ThumbnailModelSort by)
         default: return false; //basically to make compiler happy
         }
     });
+
+    endInsertRows();
 }

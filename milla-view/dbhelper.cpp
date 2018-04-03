@@ -459,7 +459,7 @@ QStringList DBHelper::getLinkedImages(QByteArray const &sha)
     return out;
 }
 
-QStringList DBHelper::tagSearch(MTagCache const &cache, QList<MImageListRecord>* within)
+QStringList DBHelper::tagSearch(MTagCache const &cache, QList<MImageListRecord>* within, int maxitems)
 {
     QSqlQuery q;
     std::map<QString,QList<int>> targ;
@@ -478,7 +478,6 @@ QStringList DBHelper::tagSearch(MTagCache const &cache, QList<MImageListRecord>*
             qDebug() << "Select tag " << i.second.first << " failed";
             continue;
         }
-        //qDebug() << q.lastQuery();
 
         while (q.next()) {
             qDebug() << "TAG " << i.second.first << " FOUND: " << q.value(0).toString();
@@ -509,7 +508,9 @@ QStringList DBHelper::tagSearch(MTagCache const &cache, QList<MImageListRecord>*
         }
 
         found.push_back(i.first);
+        if (maxitems > 0 && found.size() >= maxitems) break;
     }
+    qDebug() << "Found: " << found.size();
 
     return found;
 }
