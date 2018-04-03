@@ -1068,11 +1068,19 @@ void MViewer::historyShowCurrent()
 {
     ThumbnailModel* ptm = dynamic_cast<ThumbnailModel*>(ui->listView->model());
     if (ptm && !history.cur->isEmpty()) {
+        //just select file in current list model
         QModelIndex idx = ptm->getRecordIndex(*history.cur);
         if (idx.isValid()) ui->listView->setCurrentIndex(idx);
 
     } else {
-        //TODO: load arbitary file?
+        //load arbitary file using ThumbnailModel instance
+        QStringList ls = { (*history.cur) };
+        ptm = new ThumbnailModel(ls);
+        ptm->LoadUp(0);
+        current_l = ptm->data(ptm->getRecordIndex(0),MImageListModel::FullDataRole).value<MImageListRecord>();
+        delete ptm;
+        scaleImage(current_l,ui->scrollArea,ui->label,ui->label_3,1);
+        leftImageMetaUpdate();
     }
 }
 
