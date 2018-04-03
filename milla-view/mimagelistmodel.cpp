@@ -1,4 +1,5 @@
 #include "mimagelistmodel.h"
+#include "dbhelper.h"
 
 MImageListModel::MImageListModel(QObject *parent)
     : QAbstractListModel(parent)
@@ -13,7 +14,7 @@ MImageListModel::~MImageListModel()
 
 QVariant MImageListModel::data(const QModelIndex &index, int role) const
 {
-    if (index.isValid()) {
+    if (index.isValid() && images.value(index.row()).valid) {
         switch (role) {
         case Qt::DecorationRole:
             return images.value(index.row()).thumb;
@@ -62,4 +63,12 @@ QModelIndex MImageListModel::getRecordIndex(const QString &fn)
     }
 
     return ok? createIndex(idx,0) : QModelIndex();
+}
+
+void MImageListModel::SaveThumbnail(MImageListRecord &rec) const
+{
+    QByteArray arr;
+    QBuffer dat(&arr);
+    dat.open(QBuffer::WriteOnly);
+    if (rec.thumb.save(&dat,"png")) DBHelper::updateThumbnail(rec,arr);
 }

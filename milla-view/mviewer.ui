@@ -1606,6 +1606,7 @@
      <addaction name="actionRight_image"/>
     </widget>
     <addaction name="menuShow_in"/>
+    <addaction name="actionGlobal_search"/>
     <addaction name="actionClear_results"/>
     <addaction name="actionRefine_search"/>
     <addaction name="actionMatch"/>
@@ -1930,6 +1931,14 @@
    </property>
    <property name="shortcut">
     <string>Alt+Right</string>
+   </property>
+  </action>
+  <action name="actionGlobal_search">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Global search</string>
    </property>
   </action>
  </widget>

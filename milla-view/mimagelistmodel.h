@@ -64,6 +64,8 @@ protected:
     bool do_shorten = false;
 
     virtual size_t ItemSizeInBytes(int idx);
+
+    virtual void SaveThumbnail(MImageListRecord &rec) const;
 };
 
 #endif // MIMAGELISTMODEL_H

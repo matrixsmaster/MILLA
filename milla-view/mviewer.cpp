@@ -68,7 +68,12 @@ void MViewer::addTag(QString const &tg, unsigned key, bool check)
     ui->listWidget->addItem(tg);
     QListWidgetItem* i = ui->listWidget->item(ui->listWidget->count()-1);
     if (!i) return;
-    i->setFlags(i->flags() | Qt::ItemIsUserCheckable);
+
+    if (ui->radio_search->isChecked())
+        i->setFlags(i->flags() | Qt::ItemIsUserTristate);
+    else
+        i->setFlags(i->flags() | Qt::ItemIsUserCheckable);
+
     i->setCheckState(check? Qt::Checked : Qt::Unchecked);
     tags_cache[tg] = std::pair<unsigned,bool>(key,check);
 }
@@ -561,7 +566,12 @@ void MViewer::on_listWidget_itemClicked(QListWidgetItem *item)
     if (ui->radio_search->isChecked()) {
         //search by tag instead of change tags
         tags_cache[item->text()].second = now;
-        ThumbnailModel* ptm = dynamic_cast<ThumbnailModel*>(ui->listView->model());
+        ThumbnailModel* ptm;
+        if (ui->actionGlobal_search->isChecked()) ptm = nullptr;
+        else {
+            ptm = dynamic_cast<ThumbnailModel*>(ui->listView->model());
+            if (!ptm) return;
+        }
         searchResults(db.tagSearch(tags_cache,(ptm? &(ptm->GetAllImages()) : nullptr)));
         return;
     }
@@ -596,27 +606,35 @@ void MViewer::resultsPresentation(QStringList lst, QListView* view, int tabIndex
         qDebug() << "Old model scheduled for removal";
         view->model()->deleteLater();
     }
-
     if (lst.isEmpty()) return;
-    ThumbnailModel* ptm = dynamic_cast<ThumbnailModel*>(ui->listView->model());
-    if (!ptm) return;
 
     QList<MImageListRecord> out;
-    QList<MImageListRecord> &imgs = ptm->GetAllImages();
-    for (auto &i : lst) {
-        int idx = 0;
+    ThumbnailModel* ptm = dynamic_cast<ThumbnailModel*>(ui->listView->model());
 
-        for (auto &j : imgs) {
-            if (j.filename == i) break;
-            idx++;
-        }
-        if (idx >= imgs.size()) {
-            qDebug() << "ALERT: Unable to match filename " << i;
-            return;
+    if (!ui->actionGlobal_search->isChecked() && ptm) {
+        QList<MImageListRecord> &imgs = ptm->GetAllImages();
+        for (auto &i : lst) {
+            int idx = 0;
+
+            for (auto &j : imgs) {
+                if (j.filename == i) break;
+                idx++;
+            }
+            if (idx >= imgs.size()) {
+                qDebug() << "ALERT: Unable to match filename " << i;
+                return;
+            }
+
+            ptm->LoadUp(idx);
+            out.push_back(imgs.at(idx));
         }
 
-        ptm->LoadUp(idx);
-        out.push_back(imgs.at(idx));
+    } else {
+        for (auto &i : lst) {
+            MImageListRecord r;
+            r.filename = i;
+            out.push_back(r);
+        }
     }
 
     view->setModel(new SResultModel(out,view));
@@ -984,24 +1002,22 @@ void MViewer::on_actionReload_metadata_triggered()
 
 void MViewer::on_actionSanitize_DB_triggered()
 {
-    //step 1. check all links
-    prepareLongProcessing();
-    ui->statusBar->showMessage("Checking links...");
-    db.sanitizeLinks([this] (double p) {
+    progressCB cb = ([this] (double p) {
         progressBar->setValue(floor(p));
         QCoreApplication::processEvents();
         return !flag_stop_load_everything;
     });
+
+    //step 1. check all links
+    prepareLongProcessing();
+    ui->statusBar->showMessage("Checking links...");
+    db.sanitizeLinks(cb);
     prepareLongProcessing(true);
 
     //step 2. renew tags ratings
     prepareLongProcessing();
     ui->statusBar->showMessage("Checking tags...");
-    db.sanitizeTags([this] (double p) {
-        progressBar->setValue(floor(p));
-        QCoreApplication::processEvents();
-        return !flag_stop_load_everything;
-    });
+    db.sanitizeTags(cb);
 
     qDebug() << "[Sanitizer] Done.";
     prepareLongProcessing(true);

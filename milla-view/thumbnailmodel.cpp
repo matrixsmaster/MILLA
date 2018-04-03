@@ -4,8 +4,6 @@
 ThumbnailModel::ThumbnailModel(QStringList files, QObject *parent)
     : MImageListModel(parent)
 {
-    QSqlQuery q;
-
     for (auto &i : files) {
         MImageListRecord rec;
         rec.filename = i;
@@ -48,11 +46,7 @@ void ThumbnailModel::LoadUp(int idx, bool force_reload)
     images[idx].touched = time(NULL);
     images[idx].filechanged = fi.lastModified().toTime_t();
 
-    QByteArray arr;
-    QBuffer dat(&arr);
-    dat.open(QBuffer::WriteOnly);
-    if (images.at(idx).thumb.save(&dat,"png"))
-        DBHelper::updateThumbnail(images[idx],arr);
+    SaveThumbnail(images[idx]);
 }
 
 void ThumbnailModel::GC(int skip)
