@@ -57,7 +57,7 @@ public:
 
     virtual QModelIndex getRecordIndex(int n) { return createIndex(n,0); }
 
-    virtual QModelIndex getRecordIndex(const QString &fn);
+    virtual QModelIndex getRecordIndex(const QString &fn, bool allowPartialMatch = false);
 
 protected:
     QList<MImageListRecord> images;

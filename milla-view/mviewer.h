@@ -143,6 +143,8 @@ private slots:
 
     void on_actionRandom_image_triggered();
 
+    void on_actionClose_triggered();
+
 private:
     Ui::MViewer *ui;
     DBHelper db;

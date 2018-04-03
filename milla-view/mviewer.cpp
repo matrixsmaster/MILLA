@@ -60,10 +60,28 @@ MViewer::~MViewer()
 void MViewer::cleanUp()
 {
     extra_cache.clear();
+
     current_l = MImageListRecord();
     current_r = MImageListRecord();
+
     history.files.clear();
     history.cur = history.files.begin();
+
+    if (ui->listView->model()) ui->listView->model()->deleteLater();
+    if (ui->listView_2->model()) ui->listView_2->model()->deleteLater();
+    if (ui->listView_3->model()) ui->listView_3->model()->deleteLater();
+
+    ui->label->setPixmap(QPixmap());
+    ui->label_2->setPixmap(QPixmap());
+    ui->label_3->clear();
+    ui->label_4->clear();
+
+    updateTags();
+    updateStars();
+    ui->lcdNumber->display(0);
+    ui->lcdNumber_2->display(0);
+    ui->statusBar->clearMessage();
+    progressBar->setValue(0);
 }
 
 void MViewer::addTag(QString const &tg, unsigned key, bool check)
@@ -220,10 +238,7 @@ MImageExtras MViewer::getExtraCacheLine(QString const &fn, bool forceload, bool 
 
 void MViewer::showImageList(QStringList const &lst)
 {
-    if (ui->listView->model()) {
-        qDebug() << "Old model scheduled for removal";
-        ui->listView->model()->deleteLater();
-    }
+    cleanUp();
 
     bool purelist = !(ui->actionThumbnails_cloud->isChecked());
     ThumbnailModel* ptr = new ThumbnailModel(lst,ui->listView);
@@ -248,6 +263,8 @@ void MViewer::showImageList(QStringList const &lst)
 
 void MViewer::showSelectedImage()
 {
+    if (ui->listView->selectionModel()->selectedIndexes().isEmpty()) return;
+
     QModelIndex idx = ui->listView->selectionModel()->selectedIndexes().first();
     ThumbnailModel* ptm = dynamic_cast<ThumbnailModel*>(ui->listView->model());
     if (ptm) ptm->LoadUp(idx.row());
@@ -385,7 +402,6 @@ void MViewer::openDirByFile(QString const &fileName, bool recursive)
     if (bpath.isEmpty()) return;
 
     QStringList lst;
-    cleanUp();
     scanDirectory(bpath,lst,recursive);
     showImageList(lst);
 }
@@ -405,8 +421,6 @@ void MViewer::openDirByList(QString const &fileName)
     QStringList ldat = dat.split('\n',QString::SkipEmptyParts);
     dat.clear();
     if (ldat.empty()) return;
-
-    cleanUp();
 
     QStringList lst;
     QString cpath;
@@ -436,7 +450,6 @@ void MViewer::processArguments()
         }
 
     } else {
-        cleanUp();
         QStringList lst;
         QString cpath;
         for (auto &i : args) {
@@ -676,7 +689,7 @@ void MViewer::on_actionJump_to_triggered()
     bool ok;
     QString fn = QInputDialog::getText(this,tr("Jump to file"),tr("File name or full path"),QLineEdit::Normal,QString(),&ok);
 
-    if (ok) ui->listView->setCurrentIndex(ptm->getRecordIndex(fn));
+    if (ok) ui->listView->setCurrentIndex(ptm->getRecordIndex(fn,true));
 }
 
 void MViewer::on_actionRefine_search_triggered()
@@ -807,8 +820,6 @@ void MViewer::on_actionThumbnails_cloud_changed()
 
     QStringList lst;
     for (auto &i : ptm->GetAllImages()) lst.push_back(i.filename);
-
-    cleanUp();
     showImageList(lst);
 }
 
@@ -1091,4 +1102,9 @@ void MViewer::on_actionRandom_image_triggered()
     double idx = (double)random() / (double)RAND_MAX * (double)(ptm->GetAllImages().size());
     qDebug() << "Randomly selecting item " << idx;
     ui->listView->setCurrentIndex(ptm->getRecordIndex(floor(idx)));
+}
+
+void MViewer::on_actionClose_triggered()
+{
+    cleanUp();
 }

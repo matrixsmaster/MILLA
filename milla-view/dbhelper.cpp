@@ -93,6 +93,12 @@ QString DBHelper::timePrinter(double sec)
     return res;
 }
 
+QString DBHelper::getCanonicalPath(QString const &fn)
+{
+    QFileInfo fi(fn);
+    return fi.exists()? fi.canonicalFilePath() : QString();
+}
+
 QByteArray DBHelper::getSHA256(QString const &fn, qint64* size)
 {
     QCryptographicHash hash(QCryptographicHash::Sha256);

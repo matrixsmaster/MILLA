@@ -666,7 +666,7 @@
                         <x>0</x>
                         <y>0</y>
                         <width>298</width>
-                        <height>369</height>
+                        <height>365</height>
                        </rect>
                       </property>
                       <layout class="QHBoxLayout" name="horizontalLayout_12">
@@ -1197,7 +1197,7 @@
                         <x>0</x>
                         <y>0</y>
                         <width>302</width>
-                        <height>369</height>
+                        <height>365</height>
                        </rect>
                       </property>
                       <layout class="QHBoxLayout" name="horizontalLayout_11">
@@ -2521,6 +2521,7 @@
     </property>
     <addaction name="actionOpen"/>
     <addaction name="actionOpen_list"/>
+    <addaction name="actionClose"/>
     <addaction name="separator"/>
     <addaction name="actionJump_to"/>
     <addaction name="actionRandom_image"/>
@@ -2948,6 +2949,11 @@
    </property>
    <property name="shortcut">
     <string>R</string>
+   </property>
+  </action>
+  <action name="actionClose">
+   <property name="text">
+    <string>Close</string>
    </property>
   </action>
  </widget>

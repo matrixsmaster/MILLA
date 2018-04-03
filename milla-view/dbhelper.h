@@ -22,6 +22,8 @@ public:
 
     static QString timePrinter(double sec);
 
+    static QString getCanonicalPath(QString const &fn);
+
     static QByteArray getSHA256(QString const &fn, qint64 *size);
 
     static bool getThumbnail(MImageListRecord &rec);

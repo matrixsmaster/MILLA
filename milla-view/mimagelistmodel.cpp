@@ -48,17 +48,23 @@ size_t MImageListModel::ItemSizeInBytes(int idx)
     return (images.at(idx).picture.depth() / 8) * images.at(idx).picture.size().width() * images.at(idx).picture.size().height();
 }
 
-QModelIndex MImageListModel::getRecordIndex(const QString &fn)
+QModelIndex MImageListModel::getRecordIndex(const QString &fn, bool allowPartialMatch)
 {
+    QString canon;
     bool path = fn.contains('/');
+    if (path) canon = DBHelper::getCanonicalPath(fn);
 
     size_t idx = 0;
     bool ok = false;
     for (auto &i : images) {
-        if ((path && !fn.compare(i.filename,Qt::CaseInsensitive)) || (!path && !fn.compare(i.fnshort,Qt::CaseInsensitive))) {
-            ok = true;
-            break;
+        if (allowPartialMatch) {
+            if ((path && (i.filename.contains(fn,Qt::CaseInsensitive) || i.filename.contains(canon,Qt::CaseInsensitive)))
+                    || (!path && i.fnshort.contains(fn,Qt::CaseInsensitive))) ok = true;
+        } else {
+            if ((path && (!fn.compare(i.filename,Qt::CaseInsensitive) || !canon.compare(i.filename,Qt::CaseInsensitive)))
+                    || (!path && !fn.compare(i.fnshort,Qt::CaseInsensitive))) ok = true;
         }
+        if (ok) break;
         idx++;
     }
 
