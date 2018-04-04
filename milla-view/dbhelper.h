@@ -68,9 +68,15 @@ public:
 
     static QStringList getAllFiles();
 
+    static bool removeFile(QString const &fn);
+
+    static void sanitizeFiles(ProgressCB progress_cb);
+
     static void sanitizeLinks(ProgressCB progress_cb);
 
     static void sanitizeTags(ProgressCB progress_cb);
+
+    static QString detectExactCopies(ProgressCB progress_cb);
 };
 
 #endif // DBHELPER_H

@@ -26,7 +26,7 @@
 #include "mimpexpmodule.h"
 #include "mmatcher.h"
 
-#define MILLA_VERSION "ver. 0.1.17"
+#define MILLA_VERSION "ver. 0.1.18"
 #define MILLA_SITE "http://github.com/matrixsmaster/MILLA"
 #define MILLA_EXTRA_CACHE_SIZE 1500
 #define MILLA_OPEN_FILE "Image Files (*.png *.jpg *.jpeg *.bmp)"
@@ -34,16 +34,6 @@
 #define MILLA_MAXMATCH_RESULTS 10
 #define MILLA_MAXTAG_RESULTS 300
 
-/* A note for future self:
- * This file SHOULD be separated. It IS in this messy state only because MILLA is
- * mostly an experimental project.
- * But as soon, as some functionality seems to be complete, it should be
- * extracted, encapsulated and moved into its own module.
- * Just like ImportExportModule, FaceDetector and DBHelper did.
- *
- * Thank you in advance, future me!
- * Signed, present me.
- * */
 
 struct MHistory {
     QStringList files;
@@ -144,6 +134,8 @@ private slots:
     void on_actionRandom_image_triggered();
 
     void on_actionClose_triggered();
+
+    void on_actionFind_duplicates_triggered();
 
 private:
     Ui::MViewer *ui;

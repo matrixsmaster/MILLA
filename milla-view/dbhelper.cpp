@@ -552,8 +552,8 @@ QStringList DBHelper::parametricSearch(SearchFormData flt, QList<MImageListRecor
 
             if (flt.rating > q.value(0).toInt()) continue;
             if (flt.kudos > q.value(1).toInt()) continue;
-            if (q.value(2).toUInt() < flt.minviews || q.value(2).toUInt() > flt.maxviews) continue;
-            if (q.value(3).toInt() < flt.minface || q.value(3).toInt() > flt.maxface) continue;
+            if (q.value(2).toUInt() < flt.minviews || q.value(2).toUInt() >= flt.maxviews) continue;
+            if (q.value(3).toInt() < flt.minface || q.value(3).toInt() >= flt.maxface) continue;
             if (flt.colors > -1 && flt.colors != (q.value(4).toInt()>0)) continue;
             if (i.filechanged < flt.minmtime || i.filechanged > flt.maxmtime) continue;
             if (flt.wo_tags && q.value(7).toInt()) continue;
@@ -604,6 +604,73 @@ QStringList DBHelper::getAllFiles()
     while (q.next()) out.push_back(q.value(0).toString());
 
     return out;
+}
+
+bool DBHelper::removeFile(QString const &fn)
+{
+    QSqlQuery q;
+
+    //remove it from stats table...
+    q.prepare("DELETE FROM stats WHERE file = :fn");
+    q.bindValue(":fn",fn);
+    bool ok1 = q.exec();
+    qDebug() << "[db] Removing file " << fn << " from stats: " << ok1;
+
+    //...and from thumbnails table too
+    q.clear();
+    q.prepare("DELETE FROM thumbs WHERE file = :fn");
+    q.bindValue(":fn",fn);
+    bool ok2 = q.exec();
+    qDebug() << "[db] Removing file " << fn << " from thumbs: " << ok2;
+
+    return (ok1 || ok2);
+}
+
+void DBHelper::sanitizeFiles(ProgressCB progress_cb)
+{
+    QSqlQuery q;
+    QStringList all = getAllFiles(); //get all known files listed
+    double prg = 0, dp = 50.f / (double)(all.size());
+
+    //add files with known thumbnails (whos metainfo was never saved)
+    q.prepare("SELECT file FROM thumbs");
+    if (q.exec()) {
+        while (q.next()) {
+            if (!all.contains(q.value(0).toString()))
+                all.push_back(q.value(0).toString());
+        }
+    }
+
+    //let's walk through all of them
+    for (auto &i : all) {
+        prg += dp;
+        if (progress_cb && !progress_cb(prg)) return;
+
+        QFileInfo fi(i);
+        if (!fi.exists()) removeFile(i); //if a dead file is detected, remove it
+    }
+
+    //as last measure, let's remove all records about zero-length files and files without checksum
+    q.clear();
+    if (!q.exec("SELECT COUNT(file) FROM stats WHERE (length < 1) OR (sha256 IS NULL)") || !q.next()) {
+        qDebug() << "[db] ALERT: error while searching for empty records";
+        return;
+    }
+    if (!q.value(0).toUInt()) return; //nothing to do
+
+    //update progress variables
+    prg = 50;
+    dp = 50.f / (double)(q.value(0).toUInt());
+
+    //get actual list of empty entries
+    q.clear();
+    if (!q.exec("SELECT file FROM stats WHERE (length < 1) OR (sha256 IS NULL)")) return;
+    while (q.next()) {
+        prg += dp;
+        if (progress_cb && !progress_cb(prg)) return;
+
+        removeFile(q.value(0).toString());
+    }
 }
 
 void DBHelper::sanitizeLinks(ProgressCB progress_cb)
@@ -712,4 +779,53 @@ void DBHelper::sanitizeTags(ProgressCB progress_cb)
         prg += dp;
         if (progress_cb && !progress_cb(prg)) return;
     }
+}
+
+QString DBHelper::detectExactCopies(ProgressCB progress_cb)
+{
+    QString res;
+    QSqlQuery q;
+    double prg, dp;
+
+    if (q.exec("SELECT COUNT(file) FROM stats") && q.next()) {
+        prg = 0;
+        dp = 100.f / (double)(q.value(0).toUInt());
+    } else {
+        qDebug() << "[db] ALERT: unable to get stats table size";
+        return res;
+    }
+
+    q.clear();
+    if (!q.exec("SELECT file, sha256, length FROM stats")) {
+        qDebug() << "[db] ALERT: unable to query stats table";
+        return res;
+    }
+
+    QTextStream out(&res);
+    std::multimap<size_t,std::pair<QByteArray,QString>> kmap;
+    while (q.next()) {
+        prg += dp;
+        if (progress_cb && !progress_cb(prg)) break;
+
+        QString fn = q.value(0).toString();
+        QByteArray sha = q.value(1).toByteArray();
+        size_t len = q.value(2).toUInt();
+
+        bool fnd = false;
+        if (kmap.count(len)) {
+            auto pk = kmap.equal_range(len);
+            for (auto ik = pk.first; ik != pk.second; ++ik)
+                if (sha == ik->second.first) {
+                    out << "Duplicates: \"" << ik->second.second;
+                    out << "\" and \"" << fn << "\"\n";
+                    fnd = true;
+                    break;
+                }
+        }
+
+        if (!fnd)
+            kmap.insert(std::pair<size_t,std::pair<QByteArray,QString>>(len,std::pair<QByteArray,QString>(sha,fn)));
+    }
+
+    return res;
 }

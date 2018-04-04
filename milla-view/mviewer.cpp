@@ -497,12 +497,9 @@ void MViewer::on_actionMatch_triggered()
     MImageExtras orig = getExtraCacheLine(current_l.filename);
     if (!orig.valid) return;
 
+    //destroy model immediately, to prevent it from loading more images (if background loading is activated)
     SResultModel* mdl = static_cast<SResultModel*>(ui->listView_2->model());
-//    mdl->beginResetModel();
-//    ui->listView_2->reset();
-//    mdl->endResetModel();
     ui->listView_2->setModel(nullptr);
-    //ui->listView_2->setCurrentIndex(QModelIndex());
     delete mdl;
 
     MMatcher match(orig,current_l.filename,MILLA_MAXMATCH_RESULTS);
@@ -960,7 +957,7 @@ void MViewer::on_actionDescending_triggered()
 
 void MViewer::on_actionList_all_triggered()
 {
-    QMessageBox::information(this,tr("Plugins list: generators"),plugins.listPlugins());
+    QMessageBox::information(this,tr("Plugins list"),plugins.listPlugins());
 }
 
 void MViewer::on_actionReload_metadata_triggered()
@@ -1007,6 +1004,12 @@ void MViewer::on_actionSanitize_DB_triggered()
         QCoreApplication::processEvents();
         return !flag_stop_load_everything;
     });
+
+    //step 0. remove unreachable files
+    prepareLongProcessing();
+    ui->statusBar->showMessage("Checking files...");
+    db.sanitizeFiles(cb);
+    prepareLongProcessing(true);
 
     //step 1. check all links
     prepareLongProcessing();
@@ -1095,4 +1098,34 @@ void MViewer::on_actionRandom_image_triggered()
 void MViewer::on_actionClose_triggered()
 {
     cleanUp();
+}
+
+void MViewer::on_actionFind_duplicates_triggered()
+{
+    prepareLongProcessing();
+
+    ui->statusBar->showMessage("Checking for duplicates in DB...");
+    QString report = db.detectExactCopies([this] (double p) {
+        progressBar->setValue(floor(p));
+        QCoreApplication::processEvents();
+        return !flag_stop_load_everything;
+    });
+
+    bool abrt = flag_stop_load_everything;
+    prepareLongProcessing(true);
+    ui->statusBar->showMessage(abrt? "Aborted":"Done");
+    if (abrt || report.isEmpty()) return;
+
+    QString fn = QFileDialog::getSaveFileName(this, tr("Save report to"), "", tr("Text Files (*.txt)"));
+    if (fn.isEmpty()) return;
+    if (fn.right(4).toUpper() != ".TXT") fn += ".txt";
+
+    QFile fl(fn);
+    if (!fl.open(QIODevice::Text | QIODevice::WriteOnly)) {
+        qDebug() << "ALERT: unable to write " << fn;
+        return;
+    }
+    QTextStream strm(&fl);
+    strm << report;
+    fl.close();
 }

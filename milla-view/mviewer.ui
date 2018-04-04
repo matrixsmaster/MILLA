@@ -2585,6 +2585,7 @@
     <addaction name="actionSwap_images"/>
     <addaction name="actionClear_image_cache"/>
     <addaction name="actionSanitize_DB"/>
+    <addaction name="actionFind_duplicates"/>
    </widget>
    <widget class="QMenu" name="menuHelp">
     <property name="title">
@@ -2948,6 +2949,11 @@
   <action name="actionClose">
    <property name="text">
     <string>Close</string>
+   </property>
+  </action>
+  <action name="actionFind_duplicates">
+   <property name="text">
+    <string>Find duplicates</string>
    </property>
   </action>
  </widget>
