@@ -27,8 +27,9 @@ void SResultModel::Loader()
         if (j.picture.isNull()) {
             qDebug() << "[SRModel] Loading pixmap for " << j.filename;
             j.picture = QPixmap(j.filename);
-        } else
-            j.loaded = true;
+            ram_footprint += ItemSizeInBytes(j);
+        }
+        j.loaded = true;
 
         if (!DBHelper::getThumbnail(j)) {
 
@@ -50,6 +51,11 @@ void SResultModel::Loader()
         }
 
         j.valid = true;
+
+        if (ram_footprint > MAXPICSBYTES) {
+            curitem = images.end();
+            break;
+        }
     }
 
     beginInsertRows(QModelIndex(),images.size(),images.size());

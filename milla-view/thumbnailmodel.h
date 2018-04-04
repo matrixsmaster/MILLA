@@ -8,7 +8,6 @@ class ThumbnailModel : public MImageListModel
     Q_OBJECT
 
 public:
-
     enum ThumbnailModelSort {
         NoSort,
         SortByNameAsc,
@@ -29,9 +28,6 @@ public:
     void clearCache();
 
     void sortBy(ThumbnailModelSort by);
-
-protected:
-    size_t ram_footprint = 0;
 };
 
 #endif // THUMBNAILMODEL_H

@@ -26,8 +26,6 @@ MViewer::MViewer(QWidget *parent) :
     stopButton->setEnabled(false);
     ui->statusBar->addPermanentWidget(stopButton);
 
-    plugins.addPluginsToMenu(*(ui->menuPlugins),[this] (auto p) { this->pluginTriggered(p); });
-
     connect(&view_timer,&QTimer::timeout,this,[this] {
         if (progressBar->value() < 100)
             progressBar->setValue(progressBar->value()+1);
@@ -45,6 +43,16 @@ MViewer::MViewer(QWidget *parent) :
     connect(ui->star_5,&StarLabel::clicked,this,[this] { changedStars(5); });
 
     loadingMovie = new QMovie(":/loading_icon.gif");
+
+    plugins.addPluginsToMenu(*(ui->menuPlugins),
+                             ([this] (auto p, auto s) {
+        this->pluginTriggered(p,s);
+    }),
+                             ([this] (double p) {
+        progressBar->setValue(floor(p));
+        QCoreApplication::processEvents();
+        return !flag_stop_load_everything;
+    }));
 
     cleanUp();
     updateTags();
@@ -1131,19 +1139,23 @@ void MViewer::on_actionFind_duplicates_triggered()
     fl.close();
 }
 
-void MViewer::pluginTriggered(MillaGenericPlugin* plug)
+void MViewer::pluginTriggered(MillaGenericPlugin* plug, QAction* sender)
 {
     QPixmap out;
 
+    prepareLongProcessing();
     if (plug->isFilter() && current_l.valid) {
+        qDebug() << "Set radius: " << plug->setParam("radius",(double)32); //FIXME: debug only
         QVariant r(plug->action(current_l.picture));
         if (r.canConvert<QPixmap>()) out = r.value<QPixmap>();
 
     } else {
+        //TODO: check state (isChecked)
         QSize sz(ui->scrollArea_2->width(),ui->scrollArea_2->height());
         QVariant r(plug->action(sz));
         if (r.canConvert<QPixmap>()) out = r.value<QPixmap>();
     }
+    prepareLongProcessing(true);
 
     if (out.isNull()) return;
 

@@ -51,9 +51,12 @@ public:
 
 protected:
     QList<MImageListRecord> images;
+    size_t ram_footprint = 0;
     bool do_shorten = false;
 
     virtual size_t ItemSizeInBytes(int idx);
+
+    virtual size_t ItemSizeInBytes(MImageListRecord const &r);
 
     virtual void SaveThumbnail(MImageListRecord &rec) const;
 };

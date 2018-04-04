@@ -28,25 +28,33 @@ MillaPluginLoader::~MillaPluginLoader()
     qDebug() << "[PLUGINS] Unloaded";
 }
 
-void MillaPluginLoader::addPluginsToMenu(QMenu &m, PluginCB mcb)
+void MillaPluginLoader::addPluginsToMenu(QMenu &m, PluginCB mcb, ProgressCB pcb)
 {
     for (auto &i : plugins) {
-        QAction* a = m.addAction(i.second->getPluginName());
-        if (!a) continue;
+        if (!i.second->init()) {
+            qDebug() << "[PLUGINS] Unable to initialize plugin " << i.first;
+            continue;
+        }
 
-        i.second->init();
+        QAction* a = m.addAction(i.second->getPluginName());
+        if (!a) {
+            qDebug() << "[PLUGINS] Unable to create GUI action";
+            break;
+        }
+
         a->setToolTip(i.second->getPluginDesc());
         if (i.second->isContinous()) a->setCheckable(true);
+        i.second->setProgressCB(pcb);
 
-        connect(a,&QAction::triggered,this,[i,this] { this->pluginCallback(i.first); });
+        connect(a,&QAction::triggered,this,[a,i,this] { this->pluginCallback(i.first,a); });
     }
 
     menu_cb = mcb;
 }
 
-void MillaPluginLoader::pluginCallback(QString sender)
+void MillaPluginLoader::pluginCallback(QString name, QAction* sender)
 {
-    if (plugins.count(sender) && menu_cb) menu_cb(plugins.at(sender));
+    if (plugins.count(name) && sender && menu_cb) menu_cb(plugins.at(name),sender);
 }
 
 QString MillaPluginLoader::listPlugins()

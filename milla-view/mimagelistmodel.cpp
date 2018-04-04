@@ -45,7 +45,12 @@ QVariant MImageListModel::data(const QModelIndex &index, int role) const
 
 size_t MImageListModel::ItemSizeInBytes(int idx)
 {
-    return (images.at(idx).picture.depth() / 8) * images.at(idx).picture.size().width() * images.at(idx).picture.size().height();
+    return ItemSizeInBytes(images.at(idx));
+}
+
+size_t MImageListModel::ItemSizeInBytes(MImageListRecord const &r)
+{
+    return (r.picture.depth() / 8) * r.picture.size().width() * r.picture.size().height();
 }
 
 QModelIndex MImageListModel::getRecordIndex(const QString &fn, bool allowPartialMatch)

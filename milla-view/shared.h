@@ -2,6 +2,7 @@
 #define SHARED_H
 
 #include <QObject>
+#include <QAction>
 #include <QString>
 #include <QPixmap>
 #include <QVariant>

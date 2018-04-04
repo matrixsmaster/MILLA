@@ -21,7 +21,7 @@ public:
     MillaPluginLoader();
     virtual ~MillaPluginLoader();
 
-    void addPluginsToMenu(QMenu &m, PluginCB mcb);
+    void addPluginsToMenu(QMenu &m, PluginCB mcb, ProgressCB pcb);
 
     QString listPlugins();
 
@@ -30,7 +30,7 @@ private:
 
     std::map<QString,MillaGenericPlugin*> plugins;
 
-    void pluginCallback(QString sender);
+    void pluginCallback(QString name, QAction *sender);
 };
 
 #endif // MILLAPLUGINLOADER_H

@@ -33,6 +33,7 @@ public:
 private:
     PlugConfCB config_cb;
     ProgressCB progress_cb;
+    double radius = 16;
 
     void core();
 };
