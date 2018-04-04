@@ -3,27 +3,36 @@
 
 #include "plugins.h"
 
-class TestPlugin : public QObject, MillaGeneratorPlugin
+class TestPlugin : public QObject, MillaGenericPlugin
 {
     Q_OBJECT
-    Q_PLUGIN_METADATA(IID MILLA_PLUGIN_GEN_LID FILE "testplugin.json")
-    Q_INTERFACES(MillaGeneratorPlugin)
+    Q_PLUGIN_METADATA(IID MILLA_PLUGIN_LID FILE "testplugin.json")
+    Q_INTERFACES(MillaGenericPlugin)
 
 public:
     TestPlugin();
     virtual ~TestPlugin() {}
 
-    virtual void setImageSize(QSize sz);
-    virtual QSize getImageSize();
+    QString getPluginName() { return "TestPlugin"; }
+    QString getPluginDesc() { return "A simple test plugin."; }
 
-    virtual bool config(QString cfg);
-    virtual QPixmap generate();
-    virtual void update();
+    bool isFilter()         { return true; }
+    bool isContinous()      { return false; }
+
+    bool init();
+    bool finalize();
+
+    void setConfigCB(PlugConfCB cb)     { config_cb = cb; }
+    void setProgressCB(ProgressCB cb)   { progress_cb = cb; }
+
+    QVariant getParam(QString key);
+    bool setParam(QString key, QVariant val);
+
+    QVariant action(QVariant in);
 
 private:
-    QSize mysize;
-    QColor mycolor;
-    QPixmap myimage;
+    PlugConfCB config_cb;
+    ProgressCB progress_cb;
 
     void core();
 };

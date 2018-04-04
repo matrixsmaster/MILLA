@@ -5,8 +5,7 @@
 #include <functional>
 #include <QStringList>
 #include "cvhelper.h"
-#include "mimagelistmodel.h"
-#include "mimpexpmodule.h"
+#include "shared.h"
 
 typedef std::function<MImageExtras(QString)> CacheRetrieveCB;
 

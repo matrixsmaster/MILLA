@@ -2,20 +2,12 @@
 #define MIMPEXPMODULE_H
 
 #include <QDebug>
-#include <QString>
 #include <QTextStream>
 #include <QSqlQuery>
-#include <map>
-#include <functional>
 #include "db_format.h"
+#include "shared.h"
 #include "mimagelistmodel.h"
 #include "exportform.h"
-
-typedef std::map<QString,std::pair<unsigned,Qt::CheckState>> MTagCache;
-
-//workaround bug with 'unrecognizable' std::function
-typedef std::function<bool(QString)> InitRecCB;
-typedef std::function<bool(double)> ProgressCB;
 
 class MImpExpModule
 {

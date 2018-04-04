@@ -14,21 +14,11 @@
 #include <QBuffer>
 #include <QImageWriter>
 #include <QDateTime>
+#include "shared.h"
 
 #define THUMBNAILSIZE 100
 #define MAXSHORTLENGTH 24
 #define MAXPICSBYTES 1024*1024*1024
-
-struct MImageListRecord {
-    QString filename, fnshort;
-    QPixmap thumb, picture;
-    time_t touched = 0, filechanged = 0;
-    bool loaded = false;
-    bool modified = true;
-    bool valid = false;
-};
-
-Q_DECLARE_METATYPE(MImageListRecord)
 
 class MImageListModel : public QAbstractListModel
 {

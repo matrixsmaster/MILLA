@@ -21,15 +21,14 @@ public:
     MillaPluginLoader();
     virtual ~MillaPluginLoader();
 
-    QString getPluginDescription(QString plugname);
+    void addPluginsToMenu(QMenu &m);
 
-    QStringList getGeneratorsNames();
-
-    void addGeneratorsToMenu(QMenu &m);
+    QString listPlugins();
 
 private:
-    std::map<QString,QString> descriptions;
-    std::map<QString,MillaGeneratorPlugin*> generators;
+    std::map<QString,MillaGenericPlugin*> plugins;
+
+    void pluginCallback(QString sender);
 };
 
 #endif // MILLAPLUGINLOADER_H

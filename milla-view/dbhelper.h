@@ -6,7 +6,7 @@
 #include <QCryptographicHash>
 #include <QDir>
 #include "db_format.h"
-#include "mimpexpmodule.h"
+#include "shared.h"
 #include "cvhelper.h"
 #include "searchform.h"
 

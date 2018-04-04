@@ -26,7 +26,7 @@ MViewer::MViewer(QWidget *parent) :
     stopButton->setEnabled(false);
     ui->statusBar->addPermanentWidget(stopButton);
 
-    plugins.addGeneratorsToMenu(*ui->menuGenerators);
+    plugins.addPluginsToMenu(*ui->menuPlugins);
 
     connect(&view_timer,&QTimer::timeout,this,[this] {
         if (progressBar->value() < 100)
@@ -765,7 +765,7 @@ void MViewer::displayLinkedImages(QString const &fn)
 void MViewer::on_actionAbout_triggered()
 {
     QMessageBox::about(this, tr("About MILLA"),
-                       tr("<p><b>MILLA</b> image viewer.</p>"
+                       tr("<p><b>MILLA</b> image viewer</p>"
                           "<p><i>" MILLA_VERSION "</i></p>"
                           "<p><a href=" MILLA_SITE ">GitHub site</a></p>"
                           "<p>(C) Dmitry 'MatrixS_Master' Soloviov, 2018</p>"));
@@ -960,19 +960,7 @@ void MViewer::on_actionDescending_triggered()
 
 void MViewer::on_actionList_all_triggered()
 {
-    QStringList gen_nms = plugins.getGeneratorsNames();
-    if (gen_nms.isEmpty()) return;
-
-    QString sout;
-    QTextStream out(&sout);
-    int n = 1;
-    for (auto &i : gen_nms) {
-        out << n << ") ";
-        out << i << ": ";
-        out << plugins.getPluginDescription(i);
-    }
-
-    QMessageBox::information(this,tr("Plugins list: generators"),sout);
+    QMessageBox::information(this,tr("Plugins list: generators"),plugins.listPlugins());
 }
 
 void MViewer::on_actionReload_metadata_triggered()

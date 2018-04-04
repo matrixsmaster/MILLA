@@ -10,53 +10,51 @@ MillaPluginLoader::MillaPluginLoader() : QObject()
         QObject* plugin = loader.instance();
         if (!plugin) continue;
 
-        QJsonObject meta = loader.metaData()["MetaData"].toObject();
-        if (meta.isEmpty()) continue;
-        if (!meta.keys().contains("Name")) {
-            qDebug() << "[PLUGINS] Plugin " << loader.fileName() << " have no Name tag (" << meta.keys().join(',') << ").";
-            continue;
-        }
+        MillaGenericPlugin* plug = qobject_cast<MillaGenericPlugin*>(plugin);
+        if (!plug) continue;
 
-        MillaGeneratorPlugin* gen = qobject_cast<MillaGeneratorPlugin*>(plugin);
-        if (gen) {
-            QString nm = meta["Name"].toString();
-            descriptions[nm] = meta["ShortDesc"].toString();
-            generators[nm] = gen;
-            qDebug() << "[PLUGINS] Found " << nm << descriptions[nm];
-        }
+        plugins[plug->getPluginName()] = plug;
+        qDebug() << "[PLUGINS] Found " << plug->getPluginName();
+
     }
 
-    qDebug() << "[PLUGINS] " << generators.size() << " generators loaded";
+    qDebug() << "[PLUGINS] " << plugins.size() << " plugins loaded";
 }
 
 MillaPluginLoader::~MillaPluginLoader()
 {
+    for (auto &i : plugins) i.second->finalize();
     //unloads will be called automatically
     qDebug() << "[PLUGINS] Unloaded";
 }
 
-QString MillaPluginLoader::getPluginDescription(QString plugname)
+void MillaPluginLoader::addPluginsToMenu(QMenu &m)
 {
-    if (!descriptions.count(plugname)) return "Plugin metadata is invalid.";
-    return descriptions.at(plugname);
-}
-
-QStringList MillaPluginLoader::getGeneratorsNames()
-{
-    QStringList lst;
-    for (auto &i : generators) lst.push_back(i.first);
-    return lst;
-}
-
-void MillaPluginLoader::addGeneratorsToMenu(QMenu &m)
-{
-    if (generators.empty()) return;
-
-    for (auto &i : generators) {
-        QAction* a = m.addAction(i.first);
+    for (auto &i : plugins) {
+        QAction* a = m.addAction(i.second->getPluginName());
         if (!a) continue;
 
-        a->setToolTip(getPluginDescription(i.first));
-        connect(a,&QAction::triggered,this,[i] { i.second->setImageSize(QSize(10,20)); }); //FIXME: debug only
+        i.second->init();
+        a->setToolTip(i.second->getPluginDesc());
+        if (i.second->isContinous()) a->setCheckable(true);
+
+        connect(a,&QAction::triggered,this,[i,this] { this->pluginCallback(i.first); });
     }
+}
+
+void MillaPluginLoader::pluginCallback(QString sender)
+{
+    if (!plugins.count(sender)) return;
+    //TODO
+    plugins[sender]->action(QVariant());
+}
+
+QString MillaPluginLoader::listPlugins()
+{
+    QString out;
+    int n = 1;
+    for (auto &i : plugins) {
+        out += QString::asprintf("%02d) %s: %s\n",n++,i.first.toStdString().c_str(),i.second->getPluginDesc().toStdString().c_str());
+    }
+    return out;
 }

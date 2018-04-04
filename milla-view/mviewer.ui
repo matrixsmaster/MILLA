@@ -2614,13 +2614,7 @@
     <property name="title">
      <string>Plugins</string>
     </property>
-    <widget class="QMenu" name="menuGenerators">
-     <property name="title">
-      <string>Generators</string>
-     </property>
-     <addaction name="actionList_all"/>
-    </widget>
-    <addaction name="menuGenerators"/>
+    <addaction name="actionList_all"/>
    </widget>
    <addaction name="menuFile"/>
    <addaction name="menuEdit"/>
@@ -2819,12 +2813,12 @@
   </action>
   <action name="actionExport_data">
    <property name="text">
-    <string>Export data</string>
+    <string>Export metadata</string>
    </property>
   </action>
   <action name="actionImport_data">
    <property name="text">
-    <string>Import data</string>
+    <string>Import metadata</string>
    </property>
   </action>
   <action name="actionUpdate_thumbnails">

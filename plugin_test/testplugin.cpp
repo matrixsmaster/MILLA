@@ -1,51 +1,42 @@
 #include <QDebug>
 #include <QTextStream>
 #include <QPainter>
+#include <QPixmap>
+#include <QImage>
 #include "testplugin.h"
 
 TestPlugin::TestPlugin() :
     QObject(),
-    MillaGeneratorPlugin()
+    MillaGenericPlugin()
 {
 }
 
-void TestPlugin::setImageSize(QSize sz)
+bool TestPlugin::init()
 {
-    qDebug() << "[TEST] Set size " << sz;
-    mysize = sz;
+    qDebug() << "[Test] Init OK";
 }
 
-QSize TestPlugin::getImageSize()
+bool TestPlugin::finalize()
 {
-    qDebug() << "[TEST] Get size";
-    return mysize;
+    qDebug() << "[Test] Finalize OK";
 }
 
-bool TestPlugin::config(QString cfg)
+QVariant TestPlugin::getParam(QString key)
 {
-    qDebug() << "[TEST] config(): " << cfg;
-    QTextStream s(&cfg);
-    int r,g,b;
-    s >> r;
-    s >> g;
-    s >> b;
-    mycolor = QColor(r,g,b);
-    return true;
+    qDebug() << "[Test] requested parameter " << key;
 }
 
-QPixmap TestPlugin::generate()
+bool TestPlugin::setParam(QString key, QVariant val)
 {
-    qDebug() << "[TEST] generate()";
-    core();
-    return myimage;
+    qDebug() << "[Test] parameter " << key << " sent";
 }
 
-void TestPlugin::update()
+QVariant TestPlugin::action(QVariant in)
 {
-    qDebug() << "[TEST] update()";
-    core();
+    qDebug() << "[Test] Action";
 }
 
+/*
 void TestPlugin::core()
 {
     QImage inq(mysize,QImage::Format_RGB32);
@@ -61,3 +52,4 @@ void TestPlugin::core()
 
     painter.drawRect(QRect(QPoint(0,0),mysize));
 }
+*/

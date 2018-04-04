@@ -2,6 +2,8 @@
 #define DB_FORMAT_H
 
 #include <QtSql/QSqlDatabase>
+#include <QSqlQuery>
+#include <QSqlError>
 
 #define DB_FILEPATH "/.milla/storage.db"
 

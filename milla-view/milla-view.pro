@@ -41,7 +41,8 @@ HEADERS  += mviewer.h \
     cvhelper.h \
     pluginloader.h \
     dbhelper.h \
-    mmatcher.h
+    mmatcher.h \
+    shared.h
 
 FORMS    += mviewer.ui \
     searchform.ui \
