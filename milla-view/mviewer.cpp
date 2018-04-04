@@ -339,11 +339,12 @@ unsigned MViewer::incViews(bool left)
     v++;
     if (!db.updateFileViews(fn,v)) return 0;
 
-    if (left && (history.cur == history.files.end())) {
-        if (history.files.empty() || history.files.back() != current_l.filename) {
+    if (left) {
+        bool add = history.files.empty() || (history.cur == history.files.end());
+        if (!add) add = !history.files.contains(current_l.filename);
+        if (add) {
             history.files.push_back(current_l.filename);
             history.cur = history.files.end();
-
             qDebug() << "history size now" << history.files.size() << "; we just pushed " << current_l.filename;
         }
     }
