@@ -26,7 +26,7 @@ MViewer::MViewer(QWidget *parent) :
     stopButton->setEnabled(false);
     ui->statusBar->addPermanentWidget(stopButton);
 
-    plugins.addPluginsToMenu(*ui->menuPlugins);
+    plugins.addPluginsToMenu(*(ui->menuPlugins),[this] (auto p) { this->pluginTriggered(p); });
 
     connect(&view_timer,&QTimer::timeout,this,[this] {
         if (progressBar->value() < 100)
@@ -1129,4 +1129,29 @@ void MViewer::on_actionFind_duplicates_triggered()
     QTextStream strm(&fl);
     strm << report;
     fl.close();
+}
+
+void MViewer::pluginTriggered(MillaGenericPlugin* plug)
+{
+    QPixmap out;
+
+    if (plug->isFilter() && current_l.valid) {
+        QVariant r(plug->action(current_l.picture));
+        if (r.canConvert<QPixmap>()) out = r.value<QPixmap>();
+
+    } else {
+        QSize sz(ui->scrollArea_2->width(),ui->scrollArea_2->height());
+        QVariant r(plug->action(sz));
+        if (r.canConvert<QPixmap>()) out = r.value<QPixmap>();
+    }
+
+    if (out.isNull()) return;
+
+    current_r = MImageListRecord();
+    current_r.fnshort = "Generated Picture";
+    current_r.picture = out;
+    current_r.loaded = true;
+    current_r.valid = true;
+
+    scaleImage(current_r,ui->scrollArea_2,ui->label_2,ui->label_4,1);
 }

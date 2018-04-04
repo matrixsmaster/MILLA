@@ -30,6 +30,7 @@ public:
 
 Q_DECLARE_INTERFACE(MillaGenericPlugin, MILLA_PLUGIN_LID)
 
+typedef std::function<void(MillaGenericPlugin*)> PluginCB;
 
 #endif // PLUGINS
 

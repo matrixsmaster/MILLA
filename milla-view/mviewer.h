@@ -208,6 +208,8 @@ private:
     void updateThumbnailsOrder(ThumbnailModel::ThumbnailModelSort ord, bool desc);
 
     void historyShowCurrent();
+
+    void pluginTriggered(MillaGenericPlugin* plug);
 };
 
 #endif // MVIEWER_H

@@ -21,11 +21,13 @@ public:
     MillaPluginLoader();
     virtual ~MillaPluginLoader();
 
-    void addPluginsToMenu(QMenu &m);
+    void addPluginsToMenu(QMenu &m, PluginCB mcb);
 
     QString listPlugins();
 
 private:
+    PluginCB menu_cb;
+
     std::map<QString,MillaGenericPlugin*> plugins;
 
     void pluginCallback(QString sender);

@@ -28,7 +28,7 @@ MillaPluginLoader::~MillaPluginLoader()
     qDebug() << "[PLUGINS] Unloaded";
 }
 
-void MillaPluginLoader::addPluginsToMenu(QMenu &m)
+void MillaPluginLoader::addPluginsToMenu(QMenu &m, PluginCB mcb)
 {
     for (auto &i : plugins) {
         QAction* a = m.addAction(i.second->getPluginName());
@@ -40,13 +40,13 @@ void MillaPluginLoader::addPluginsToMenu(QMenu &m)
 
         connect(a,&QAction::triggered,this,[i,this] { this->pluginCallback(i.first); });
     }
+
+    menu_cb = mcb;
 }
 
 void MillaPluginLoader::pluginCallback(QString sender)
 {
-    if (!plugins.count(sender)) return;
-    //TODO
-    plugins[sender]->action(QVariant());
+    if (plugins.count(sender) && menu_cb) menu_cb(plugins.at(sender));
 }
 
 QString MillaPluginLoader::listPlugins()
