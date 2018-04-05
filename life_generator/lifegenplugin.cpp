@@ -30,6 +30,10 @@ QVariant LifeGenPlugin::getParam(QString key)
 {
     if (key == "update_delay") {
         return int(LIFEGEN_UPDATE);
+
+    } else if (key == "use_config_cb") {
+        return true;
+
     }
     return QVariant();
 }
@@ -43,7 +47,7 @@ bool LifeGenPlugin::setParam(QString key, QVariant val)
     return false;
 }
 
-void LifeGenPlugin::randomInit(QSize sz)
+void LifeGenPlugin::randomInit(QSize const &sz)
 {
     field = QImage(sz,QImage::Format_RGB32);
 
@@ -51,6 +55,22 @@ void LifeGenPlugin::randomInit(QSize sz)
         uint32_t* line = reinterpret_cast<uint32_t*>(field.scanLine(i));
         for (int j = 0; j < sz.width(); j++,line++)
             *line = (random() < (RAND_MAX / 10))? 0xffffffff : 0xff000000;
+    }
+}
+
+void LifeGenPlugin::imageInit(QSize const &sz, QPixmap const &in)
+{
+    if (in.isNull()) return;
+
+    field = in.scaled(sz).toImage().convertToFormat(QImage::Format_RGB32);
+
+    for (int i = 0; i < field.size().height(); i++) {
+        uchar* px = field.scanLine(i);
+        for (int j = 0; j < field.size().width(); j++,px+=4) {
+            if (px[0] > 0x50 && px[2] > 0x50) {
+                for (int k = 0; k < 4; k++) px[k] = 0xff;
+            }
+        }
     }
 }
 
@@ -87,7 +107,6 @@ void LifeGenPlugin::kill(QImage &ref, QPoint const &p)
     uint32_t* line = reinterpret_cast<uint32_t*>(ref.scanLine(p.y()));
     line += p.x();
     *line = 0xff808080;
-    //*line = 0xff000000;
 }
 
 void LifeGenPlugin::born(QImage &ref, QPoint const &p)
@@ -104,7 +123,7 @@ void LifeGenPlugin::fade(QImage &from, QImage &to, QPoint const &p)
     if (!(*line & 0x00ffffff)) return; //already fully dead
 
     int n = static_cast<int>((*line) & 0x00ffffff);
-    n -= 0x020202;
+    n -= 0x040504;
     if (n < 0) n = 0;
 
     line = reinterpret_cast<uint32_t*>(to.scanLine(p.y()));
@@ -133,7 +152,13 @@ QVariant LifeGenPlugin::action(QVariant in)
         return QVariant();
     }
 
-    if (field.isNull()) randomInit(in.value<QSize>());
+    if (field.isNull() && config_cb) {
+        QVariant r(config_cb("get_left_image",QVariant()));
+        if (r.canConvert<QPixmap>()) imageInit(in.value<QSize>(),r.value<QPixmap>());
+    }
+
+    if (field.isNull())
+        randomInit(in.value<QSize>());
 
     if (!field.isNull()) {
         singleStep();

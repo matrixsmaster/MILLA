@@ -218,6 +218,8 @@ private:
     void pluginTriggered(MillaGenericPlugin* plug, QAction* sender);
 
     void pluginTimedOut(MillaGenericPlugin* plug);
+
+    QVariant pluginConfigCallback(MillaGenericPlugin* plug, QString const &key, QVariant const &val);
 };
 
 #endif // MVIEWER_H

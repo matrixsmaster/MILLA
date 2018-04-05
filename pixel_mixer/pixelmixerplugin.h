@@ -23,7 +23,7 @@ public:
     bool finalize();
 
     void showUI();
-    void setConfigCB(PlugConfCB cb)     { config_cb = cb; }
+    void setConfigCB(PlugConfCB)        {}
     void setProgressCB(ProgressCB cb)   { progress_cb = cb; }
 
     QVariant getParam(QString key);
@@ -32,8 +32,7 @@ public:
     QVariant action(QVariant in);
 
 private:
-    PlugConfCB config_cb;
-    ProgressCB progress_cb;
+    ProgressCB progress_cb = 0;
     double radius = 16;
     bool once = false;
 };

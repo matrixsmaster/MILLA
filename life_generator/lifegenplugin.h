@@ -27,8 +27,8 @@ public:
     bool finalize();
 
     void showUI();
-    void setConfigCB(PlugConfCB)     {}
-    void setProgressCB(ProgressCB)   {}
+    void setConfigCB(PlugConfCB cb)     { config_cb = cb; }
+    void setProgressCB(ProgressCB)      {}
 
     QVariant getParam(QString key);
     bool setParam(QString key, QVariant val);
@@ -36,9 +36,11 @@ public:
     QVariant action(QVariant in);
 
 private:
+    PlugConfCB config_cb = 0;
     QImage field;
 
-    void randomInit(QSize sz);
+    void randomInit(QSize const &sz);
+    void imageInit(QSize const &sz, QPixmap const &in);
     void singleStep();
     bool alive(QImage &ref, QPoint const &p);
     void kill(QImage &ref, QPoint const &p);
