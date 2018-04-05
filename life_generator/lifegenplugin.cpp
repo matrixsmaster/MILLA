@@ -1,4 +1,5 @@
 #include <QDebug>
+#include <QTextStream>
 #include "lifegenplugin.h"
 #include "dialog.h"
 
@@ -23,7 +24,8 @@ bool LifeGenPlugin::finalize()
 void LifeGenPlugin::showUI()
 {
     Dialog dlg;
-    dlg.exec();
+    if (dlg.exec()) text_life = dlg.getData();
+    else text_life.clear();
 }
 
 QVariant LifeGenPlugin::getParam(QString key)
@@ -72,6 +74,70 @@ void LifeGenPlugin::imageInit(QSize const &sz, QPixmap const &in)
             }
         }
     }
+}
+
+void LifeGenPlugin::textInit(QSize const &sz)
+{
+    if (text_life.isEmpty()) return;
+
+    field = QImage(sz,QImage::Format_RGB32);
+
+    for (int i = 0; i < sz.height(); i++) {
+        uint32_t* line = reinterpret_cast<uint32_t*>(field.scanLine(i));
+        for (int j = 0; j < sz.width(); j++,line++) *line = 0xff000000;
+    }
+
+    int fsm = 0, ccx, cx = 0, cy = 0;
+    for (auto &i : text_life) {
+        QString s = i.trimmed();
+        if (s.isEmpty()) continue;
+
+        switch (fsm) {
+        case 0:
+            if (s.startsWith("#Life 1.05",Qt::CaseInsensitive)) fsm++; //file type
+            break;
+
+        case 1:
+            if (s.startsWith("#N",Qt::CaseInsensitive)) fsm++; //normal (standard) rules
+            break;
+
+        case 2:
+        case 3:
+            if (s.startsWith("#P",Qt::CaseInsensitive)) {
+                s.remove(0,2);
+                QTextStream ss(&s);
+                int dx,dy;
+                ss >> dx;
+                ss >> dy;
+                qDebug() << "[LifeGen] P-tag: " << dx << dy;
+
+                cx = sz.width() / 2 + dx;
+                cy = sz.height() / 2 + dy;
+                if (cx < 0) cx = 0;
+                if (cx >= sz.width()) cx = sz.width() - 1;
+                if (cy < 0) cy = 0;
+                if (cy >= sz.height()) cy = sz.height() - 1;
+                ccx = cx;
+
+                fsm++;
+
+            } else if (fsm == 3) {
+                for (auto &j : s.toLatin1()) {
+                    if (j == '*') {
+                        uint32_t* line = reinterpret_cast<uint32_t*>(field.scanLine(cy));
+                        line += cx;
+                        *line = 0xffffffff;
+                    }
+                    if (++cx >= sz.width()) break;
+                }
+                cx = ccx;
+                if (++cy >= sz.height()) fsm = 2; //skip everything to the next P tag
+            }
+        }
+    }
+
+    text_life.clear();
+    qDebug() << "[LifeGen] Parsing done";
 }
 
 void LifeGenPlugin::singleStep()
@@ -137,6 +203,7 @@ int LifeGenPlugin::neighbours(QPoint const &p)
     for (int i = -1; i < 2; i++) {
         if (p.y() + i < 0 || p.y() + i >= field.size().height()) continue;
         for (int j = -1; j < 2; j++) {
+            if (i == j && j == 0) continue;
             if (p.x() + j < 0 || p.x() + j >= field.size().width()) continue;
             QPoint pp(p.x() + j, p.y() + i);
             if (alive(field,pp)) n++;
@@ -151,14 +218,18 @@ QVariant LifeGenPlugin::action(QVariant in)
         qDebug() << "[LifeGen] Action(): invalid QVariant";
         return QVariant();
     }
+    QSize sz = in.value<QSize>();
+
+    if (field.isNull() && !text_life.isEmpty())
+        textInit(sz);
 
     if (field.isNull() && config_cb) {
         QVariant r(config_cb("get_left_image",QVariant()));
-        if (r.canConvert<QPixmap>()) imageInit(in.value<QSize>(),r.value<QPixmap>());
+        if (r.canConvert<QPixmap>()) imageInit(sz,r.value<QPixmap>());
     }
 
     if (field.isNull())
-        randomInit(in.value<QSize>());
+        randomInit(sz);
 
     if (!field.isNull()) {
         singleStep();

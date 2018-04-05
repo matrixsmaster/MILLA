@@ -3,6 +3,7 @@
 
 #include <QImage>
 #include <QPoint>
+#include <QStringList>
 #include "plugins.h"
 
 #define LIFEGEN_UPDATE 100
@@ -38,9 +39,11 @@ public:
 private:
     PlugConfCB config_cb = 0;
     QImage field;
+    QStringList text_life;
 
     void randomInit(QSize const &sz);
     void imageInit(QSize const &sz, QPixmap const &in);
+    void textInit(QSize const &sz);
     void singleStep();
     bool alive(QImage &ref, QPoint const &p);
     void kill(QImage &ref, QPoint const &p);
