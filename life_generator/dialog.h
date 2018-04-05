@@ -15,14 +15,8 @@ public:
     explicit Dialog(QWidget *parent = 0);
     ~Dialog();
 
-    int getRadius();
-
-private slots:
-    void on_buttonBox_accepted();
-
 private:
     Ui::Dialog *ui;
-    int radius;
 };
 
 #endif // DIALOG_H

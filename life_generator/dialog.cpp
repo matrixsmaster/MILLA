@@ -6,20 +6,9 @@ Dialog::Dialog(QWidget *parent) :
     ui(new Ui::Dialog)
 {
     ui->setupUi(this);
-    radius = ui->horizontalSlider->minimum();
 }
 
 Dialog::~Dialog()
 {
     delete ui;
-}
-
-int Dialog::getRadius()
-{
-    return radius;
-}
-
-void Dialog::on_buttonBox_accepted()
-{
-    radius = ui->horizontalSlider->value();
 }

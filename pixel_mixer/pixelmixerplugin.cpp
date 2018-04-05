@@ -4,6 +4,7 @@
 #include <QPixmap>
 #include <QImage>
 #include "pixelmixerplugin.h"
+#include "dialog.h"
 
 PixelMixerPlugin::PixelMixerPlugin() :
     QObject(),
@@ -23,9 +24,20 @@ bool PixelMixerPlugin::finalize()
     return true;
 }
 
+void PixelMixerPlugin::showUI()
+{
+    qDebug() << "[PixMix] Showing interface";
+    Dialog dlg;
+    once = dlg.exec();
+    radius = dlg.getRadius();
+}
+
 QVariant PixelMixerPlugin::getParam(QString key)
 {
     qDebug() << "[PixMix] requested parameter " << key;
+    if (key == "show_ui") {
+        return !once;
+    }
     return QVariant();
 }
 
@@ -50,7 +62,7 @@ QVariant PixelMixerPlugin::action(QVariant in)
 
     QImage inq(in.value<QPixmap>().toImage().convertToFormat(QImage::Format_RGB32));
 
-    double stp = 2.f + (double)random() / (double)RAND_MAX * radius;
+    double stp = radius;
     double prg = 0, dp = 100.f / (double)(inq.width()*inq.height());
 
     for (int i = 0; i < inq.height(); i++) {

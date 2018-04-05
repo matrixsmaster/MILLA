@@ -22,6 +22,7 @@ public:
     bool init();
     bool finalize();
 
+    void showUI();
     void setConfigCB(PlugConfCB cb)     { config_cb = cb; }
     void setProgressCB(ProgressCB cb)   { progress_cb = cb; }
 
@@ -34,6 +35,7 @@ private:
     PlugConfCB config_cb;
     ProgressCB progress_cb;
     double radius = 16;
+    bool once = false;
 
     void core();
 };

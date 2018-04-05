@@ -1144,12 +1144,21 @@ void MViewer::pluginTriggered(MillaGenericPlugin* plug, QAction* sender)
     QPixmap out;
 
     prepareLongProcessing();
-    if (plug->isFilter() && current_l.valid) {
-        qDebug() << "Set radius: " << plug->setParam("radius",(double)32); //FIXME: debug only
+
+    if (plug->isFilter() && current_l.valid) { //Filter plugin
+
+        //determine if we need to show UI for this plugin now
+        if (!ui->actionAlways_show_GUI->isChecked()) {
+            QVariant g(plug->getParam("show_ui"));
+            if (g.canConvert<bool>() && g.value<bool>()) plug->showUI();
+        } else
+            plug->showUI();
+        //ok, let's fire up some action
         QVariant r(plug->action(current_l.picture));
+        //and present the result to the user
         if (r.canConvert<QPixmap>()) out = r.value<QPixmap>();
 
-    } else {
+    } else if (!plug->isFilter()) { //Generator plugin
         //TODO: check state (isChecked)
         QSize sz(ui->scrollArea_2->width(),ui->scrollArea_2->height());
         QVariant r(plug->action(sz));

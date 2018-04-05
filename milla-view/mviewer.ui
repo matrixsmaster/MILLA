@@ -2616,6 +2616,9 @@
      <string>Plugins</string>
     </property>
     <addaction name="actionList_all"/>
+    <addaction name="actionAlways_show_GUI"/>
+    <addaction name="actionRepeat_last"/>
+    <addaction name="separator"/>
    </widget>
    <addaction name="menuFile"/>
    <addaction name="menuEdit"/>
@@ -2954,6 +2957,22 @@
   <action name="actionFind_duplicates">
    <property name="text">
     <string>Find duplicates</string>
+   </property>
+  </action>
+  <action name="actionAlways_show_GUI">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Always show GUI</string>
+   </property>
+  </action>
+  <action name="actionRepeat_last">
+   <property name="text">
+    <string>Repeat last</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+0</string>
    </property>
   </action>
  </widget>
