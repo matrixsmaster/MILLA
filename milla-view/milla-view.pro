@@ -54,3 +54,5 @@ QMAKE_CXXFLAGS  += -Wextra
 LIBS     += -lopencv_core -lopencv_imgproc -lopencv_features2d -lopencv_flann -lopencv_objdetect -lopencv_highgui
 
 RESOURCES+= milla-view.qrc
+
+DESTDIR = ../bin

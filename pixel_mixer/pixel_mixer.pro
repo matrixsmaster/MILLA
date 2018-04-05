@@ -26,4 +26,4 @@ FORMS    += dialog.ui
 DISTFILES += \
     pixelmixer.json
 
-DESTDIR         = ../share/plugins
+DESTDIR = ../share/plugins

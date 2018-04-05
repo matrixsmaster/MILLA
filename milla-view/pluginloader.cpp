@@ -3,7 +3,7 @@
 MillaPluginLoader::MillaPluginLoader() : QObject()
 {
     QDir pluginsDir(QApplication::applicationDirPath());
-    pluginsDir.cd("plugins");
+    pluginsDir.cd(MILLA_PLUGIN_RELPATH);
 
     for (auto &i : pluginsDir.entryList(QDir::Files)) {
         QPluginLoader loader(pluginsDir.absoluteFilePath(i));

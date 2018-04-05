@@ -3,6 +3,7 @@
 
 #include "shared.h"
 
+#define MILLA_PLUGIN_RELPATH "../share/plugins"
 #define MILLA_PLUGIN_LID "org.MatrixS_Master.MILLA.Plugins.Generic"
 
 class MillaGenericPlugin
