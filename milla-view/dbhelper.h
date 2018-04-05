@@ -60,7 +60,7 @@ public:
 
     static bool createLinkBetweenImages(QByteArray const &left, QByteArray const &right);
 
-    static QStringList getLinkedImages(QByteArray const &sha);
+    static QStringList getLinkedImages(QByteArray const &sha, bool reverse);
 
     static QStringList tagSearch(MTagCache const &cache, QList<MImageListRecord>* within = nullptr, int maxitems = 0);
 

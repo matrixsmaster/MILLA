@@ -760,7 +760,10 @@ void MViewer::displayLinkedImages(QString const &fn)
     MImageExtras extr = getExtraCacheLine(fn);
     if (!extr.valid) return;
 
-    QStringList out = db.getLinkedImages(extr.sha);
+    QStringList out = db.getLinkedImages(extr.sha,false);
+    if (ui->actionShow_reverse_links->isChecked())
+        out += db.getLinkedImages(extr.sha,true);
+
     resultsPresentation(out,ui->listView_3,2);
     connect(ui->listView_3->selectionModel(),&QItemSelectionModel::selectionChanged,[this] {
         current_r = ui->listView_3->selectionModel()->selectedIndexes().first().data(MImageListModel::FullDataRole).value<MImageListRecord>();
@@ -1192,6 +1195,7 @@ void MViewer::pluginTriggered(MillaGenericPlugin* plug, QAction* sender)
             if (!sender->isChecked()) { //since check was toggled before this call, check is inverted
                 //stop it
                 if (plugins_timers.count(plug)) {
+                    plug->setParam("process_started",false); //ignore result
                     plugins_timers[plug].stop();
                     disconnect(&(plugins_timers[plug]),&QTimer::timeout,nullptr,nullptr);
                     plugins_timers.erase(plug);
@@ -1203,6 +1207,7 @@ void MViewer::pluginTriggered(MillaGenericPlugin* plug, QAction* sender)
                 QVariant d(plug->getParam("update_delay"));
                 int di = (d.canConvert<int>())? d.value<int>() : 0;
                 if (di > 0) {
+                    plug->setParam("process_started",true); //ignore result
                     qDebug() << "[PLUGINS] Starting timer with interval " << di;
                     plugins_timers[plug].start(di); //timer created automatically by std::map
                     connect(&(plugins_timers[plug]),&QTimer::timeout,this,[plug,this] { this->pluginTimedOut(plug); });
@@ -1234,5 +1239,17 @@ void MViewer::pluginTimedOut(MillaGenericPlugin* plug)
 {
     qDebug() << "[PLUGINS] timeout for " << plug->getPluginName();
 
-    //TODO
+    QVariant r(plug->action(QSize(ui->scrollArea_2->width(),ui->scrollArea_2->height())));
+    showGeneratedPicture((r.canConvert<QPixmap>())? r.value<QPixmap>() : QPixmap());
+}
+
+void MViewer::on_actionRepeat_last_triggered()
+{
+    if (!last_plugin.first || !last_plugin.second) return;
+
+    //toggle checkbox before calling triggered() method
+    if (last_plugin.second->isCheckable()) last_plugin.second->toggle();
+
+    //now call main method
+    pluginTriggered(last_plugin.first,last_plugin.second);
 }

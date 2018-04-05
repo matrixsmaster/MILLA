@@ -2,6 +2,7 @@
 #define LIFEGENPLUGIN_H
 
 #include <QImage>
+#include <QPoint>
 #include "plugins.h"
 
 #define LIFEGEN_UPDATE 100
@@ -22,12 +23,12 @@ public:
     bool isFilter()         { return false; }
     bool isContinous()      { return true; }
 
-    bool init()             { return true; }
-    bool finalize()         { return true; }
+    bool init();
+    bool finalize();
 
     void showUI();
-    void setConfigCB(PlugConfCB cb)     {}
-    void setProgressCB(ProgressCB cb)   {}
+    void setConfigCB(PlugConfCB)     {}
+    void setProgressCB(ProgressCB)   {}
 
     QVariant getParam(QString key);
     bool setParam(QString key, QVariant val);
@@ -36,6 +37,14 @@ public:
 
 private:
     QImage field;
+
+    void randomInit(QSize sz);
+    void singleStep();
+    bool alive(QImage &ref, QPoint const &p);
+    void kill(QImage &ref, QPoint const &p);
+    void born(QImage &ref, QPoint const &p);
+    void fade(QImage &from, QImage &to, QPoint const &p);
+    int neighbours(QPoint const &p);
 };
 
 #endif // LIFEGENPLUGIN_H

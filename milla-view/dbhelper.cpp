@@ -443,12 +443,14 @@ bool DBHelper::createLinkBetweenImages(QByteArray const &left, QByteArray const 
     return ok;
 }
 
-QStringList DBHelper::getLinkedImages(QByteArray const &sha)
+QStringList DBHelper::getLinkedImages(QByteArray const &sha, bool reverse)
 {
     QStringList out;
     QSqlQuery q;
 
-    q.prepare("SELECT right FROM links WHERE left = :sha");
+    if (reverse) q.prepare("SELECT left FROM links WHERE right = :sha");
+    else q.prepare("SELECT right FROM links WHERE left = :sha");
+
     q.bindValue(":sha",sha);
     if (!q.exec()) return out;
 
