@@ -3,35 +3,35 @@
 #include <QPainter>
 #include <QPixmap>
 #include <QImage>
-#include "testplugin.h"
+#include "pixelmixerplugin.h"
 
-TestPlugin::TestPlugin() :
+PixelMixerPlugin::PixelMixerPlugin() :
     QObject(),
     MillaGenericPlugin()
 {
 }
 
-bool TestPlugin::init()
+bool PixelMixerPlugin::init()
 {
-    qDebug() << "[Test] Init OK";
+    qDebug() << "[PixMix] Init OK";
     return true;
 }
 
-bool TestPlugin::finalize()
+bool PixelMixerPlugin::finalize()
 {
-    qDebug() << "[Test] Finalize OK";
+    qDebug() << "[PixMix] Finalize OK";
     return true;
 }
 
-QVariant TestPlugin::getParam(QString key)
+QVariant PixelMixerPlugin::getParam(QString key)
 {
-    qDebug() << "[Test] requested parameter " << key;
+    qDebug() << "[PixMix] requested parameter " << key;
     return QVariant();
 }
 
-bool TestPlugin::setParam(QString key, QVariant val)
+bool PixelMixerPlugin::setParam(QString key, QVariant val)
 {
-    qDebug() << "[Test] parameter " << key << " sent";
+    qDebug() << "[PixMix] parameter " << key << " sent";
     if (key == "radius" && val.canConvert<double>()) {
         radius = val.value<double>();
         return true;
@@ -39,12 +39,12 @@ bool TestPlugin::setParam(QString key, QVariant val)
     return false;
 }
 
-QVariant TestPlugin::action(QVariant in)
+QVariant PixelMixerPlugin::action(QVariant in)
 {
-    qDebug() << "[Test] Action";
+    qDebug() << "[PixMix] Action";
 
     if (!in.canConvert<QPixmap>()) {
-        qDebug() << "[Test] ALERT: invalid argument (not a pixmap)";
+        qDebug() << "[PixMix] ALERT: invalid argument (not a pixmap)";
         return QVariant();
     }
 

@@ -1,20 +1,20 @@
-#ifndef TESTPLUGIN_H
-#define TESTPLUGIN_H
+#ifndef PIXELMIXERPLUGIN_H
+#define PIXELMIXERPLUGIN_H
 
 #include "plugins.h"
 
-class TestPlugin : public QObject, MillaGenericPlugin
+class PixelMixerPlugin : public QObject, public MillaGenericPlugin
 {
     Q_OBJECT
-    Q_PLUGIN_METADATA(IID MILLA_PLUGIN_LID FILE "testplugin.json")
+    Q_PLUGIN_METADATA(IID MILLA_PLUGIN_LID FILE "pixelmixer.json")
     Q_INTERFACES(MillaGenericPlugin)
 
 public:
-    TestPlugin();
-    virtual ~TestPlugin() {}
+    PixelMixerPlugin();
+    virtual ~PixelMixerPlugin() {}
 
-    QString getPluginName() { return "TestPlugin"; }
-    QString getPluginDesc() { return "A simple test plugin."; }
+    QString getPluginName() { return "PixelMixer"; }
+    QString getPluginDesc() { return "A simple plugin mostly for testing purpose."; }
 
     bool isFilter()         { return true; }
     bool isContinous()      { return false; }
@@ -38,4 +38,4 @@ private:
     void core();
 };
 
-#endif // TESTPLUGIN_H
+#endif // PIXELMIXERPLUGIN_H
