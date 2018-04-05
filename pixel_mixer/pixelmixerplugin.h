@@ -36,8 +36,6 @@ private:
     ProgressCB progress_cb;
     double radius = 16;
     bool once = false;
-
-    void core();
 };
 
 #endif // PIXELMIXERPLUGIN_H

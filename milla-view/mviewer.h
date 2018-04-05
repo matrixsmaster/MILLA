@@ -156,6 +156,8 @@ private:
     std::map<QString,MImageExtras> extra_cache;
     MTagCache tags_cache;
     MHistory history;
+    std::pair<MillaGenericPlugin*,QAction*> last_plugin;
+    std::map<MillaGenericPlugin*,QTimer> plugins_timers;
 
     void cleanUp();
 
@@ -209,7 +211,11 @@ private:
 
     void historyShowCurrent();
 
+    void showGeneratedPicture(QPixmap const &in);
+
     void pluginTriggered(MillaGenericPlugin* plug, QAction* sender);
+
+    void pluginTimedOut(MillaGenericPlugin* plug);
 };
 
 #endif // MVIEWER_H

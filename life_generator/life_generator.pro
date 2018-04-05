@@ -15,9 +15,11 @@ CONFIG += c++14 plugin
 INCLUDEPATH += ../milla-view
 
 SOURCES += main.cpp\
-        dialog.cpp
+        dialog.cpp \
+    lifegenplugin.cpp
 
-HEADERS  += dialog.h
+HEADERS  += dialog.h \
+    lifegenplugin.h
 
 FORMS    += dialog.ui
 

@@ -53,6 +53,7 @@ MViewer::MViewer(QWidget *parent) :
         QCoreApplication::processEvents();
         return !flag_stop_load_everything;
     }));
+    last_plugin = std::pair<MillaGenericPlugin*,QAction*>(nullptr,nullptr);
 
     cleanUp();
     updateTags();
@@ -831,28 +832,35 @@ void MViewer::on_actionThumbnails_cloud_changed()
 
 void MViewer::selectIEFileDialog(bool import)
 {
+    //show import/export form and determine search filter values
     ExportForm frm(import);
-    if (!frm.exec()) return;
+    if (!frm.exec()) return; //user cancelled the request
     ExportFormData s = frm.getExportData();
 
+    //request filename to save or load from
     QString fileName = import?
                 QFileDialog::getOpenFileName(this, tr("Import from"), "", tr("Text Files [txt,csv] (*.txt *.csv)")) :
                 QFileDialog::getSaveFileName(this, tr("Export to"), "", tr("Text Files [txt,csv] (*.txt *.csv)"));
     if (fileName.isEmpty()) return;
 
+    //auto-complete file extension in case of exporting table sheet
     if ((!import) && (fileName.right(4).toUpper() != ".CSV" && fileName.right(4).toUpper() != ".TXT"))
         fileName += ".csv";
 
+    //open file andd set up the stream
     QFile fl(fileName);
     if (!fl.open(QIODevice::Text | (import? QIODevice::ReadOnly : QIODevice::WriteOnly))) {
         qDebug() << "ALERT: unable to gain access to " << fileName;
         return;
     }
-
     QTextStream strm(&fl);
-    ThumbnailModel* ptm = s.loaded_only? dynamic_cast<ThumbnailModel*>(ui->listView->model()) : nullptr;
-    updateTags();
 
+    //if we want to export currently loaded files only, prepare model's pointer
+    ThumbnailModel* ptm = s.loaded_only? dynamic_cast<ThumbnailModel*>(ui->listView->model()) : nullptr;
+
+    updateTags(); //re-create tags cache without any checked items
+
+    //create importer
     MImpExpModule mod(&tags_cache,(ptm? &(ptm->GetAllImages()) : nullptr));
     mod.setProgressBar([this] (double v) {
         this->progressBar->setValue(floor(v));
@@ -860,14 +868,17 @@ void MViewer::selectIEFileDialog(bool import)
         return !flag_stop_load_everything;
     });
 
+    //and start the process
     prepareLongProcessing();
-
     bool ok = import?
                 mod.dataImport(s,strm,[this,s] (auto fn) { return this->createStatRecord(fn,!s.loaded_only); }) :
                 mod.dataExport(s,strm);
+
+    //restore tags view
     if (current_l.valid) updateTags(current_l.filename);
     else updateTags();
 
+    //fold up
     prepareLongProcessing(true);
     fl.close();
     qDebug() << "[db] " << (import? "Import":"Export") << " data: " << ok;
@@ -1139,12 +1150,28 @@ void MViewer::on_actionFind_duplicates_triggered()
     fl.close();
 }
 
+void MViewer::showGeneratedPicture(QPixmap const &in)
+{
+    if (in.isNull()) return; //skip of no result were given
+
+    //set current right image to generated one
+    current_r = MImageListRecord();
+    current_r.fnshort = "Generated Picture";
+    current_r.picture = in;
+    current_r.loaded = true;
+    current_r.valid = true;
+
+    //and show it
+    scaleImage(current_r,ui->scrollArea_2,ui->label_2,ui->label_4,1);
+}
+
 void MViewer::pluginTriggered(MillaGenericPlugin* plug, QAction* sender)
 {
     QPixmap out;
 
-    prepareLongProcessing();
+    last_plugin = std::pair<MillaGenericPlugin*,QAction*>(plug,sender);
 
+    prepareLongProcessing();
     if (plug->isFilter() && current_l.valid) { //Filter plugin
 
         //determine if we need to show UI for this plugin now
@@ -1159,20 +1186,53 @@ void MViewer::pluginTriggered(MillaGenericPlugin* plug, QAction* sender)
         if (r.canConvert<QPixmap>()) out = r.value<QPixmap>();
 
     } else if (!plug->isFilter()) { //Generator plugin
-        //TODO: check state (isChecked)
+
+        //if generator is continous, check if it is already enabled
+        if (plug->isContinous()) {
+            if (!sender->isChecked()) { //since check was toggled before this call, check is inverted
+                //stop it
+                if (plugins_timers.count(plug)) {
+                    plugins_timers[plug].stop();
+                    disconnect(&(plugins_timers[plug]),&QTimer::timeout,nullptr,nullptr);
+                    plugins_timers.erase(plug);
+                }
+                qDebug() << "[PLUGINS] " << plug->getPluginName() << " stopped";
+
+            } else {
+                //start it
+                QVariant d(plug->getParam("update_delay"));
+                int di = (d.canConvert<int>())? d.value<int>() : 0;
+                if (di > 0) {
+                    qDebug() << "[PLUGINS] Starting timer with interval " << di;
+                    plugins_timers[plug].start(di); //timer created automatically by std::map
+                    connect(&(plugins_timers[plug]),&QTimer::timeout,this,[plug,this] { this->pluginTimedOut(plug); });
+
+                    //if plugin is timed, skip everything down there
+                    prepareLongProcessing(true);
+                    return;
+
+                } else
+                    qDebug() << "[PLUGINS] No update interval defined for " << plug->getPluginName();
+
+                qDebug() << "[PLUGINS] " << plug->getPluginName() << " started";
+            }
+        }
+
+        //grab the size of actual screen space (in 1:1 scale) available for generated picture
         QSize sz(ui->scrollArea_2->width(),ui->scrollArea_2->height());
+        //and fire up the generation process
         QVariant r(plug->action(sz));
+
+        //grab the result if it's available and valid
         if (r.canConvert<QPixmap>()) out = r.value<QPixmap>();
     }
     prepareLongProcessing(true);
+    showGeneratedPicture(out);
+}
 
-    if (out.isNull()) return;
+void MViewer::pluginTimedOut(MillaGenericPlugin* plug)
+{
+    qDebug() << "[PLUGINS] timeout for " << plug->getPluginName();
 
-    current_r = MImageListRecord();
-    current_r.fnshort = "Generated Picture";
-    current_r.picture = out;
-    current_r.loaded = true;
-    current_r.valid = true;
-
-    scaleImage(current_r,ui->scrollArea_2,ui->label_2,ui->label_4,1);
+    //TODO
 }
