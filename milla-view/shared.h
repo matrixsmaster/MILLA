@@ -26,5 +26,9 @@ struct MImageListRecord {
 
 Q_DECLARE_METATYPE(MImageListRecord)
 
+typedef QObject* QObjectPtr;
+
+Q_DECLARE_METATYPE(QObjectPtr)
+
 #endif // SHARED_H
 

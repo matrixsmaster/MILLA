@@ -159,7 +159,6 @@ private:
     MTagCache tags_cache;
     MHistory history;
     std::pair<MillaGenericPlugin*,QAction*> last_plugin;
-    std::map<MillaGenericPlugin*,QTimer> plugins_timers;
 
     void cleanUp();
 

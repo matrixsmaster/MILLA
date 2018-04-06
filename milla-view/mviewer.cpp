@@ -1169,84 +1169,21 @@ void MViewer::pluginTriggered(MillaGenericPlugin* plug, QAction* sender)
 {
     if (!current_l.valid && plug->isFilter()) return; //don't waste our time
 
+    prepareLongProcessing();
+    QSize sz(ui->scrollArea_2->width(),ui->scrollArea_2->height());
+    QPixmap out(plugins.pluginAction(ui->actionAlways_show_GUI->isChecked(),current_l,plug,sender,sz,
+                                     ([plug,this] (auto k, auto v) { return this->pluginConfigCallback(plug,k,v); }),
+                                     ([this] (auto p, auto) { this->pluginTimedOut(p); }) ));
+    prepareLongProcessing(true);
+
     last_plugin = std::pair<MillaGenericPlugin*,QAction*>(plug,sender);
 
-    //determine if we need to show UI for this plugin now
-    bool showui = true;
-    if (!ui->actionAlways_show_GUI->isChecked()) {
-        QVariant g(plug->getParam("show_ui"));
-        if (!g.canConvert<bool>() || !g.value<bool>()) showui = false;
-    }
-
-    //determine whether plugin should use configuration callbacks
-    QVariant cbf(plug->getParam("use_config_cb"));
-    if (cbf.canConvert<bool>() && cbf.value<bool>())
-        plug->setConfigCB([plug,this] (auto k, auto v) { return this->pluginConfigCallback(plug,k,v); });
-
-    //prepare for...
-    QPixmap out;
-    prepareLongProcessing();
-    if (plug->isFilter() && current_l.valid) { //Filter plugin
-
-        //show UI if needed
-        if (showui) plug->showUI();
-        //ok, let's fire up some action
-        QVariant r(plug->action(current_l.picture));
-        //and present the result to the user
-        if (r.canConvert<QPixmap>()) out = r.value<QPixmap>();
-
-    } else if (!plug->isFilter()) { //Generator plugin
-
-        //if generator is continous, check if it is already enabled
-        if (plug->isContinous()) {
-            if (!sender->isChecked()) { //since check was toggled before this call, check is inverted
-                //stop it
-                if (plugins_timers.count(plug)) {
-                    plug->setParam("process_started",false); //ignore result
-                    plugins_timers[plug].stop();
-                    disconnect(&(plugins_timers[plug]),&QTimer::timeout,nullptr,nullptr);
-                    plugins_timers.erase(plug);
-                }
-                qDebug() << "[PLUGINS] " << plug->getPluginName() << " stopped";
-
-            } else { //startup sequence should NOT be changed in future
-                //show UI if needed
-                if (showui) plug->showUI();
-                //start it
-                QVariant d(plug->getParam("update_delay"));
-                int di = (d.canConvert<int>())? d.value<int>() : 0;
-                if (di > 0) {
-                    plug->setParam("process_started",true); //ignore result
-                    qDebug() << "[PLUGINS] Starting timer with interval " << di;
-                    plugins_timers[plug].start(di); //timer created automatically by std::map
-                    connect(&(plugins_timers[plug]),&QTimer::timeout,this,[plug,this] { this->pluginTimedOut(plug); });
-
-                    //if plugin is timed, skip everything down there
-                    prepareLongProcessing(true);
-                    return;
-
-                } else
-                    qDebug() << "[PLUGINS] No update interval defined for " << plug->getPluginName();
-
-                qDebug() << "[PLUGINS] " << plug->getPluginName() << " started";
-            }
-        }
-
-        //grab the size of actual screen space (in 1:1 scale) available for generated picture
-        QSize sz(ui->scrollArea_2->width(),ui->scrollArea_2->height());
-        //and fire up the generation process
-        QVariant r(plug->action(sz));
-
-        //grab the result if it's available and valid
-        if (r.canConvert<QPixmap>()) out = r.value<QPixmap>();
-    }
-    prepareLongProcessing(true);
-    showGeneratedPicture(out);
+    if (!out.isNull()) showGeneratedPicture(out);
 }
 
 void MViewer::pluginTimedOut(MillaGenericPlugin* plug)
 {
-    //qDebug() << "[PLUGINS] timeout for " << plug->getPluginName();
+    qDebug() << "[PLUGINS] timeout for " << plug->getPluginName();
 
     //receive another "frame"
     QVariant r(plug->action(QSize(ui->scrollArea_2->width(),ui->scrollArea_2->height())));
@@ -1255,9 +1192,15 @@ void MViewer::pluginTimedOut(MillaGenericPlugin* plug)
 
 QVariant MViewer::pluginConfigCallback(MillaGenericPlugin* plug, QString const &key, QVariant const &val)
 {
-    //for now, there's just a single command, but this list would expand
-    if (!plug->isFilter() && key == "get_left_image" && val.isNull()) {
+    if (plug->isFilter()) return QVariant(); //for now, filter plugins doesn't support configuration callbacks
+
+    if (key == "get_left_image" && val.isNull()) {
         return (current_l.valid)? current_l.picture : QPixmap();
+
+    } else if (key == "set_event_filter" && val.canConvert<QObjectPtr>()) {
+        ui->label_2->installEventFilter(val.value<QObjectPtr>());
+        return true;
+
     }
     return QVariant();
 }
