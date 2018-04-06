@@ -1,4 +1,5 @@
 TEMPLATE    = subdirs
 SUBDIRS     = milla-view \
     pixel_mixer \
-    life_generator
+    life_generator \
+    sgui_plugin
