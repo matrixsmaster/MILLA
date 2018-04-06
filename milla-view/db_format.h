@@ -5,7 +5,11 @@
 #include <QSqlQuery>
 #include <QSqlError>
 
+#ifdef QT_DEBUG
+#define DB_FILEPATH "/.milla/storage_debug.db"
+#else
 #define DB_FILEPATH "/.milla/storage.db"
+#endif
 
 #define DB_VERSION 1
 

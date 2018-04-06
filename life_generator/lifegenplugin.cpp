@@ -87,7 +87,7 @@ void LifeGenPlugin::textInit(QSize const &sz)
         for (int j = 0; j < sz.width(); j++,line++) *line = 0xff000000;
     }
 
-    int fsm = 0, ccx, cx = 0, cy = 0;
+    int fsm = 0, ccx = 0, cx = 0, cy = 0;
     for (auto &i : text_life) {
         QString s = i.trimmed();
         if (s.isEmpty()) continue;
