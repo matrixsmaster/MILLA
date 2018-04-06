@@ -2575,6 +2575,7 @@
     <addaction name="menuSort_thumbnails"/>
     <addaction name="actionFit"/>
     <addaction name="actionShow_faces"/>
+    <addaction name="actionCenter_on_face"/>
     <addaction name="actionShow_linked_image"/>
     <addaction name="actionThumbnails_cloud"/>
     <addaction name="actionShow_reverse_links"/>
@@ -2982,6 +2983,17 @@
    </property>
    <property name="text">
     <string>Show reverse links</string>
+   </property>
+  </action>
+  <action name="actionCenter_on_face">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Center on face</string>
    </property>
   </action>
  </widget>

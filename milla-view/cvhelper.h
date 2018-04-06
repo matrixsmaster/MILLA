@@ -4,6 +4,8 @@
 #include <QDebug>
 #include <QImage>
 #include <QPixmap>
+#include <QRect>
+#include <QPainter>
 #include <opencv2/opencv.hpp>
 #include "facedetector.h"
 
@@ -43,6 +45,8 @@ public:
     static cv::Mat loadMat(QByteArray const &arr);
 
     MImageExtras collectImageExtraData(QString const &fn, QPixmap const &org);
+
+    static QPixmap drawROIs(QPixmap const &on, QRect &visBound, MImageExtras const &ext, bool calc_only);
 
 private:
     FaceDetector facedetector;

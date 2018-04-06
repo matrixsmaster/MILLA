@@ -313,19 +313,16 @@ void MViewer::scaleImage(const MImageListRecord &rec, QScrollArea* scrl, QLabel*
         QSize nsz = rec.picture.size() * scaleFactor;
         MImageExtras extr = getExtraCacheLine(rec.filename);
 
-        if (ui->actionShow_faces->isChecked() && extr.valid && !extr.rois.empty()) {
-            QImage inq(rec.picture.scaled(nsz,Qt::KeepAspectRatio,Qt::SmoothTransformation).toImage());
-            QPainter painter(&inq);
-            QPen paintpen(Qt::red);
-            paintpen.setWidth(2);
-            painter.setPen(paintpen);
+        if (ui->actionShow_faces->isChecked() || ui->actionCenter_on_face->isChecked()) {
+            QRect vbd;
+            lbl->setPixmap(CVHelper::drawROIs(rec.picture,vbd,extr,!ui->actionShow_faces->isChecked()));
 
-            for (auto &i : extr.rois) {
-                if (i.kind == MROI_FACE_FRONTAL)
-                    painter.drawRect(QRect(i.x,i.y,i.w,i.h));
+            if (ui->actionCenter_on_face->isChecked()) {
+                //it takes some time to actually show the image, so wait until next GUI cycle
+                QCoreApplication::processEvents();
+                //now center on face
+                scrl->ensureVisible(vbd.x(),vbd.y(),vbd.width(),vbd.height());
             }
-
-            lbl->setPixmap(QPixmap::fromImage(inq));
 
         } else
             lbl->setPixmap(rec.picture.scaled(nsz,Qt::KeepAspectRatio,Qt::SmoothTransformation));
@@ -1249,7 +1246,7 @@ void MViewer::pluginTriggered(MillaGenericPlugin* plug, QAction* sender)
 
 void MViewer::pluginTimedOut(MillaGenericPlugin* plug)
 {
-    qDebug() << "[PLUGINS] timeout for " << plug->getPluginName();
+    //qDebug() << "[PLUGINS] timeout for " << plug->getPluginName();
 
     //receive another "frame"
     QVariant r(plug->action(QSize(ui->scrollArea_2->width(),ui->scrollArea_2->height())));
