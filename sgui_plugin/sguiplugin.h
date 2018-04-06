@@ -3,8 +3,10 @@
 
 #include "plugins.h"
 #include "include/AbstractIO.h"
+#include "include/SGUI.h"
+#include "dialog.h"
 
-class SGUIPlugin : public QObject, public MillaGenericPlugin, public AbstractIO
+class SGUIPlugin : public QObject, public AbstractIO, public MillaGenericPlugin
 {
     Q_OBJECT
     Q_PLUGIN_METADATA(IID MILLA_PLUGIN_LID FILE "sguiplugin.json")
@@ -24,13 +26,13 @@ public:
     bool finalize();
 
     void showUI();
-    void setConfigCB(PlugConfCB cb)     {}
+    void setConfigCB(PlugConfCB)        {}
     void setProgressCB(ProgressCB)      {}
 
     QVariant getParam(QString key);
     bool setParam(QString key, QVariant val);
 
-    QVariant action(QVariant in);
+    QVariant action(QVariant);
 
     void getProperty(AIOPropertyType tp, int* ival, char** sval);
     bool setProperty(AIOPropertyType tp, int ival, const char* sval);
@@ -38,6 +40,18 @@ public:
     bool PollEvent(AIOEvent* e);
     void DrawFrame(uchar* ptr);
     void MouseControl(AIOMouseControlKind k, bool local, int x, int y);
+
+private:
+    SGUI* sgui = nullptr;
+    VFS* vfs = nullptr;
+    SGUIPluginGUIRec info;
+    QImage frame;
+    bool autorepeat = true;
+    AIOColorOrdering colorder = AIOCO_MEMBGRA;
+    int screen_w, screen_h;
+
+    void cleanUp();
+    void fireUp();
 };
 
 #endif // SGUIPLUGIN_H

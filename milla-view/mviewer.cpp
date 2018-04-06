@@ -1209,7 +1209,7 @@ void MViewer::pluginTriggered(MillaGenericPlugin* plug, QAction* sender)
                 }
                 qDebug() << "[PLUGINS] " << plug->getPluginName() << " stopped";
 
-            } else {
+            } else { //startup sequence should NOT be changed in future
                 //show UI if needed
                 if (showui) plug->showUI();
                 //start it

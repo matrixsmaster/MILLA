@@ -12,7 +12,9 @@ TARGET = sgui_plugin
 
 TEMPLATE = lib
 CONFIG += c++14 plugin
-INCLUDEPATH += ../milla-view ../libsgui
+INCLUDEPATH += ../milla-view ../libsgui ../libsgui/include/mlua
+
+DEFINES += SGUI_HEADER_EXTERNAL_INCLUDE
 
 SOURCES += main.cpp\
         dialog.cpp \
