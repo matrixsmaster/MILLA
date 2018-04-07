@@ -19,11 +19,13 @@ DEFINES += SGUI_HEADER_EXTERNAL_INCLUDE
 SOURCES += main.cpp\
         dialog.cpp \
     sguiplugin.cpp \
-    sguieventsink.cpp
+    sguieventsink.cpp \
+    vmouse.cpp
 
 HEADERS  += dialog.h \
     sguiplugin.h \
-    sguieventsink.h
+    sguieventsink.h \
+    vmouse.h
 
 FORMS    += dialog.ui
 

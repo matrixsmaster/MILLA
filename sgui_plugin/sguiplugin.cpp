@@ -1,9 +1,5 @@
 #include <QDebug>
 #include <QTextStream>
-#include <QFile>
-#include <QFileInfo>
-#include <QJsonDocument>
-#include <QJsonValue>
 #include "sguiplugin.h"
 
 SGUIPlugin::SGUIPlugin(QObject *parent) :
@@ -11,13 +7,6 @@ SGUIPlugin::SGUIPlugin(QObject *parent) :
     AbstractIO(0,0),
     MillaGenericPlugin()
 {
-    QFile js(":/cursors.json");
-    if (js.open(QIODevice::Text | QIODevice::ReadOnly)) {
-        QJsonObject doc = QJsonDocument::fromJson(js.readAll()).object();
-        js.close();
-        loadCursor("Move",opened,doc);
-        loadCursor("Click",closed,doc);
-    }
 }
 
 SGUIPlugin::~SGUIPlugin()
@@ -40,17 +29,6 @@ bool SGUIPlugin::finalize()
     return true;
 }
 
-void SGUIPlugin::loadCursor(QString const &name, SGUIPCursor &cur, QJsonObject &obj)
-{
-    if (!obj.contains(name)) return;
-
-    QJsonObject a = obj.take(name).toObject();
-    if (a.isEmpty()) return;
-
-    cur.pic = QPixmap(a.take("File").toString());
-    cur.hot = QPoint(a.take("HotX").toInt(),a.take("HotY").toInt());
-}
-
 void SGUIPlugin::cleanUp()
 {
     qDebug() << "[SGUIPlugin] Cleaning up";
@@ -67,7 +45,6 @@ void SGUIPlugin::cleanUp()
 
 void SGUIPlugin::showUI()
 {
-    //TODO: some settings like (timeout?) + maybe some statistics
     Dialog dlg;
     if (dlg.exec()) {
         info = dlg.getInfo();
@@ -92,7 +69,7 @@ void SGUIPlugin::fireUp()
     vfs->setReadOnly(true);
 
     sgui = new SGUI(vfs,vfs,this);
-    sgui->setFrameskip(true);
+    //sgui->setFrameskip(true);
 
     if (!sgui->setScript(info.startup.toStdString().c_str(),false,true,true)) {
         qDebug() << "[SGUIPlugin] Unable to load startup script " << info.startup;
@@ -212,7 +189,20 @@ bool SGUIPlugin::setProperty(AIOPropertyType tp, int ival, const char* sval)
 
 bool SGUIPlugin::PollEvent(AIOEvent* e)
 {
-    return sink.pullEvent(e);
+    if (!sink.popEvent(e)) return false;
+
+    switch (e->type) {
+    case AIOE_MOUSEDOWN:
+    case AIOE_MOUSEUP:
+    case AIOE_MOUSEMOVE:
+    case AIOE_MOUSEWHEEL:
+        mouse.Update(e->mouse,QSize(screen_w,screen_h));
+        break;
+
+    default: break;
+    }
+
+    return true;
 }
 
 void SGUIPlugin::DrawFrame(uchar* ptr)
@@ -224,8 +214,19 @@ void SGUIPlugin::DrawFrame(uchar* ptr)
     }
 
     memcpy(frame.bits(),ptr,sz.width()*sz.height()*4);
+
+    mouse.Draw(frame);
 }
 
-/*void SGUIPlugin::MouseControl(AIOMouseControlKind k, bool local, int x, int y)
+void SGUIPlugin::MouseControl(AIOMouseControlKind k, bool local, int x, int y)
 {
-}*/
+    switch (k) {
+    case AIOM_SETPOSITION:
+        if (local) mouse.forcePosition(QPoint(x,y));
+        break;
+
+    case AIOM_SHOWCURSOR:
+        mouse.showCursor(x);
+        break;
+    }
+}

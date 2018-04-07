@@ -1163,15 +1163,19 @@ void MViewer::showGeneratedPicture(QPixmap const &in)
 
 void MViewer::enableShortcuts(QObjectList const &children, bool en)
 {
-    if (!en) {
-        for (auto &i : children) {
-            enableShortcuts(i->children(),en);
-            if (QString(i->metaObject()->className()) != "QAction") continue;
-            QAction* ptr = dynamic_cast<QAction*>(i);
-            if (ptr) {
-            qDebug() << "Action found: " << ptr->text();
+    for (auto &i : children) {
+        enableShortcuts(i->children(),en);
+        if (QString(i->metaObject()->className()) != "QAction") continue;
+        QAction* ptr = dynamic_cast<QAction*>(i);
+        if (!ptr) continue;
+
+        if (!en) {
+            hotkeys[ptr] = ptr->shortcut();
             ptr->setShortcut(QKeySequence(""));
-            }
+
+        } else if (hotkeys.count(ptr)) {
+            ptr->setShortcut(hotkeys.at(ptr));
+            hotkeys.erase(ptr);
         }
     }
 }
@@ -1181,7 +1185,12 @@ void MViewer::on_actionRepeat_last_triggered()
     plugins.repeatLastPlugin();
 }
 
-void MViewer::on_actionAlways_show_GUI_triggered()
+void MViewer::on_actionAlways_show_GUI_toggled(bool arg1)
 {
-    plugins.setForceUI(ui->actionAlways_show_GUI->isChecked());
+    plugins.setForceUI(arg1);
+}
+
+void MViewer::on_actionHotkeys_enabled_toggled(bool arg1)
+{
+    enableShortcuts(this->children(),arg1);
 }

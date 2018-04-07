@@ -1,17 +1,12 @@
 #ifndef SGUIPLUGIN_H
 #define SGUIPLUGIN_H
 
-#include <QJsonObject>
 #include "plugins.h"
 #include "include/AbstractIO.h"
 #include "include/SGUI.h"
 #include "dialog.h"
 #include "sguieventsink.h"
-
-struct SGUIPCursor {
-    QPixmap pic;
-    QPoint hot;
-};
+#include "vmouse.h"
 
 class SGUIPlugin : public QObject, public AbstractIO, public MillaGenericPlugin
 {
@@ -46,7 +41,7 @@ public:
 
     bool PollEvent(AIOEvent* e);
     void DrawFrame(uchar* ptr);
-    //void MouseControl(AIOMouseControlKind k, bool local, int x, int y);
+    void MouseControl(AIOMouseControlKind k, bool local, int x, int y);
 
 private:
     SGUI* sgui = nullptr;
@@ -58,9 +53,8 @@ private:
     int screen_w, screen_h;
     PlugConfCB config_cb = 0;
     SGUIEventSink sink;
-    SGUIPCursor opened, closed;
+    VMouse mouse;
 
-    void loadCursor(QString const &name, SGUIPCursor &cur, QJsonObject &obj);
     void cleanUp();
     void fireUp();
 };

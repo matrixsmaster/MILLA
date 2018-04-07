@@ -2539,6 +2539,12 @@
     <property name="title">
      <string>Edit</string>
     </property>
+    <widget class="QMenu" name="menuPreferences">
+     <property name="title">
+      <string>Preferences</string>
+     </property>
+     <addaction name="actionHotkeys_enabled"/>
+    </widget>
     <addaction name="actionLink_left_to_right"/>
     <addaction name="actionLink_bidirectional"/>
     <addaction name="actionKudos_to_left_image"/>
@@ -2546,6 +2552,8 @@
     <addaction name="separator"/>
     <addaction name="actionRotate_90_CW"/>
     <addaction name="actionRotate_90_CCW"/>
+    <addaction name="separator"/>
+    <addaction name="menuPreferences"/>
    </widget>
    <widget class="QMenu" name="menuView">
     <property name="title">
@@ -2994,6 +3002,17 @@
    </property>
    <property name="text">
     <string>Center on face</string>
+   </property>
+  </action>
+  <action name="actionHotkeys_enabled">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Hotkeys enabled</string>
    </property>
   </action>
  </widget>

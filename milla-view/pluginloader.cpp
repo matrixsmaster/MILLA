@@ -91,6 +91,7 @@ void MillaPluginLoader::pluginAction(QString name, QAction* sender)
 
     //prepare processing
     wnd->prepareLongProcessing();
+    last_plugin = std::pair<QString,QAction*>(name,sender);
     QSize sz(context.area->width(),context.area->height());
 
     //process
@@ -155,9 +156,6 @@ void MillaPluginLoader::pluginAction(QString name, QAction* sender)
     }
 
     wnd->prepareLongProcessing(true);
-
-    last_plugin = std::pair<QString,QAction*>(name,sender);
-
     if (!out.isNull()) wnd->showGeneratedPicture(out);
 }
 
@@ -182,7 +180,7 @@ QVariant MillaPluginLoader::pluginConfigCallback(MillaGenericPlugin* plug, QStri
         return (context.current->valid)? context.current->picture : QPixmap();
 
     } else if (key == "set_event_filter" && val.canConvert<QObjectPtr>()) {
-        wnd->enableShortcuts(this->children(),false);
+        //wnd->enableShortcuts(this->children(),false);
         filters[plug] = std::pair<QObjectPtr,QObjectPtr>(context.area,val.value<QObjectPtr>());
         context.area->installEventFilter(val.value<QObjectPtr>());
 

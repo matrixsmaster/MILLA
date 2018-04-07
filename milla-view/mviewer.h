@@ -59,8 +59,6 @@ public:
 
     void showGeneratedPicture(QPixmap const &in);
 
-    void enableShortcuts(QObjectList const &children, bool en);
-
 private slots:
     void on_pushButton_clicked();
 
@@ -146,7 +144,9 @@ private slots:
 
     void on_actionRepeat_last_triggered();
 
-    void on_actionAlways_show_GUI_triggered();
+    void on_actionAlways_show_GUI_toggled(bool arg1);
+
+    void on_actionHotkeys_enabled_toggled(bool arg1);
 
 private:
     Ui::MViewer *ui;
@@ -168,6 +168,7 @@ private:
     std::map<QString,MImageExtras> extra_cache;
     MTagCache tags_cache;
     MHistory history;
+    std::map<QAction*,QKeySequence> hotkeys;
 
     void cleanUp();
 
@@ -218,6 +219,8 @@ private:
     void updateThumbnailsOrder(ThumbnailModel::ThumbnailModelSort ord, bool desc);
 
     void historyShowCurrent();
+
+    void enableShortcuts(QObjectList const &children, bool en);
 };
 
 #endif // MVIEWER_H
