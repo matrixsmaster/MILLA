@@ -183,6 +183,7 @@ QVariant MillaPluginLoader::pluginConfigCallback(MillaGenericPlugin* plug, QStri
         //wnd->enableShortcuts(this->children(),false);
         filters[plug] = std::pair<QObjectPtr,QObjectPtr>(context.area,val.value<QObjectPtr>());
         context.area->installEventFilter(val.value<QObjectPtr>());
+        context.window->centralWidget()->installEventFilter(val.value<QObjectPtr>());
 
         qDebug() << "[PLUGINS] Registered event filter for " << plug->getPluginName();
         return true;

@@ -23,22 +23,22 @@ void VMouse::loadCursor(QString const &name, VMPCursor &cur, QJsonObject &obj)
     cur.hot = QPoint(a.take("HotX").toInt(),a.take("HotY").toInt());
 }
 
-void VMouse::Update(AIOMouse state, QSize size)
+QPoint VMouse::Update(AIOMouse state, QSize size)
 {
     QPoint dt = QPoint(state.x,state.y) - QPoint(prev.x,prev.y);
     cur += dt;
     prev = state;
-    qDebug() << "State button: " << prev.button;
+
     if (cur.x() < 0) cur.setX(0);
     if (cur.y() < 0) cur.setY(0);
     if (cur.x() >= size.width()) cur.setX(size.width()-1);
     if (cur.y() >= size.height()) cur.setY(size.height()-1);
+
+    return cur;
 }
 
 void VMouse::Draw(QImage &on)
 {
-    qDebug() << "Prev button: " << prev.button;
-    qDebug() << "Closed: " << ((bool)(prev.button & AIMB_LEFT));
     VMPCursor &c = (prev.button & AIMB_LEFT)? closed : opened;
     QPoint op = cur - c.hot;
     QPainter pt(&on);

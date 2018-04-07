@@ -15,6 +15,7 @@
 #include <QPainter>
 #include <QMovie>
 #include <QInputDialog>
+#include <QMetaMethod>
 #include <ctime>
 #include <cstdlib>
 #include <chrono>
@@ -26,7 +27,7 @@
 #include "mimpexpmodule.h"
 #include "mmatcher.h"
 
-#define MILLA_VERSION "ver. 0.2.3"
+#define MILLA_VERSION "ver. 0.2.4"
 #define MILLA_SITE "http://github.com/matrixsmaster/MILLA"
 #define MILLA_EXTRA_CACHE_SIZE 1500
 #define MILLA_SUPPRTED_FORMATS { "png", "jpg", "jpeg", "bmp" }
@@ -58,6 +59,10 @@ public:
     void prepareLongProcessing(bool finish = false);
 
     void showGeneratedPicture(QPixmap const &in);
+
+protected:
+    void mouseMoveEvent(QMouseEvent* event);
+    void wtf(QObjectList const &lst);
 
 private slots:
     void on_pushButton_clicked();

@@ -51,8 +51,40 @@ MViewer::MViewer(QWidget *parent) :
         return !flag_stop_load_everything;
     });
 
+    /*centralWidget()->setAttribute(Qt::WA_TransparentForMouseEvents);
+    setMouseTracking(true);
+    ui->label->setMouseTracking(true);
+    ui->label_2->setMouseTracking(true);
+    ui->scrollArea->setMouseTracking(true);
+    ui->scrollArea_2->setMouseTracking(true);
+    ui->centralWidget->setMouseTracking(true);*/
+    wtf(children());
+
     cleanUp();
     updateTags();
+}
+
+void MViewer::wtf(QObjectList const &lst)
+{
+    for (auto &i : lst) {
+        wtf(i->children());
+        /*const QMetaObject* metaObject = i->metaObject();
+        QStringList methods;
+        for(int j = metaObject->methodOffset(); j < metaObject->methodCount(); j++)
+            if (QString::fromLatin1(metaObject->method(j).methodSignature()).startsWith("setMouseTracking"))
+                qDebug() << QString(i->metaObject()->className());*/
+        QWidget* ptr = dynamic_cast<QWidget*>(i);
+        if (ptr) {
+            qDebug() << QString(i->metaObject()->className());
+            ptr->setMouseTracking(true);
+        }
+    }
+}
+
+void MViewer::mouseMoveEvent(QMouseEvent* event)
+{
+    qDebug() << event->x() << event->y();
+    //event->ignore();
 }
 
 MViewer::~MViewer()

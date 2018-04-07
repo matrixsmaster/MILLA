@@ -24,7 +24,7 @@ public:
     VMouse();
     virtual ~VMouse() {}
 
-    void Update(AIOMouse state, QSize size);
+    QPoint Update(AIOMouse state, QSize size);
 
     void Draw(QImage &on);
 
