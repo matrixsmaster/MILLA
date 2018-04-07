@@ -26,9 +26,10 @@
 #include "mimpexpmodule.h"
 #include "mmatcher.h"
 
-#define MILLA_VERSION "ver. 0.2.2"
+#define MILLA_VERSION "ver. 0.2.3"
 #define MILLA_SITE "http://github.com/matrixsmaster/MILLA"
 #define MILLA_EXTRA_CACHE_SIZE 1500
+#define MILLA_SUPPRTED_FORMATS { "png", "jpg", "jpeg", "bmp" }
 #define MILLA_OPEN_FILE "Image Files (*.png *.jpg *.jpeg *.bmp)"
 #define MILLA_OPEN_LIST "Text Files [txt,lst] (*.txt *.lst)"
 #define MILLA_MAXMATCH_RESULTS 10
@@ -53,6 +54,12 @@ public:
     ~MViewer();
 
     void processArguments();
+
+    void prepareLongProcessing(bool finish = false);
+
+    void showGeneratedPicture(QPixmap const &in);
+
+    void enableShortcuts(QObjectList const &children, bool en);
 
 private slots:
     void on_pushButton_clicked();
@@ -139,11 +146,14 @@ private slots:
 
     void on_actionRepeat_last_triggered();
 
+    void on_actionAlways_show_GUI_triggered();
+
 private:
     Ui::MViewer *ui;
     DBHelper db;
     CVHelper mCV;
     MillaPluginLoader plugins;
+    QStringList supported = MILLA_SUPPRTED_FORMATS;
 
     QTimer view_timer;
     QProgressBar* progressBar;
@@ -158,7 +168,6 @@ private:
     std::map<QString,MImageExtras> extra_cache;
     MTagCache tags_cache;
     MHistory history;
-    std::pair<MillaGenericPlugin*,QAction*> last_plugin;
 
     void cleanUp();
 
@@ -171,8 +180,6 @@ private:
     void updateStars(QString const &fn = QString());
 
     void changedStars(int n);
-
-    void prepareLongProcessing(bool finish = false);
 
     bool createStatRecord(QString const &fn, bool cache_global = false);
 
@@ -211,14 +218,6 @@ private:
     void updateThumbnailsOrder(ThumbnailModel::ThumbnailModelSort ord, bool desc);
 
     void historyShowCurrent();
-
-    void showGeneratedPicture(QPixmap const &in);
-
-    void pluginTriggered(MillaGenericPlugin* plug, QAction* sender);
-
-    void pluginTimedOut(MillaGenericPlugin* plug);
-
-    QVariant pluginConfigCallback(MillaGenericPlugin* plug, QString const &key, QVariant const &val);
 };
 
 #endif // MVIEWER_H

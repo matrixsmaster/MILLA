@@ -1,4 +1,5 @@
 #include "pluginloader.h"
+#include "mviewer.h"
 
 MillaPluginLoader::MillaPluginLoader() : QObject()
 {
@@ -18,6 +19,8 @@ MillaPluginLoader::MillaPluginLoader() : QObject()
 
     }
 
+    last_plugin = std::pair<QString,QAction*>(QString(),nullptr);
+
     qDebug() << "[PLUGINS] " << plugins.size() << " plugins loaded";
 }
 
@@ -28,7 +31,7 @@ MillaPluginLoader::~MillaPluginLoader()
     qDebug() << "[PLUGINS] Unloaded";
 }
 
-void MillaPluginLoader::addPluginsToMenu(QMenu &m, PluginCB mcb, ProgressCB pcb)
+void MillaPluginLoader::addPluginsToMenu(QMenu &m, ProgressCB pcb)
 {
     for (auto &i : plugins) {
         if (!i.second->init()) {
@@ -43,18 +46,12 @@ void MillaPluginLoader::addPluginsToMenu(QMenu &m, PluginCB mcb, ProgressCB pcb)
         }
 
         a->setToolTip(i.second->getPluginDesc());
+        m.setToolTipsVisible(true);
         if (i.second->isContinous()) a->setCheckable(true);
         i.second->setProgressCB(pcb);
 
-        connect(a,&QAction::triggered,this,[a,i,this] { this->pluginCallback(i.first,a); });
+        connect(a,&QAction::triggered,this,[a,i,this] { this->pluginAction(i.first,a); });
     }
-
-    menu_cb = mcb;
-}
-
-void MillaPluginLoader::pluginCallback(QString name, QAction* sender)
-{
-    if (plugins.count(name) && sender && menu_cb) menu_cb(plugins.at(name),sender);
 }
 
 QString MillaPluginLoader::listPlugins()
@@ -67,13 +64,23 @@ QString MillaPluginLoader::listPlugins()
     return out;
 }
 
-QPixmap MillaPluginLoader::pluginAction(bool forceUI, MImageListRecord const &pic, MillaGenericPlugin* plug, QAction* sender, QSize const &space, PlugConfCB f_config, PluginCB f_timeout)
+void MillaPluginLoader::pluginAction(QString name, QAction* sender)
 {
-    QPixmap out;
+    //check validity of both context and plugin
+    if (!plugins.count(name) || !sender || !context.valid()) return;
+
+    MillaGenericPlugin* plug = plugins.at(name);
+    if (!context.current->valid && plug->isFilter()) return; //don't waste our time
+
+    MViewer* wnd = dynamic_cast<MViewer*>(context.window);
+    if (!wnd) return;
 
     //determine whether plugin should use configuration callbacks
     QVariant cbf(plug->getParam("use_config_cb"));
-    if (cbf.canConvert<bool>() && cbf.value<bool>()) plug->setConfigCB(f_config);
+    if (cbf.canConvert<bool>() && cbf.value<bool>())
+        plug->setConfigCB([this,plug] (auto s, auto v) {
+            return this->pluginConfigCallback(plug,s,v);
+        });
 
     //determine if we need to show UI for this plugin now
     bool showui = true;
@@ -82,12 +89,18 @@ QPixmap MillaPluginLoader::pluginAction(bool forceUI, MImageListRecord const &pi
         if (!g.canConvert<bool>() || !g.value<bool>()) showui = false;
     }
 
-    if (plug->isFilter() && pic.valid) { //Filter plugin
+    //prepare processing
+    wnd->prepareLongProcessing();
+    QSize sz(context.area->width(),context.area->height());
+
+    //process
+    QPixmap out;
+    if (plug->isFilter() && context.current->valid) { //Filter plugin
 
         //show UI if needed
         if (showui) plug->showUI();
         //ok, let's fire up some action
-        QVariant r(plug->action(pic.picture));
+        QVariant r(plug->action(context.current->picture));
         //and present the result to the user
         if (r.canConvert<QPixmap>()) out = r.value<QPixmap>();
 
@@ -121,10 +134,11 @@ QPixmap MillaPluginLoader::pluginAction(bool forceUI, MImageListRecord const &pi
                     plug->setParam("process_started",true); //ignore result
                     qDebug() << "[PLUGINS] Starting timer with interval " << di;
                     timers[plug].start(di); //timer created automatically by std::map
-                    connect(&(timers[plug]),&QTimer::timeout,this,[plug,f_timeout] { f_timeout(plug,nullptr); });
+                    connect(&(timers[plug]),&QTimer::timeout,this,[this,plug] { this->pluginTimedOut(plug); });
 
                     //if plugin is timed, skip everything down there
-                    return out;
+                    wnd->prepareLongProcessing(true);
+                    return;
 
                 } else
                     qDebug() << "[PLUGINS] No update interval defined for " << plug->getPluginName();
@@ -134,19 +148,58 @@ QPixmap MillaPluginLoader::pluginAction(bool forceUI, MImageListRecord const &pi
         }
 
         //fire up the generation process
-        QVariant r(plug->action(space));
+        QVariant r(plug->action(sz));
 
         //grab the result if it's available and valid
         if (r.canConvert<QPixmap>()) out = r.value<QPixmap>();
     }
 
-    return out;
+    wnd->prepareLongProcessing(true);
+
+    last_plugin = std::pair<QString,QAction*>(name,sender);
+
+    if (!out.isNull()) wnd->showGeneratedPicture(out);
 }
 
-void MillaPluginLoader::addFilter(MillaGenericPlugin* plug, QObjectPtr obj, QObjectPtr flt)
+void MillaPluginLoader::pluginTimedOut(MillaGenericPlugin* plug)
 {
-    filters[plug] = std::pair<QObjectPtr,QObjectPtr>(obj,flt);
-    obj->installEventFilter(flt);
+    //qDebug() << "[PLUGINS] Timeout for " << plug->getPluginName();
+    MViewer* wnd = dynamic_cast<MViewer*>(context.window);
+    if (!wnd) return;
+    //receive another "frame"
+    QVariant r(plug->action(QSize(context.area->width(),context.area->height())));
+    wnd->showGeneratedPicture((r.canConvert<QPixmap>())? r.value<QPixmap>() : QPixmap());
+}
 
-    qDebug() << "[PLUGINS] Registered event filter for " << plug->getPluginName();
+QVariant MillaPluginLoader::pluginConfigCallback(MillaGenericPlugin* plug, QString const &key, QVariant const &val)
+{
+    if (plug->isFilter()) return QVariant(); //for now, filter plugins doesn't support configuration callbacks
+
+    MViewer* wnd = dynamic_cast<MViewer*>(context.window);
+    if (!wnd) return QVariant();
+
+    if (key == "get_left_image" && val.isNull()) {
+        return (context.current->valid)? context.current->picture : QPixmap();
+
+    } else if (key == "set_event_filter" && val.canConvert<QObjectPtr>()) {
+        wnd->enableShortcuts(this->children(),false);
+        filters[plug] = std::pair<QObjectPtr,QObjectPtr>(context.area,val.value<QObjectPtr>());
+        context.area->installEventFilter(val.value<QObjectPtr>());
+
+        qDebug() << "[PLUGINS] Registered event filter for " << plug->getPluginName();
+        return true;
+
+    }
+    return QVariant();
+}
+
+void MillaPluginLoader::repeatLastPlugin()
+{
+    if (last_plugin.first.isEmpty() || !last_plugin.second) return;
+
+    //toggle checkbox before calling triggered() method
+    if (last_plugin.second->isCheckable()) last_plugin.second->toggle();
+
+    //now call main method
+    pluginAction(last_plugin.first,last_plugin.second);
 }

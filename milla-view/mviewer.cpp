@@ -44,16 +44,12 @@ MViewer::MViewer(QWidget *parent) :
 
     loadingMovie = new QMovie(":/loading_icon.gif");
 
-    plugins.addPluginsToMenu(*(ui->menuPlugins),
-                             ([this] (auto p, auto s) {
-        this->pluginTriggered(p,s);
-    }),
-                             ([this] (double p) {
+    plugins.setViewerContext(MillaPluginContext({ &current_l,ui->scrollArea_2,ui->label_2,this }));
+    plugins.addPluginsToMenu(*(ui->menuPlugins), [this] (double p) {
         progressBar->setValue(floor(p));
         QCoreApplication::processEvents();
         return !flag_stop_load_everything;
-    }));
-    last_plugin = std::pair<MillaGenericPlugin*,QAction*>(nullptr,nullptr);
+    });
 
     cleanUp();
     updateTags();
@@ -382,7 +378,7 @@ bool MViewer::isLoadableFile(QString const &path, QString *canonicalPath)
 {
     QFileInfo cfn(path);
     QString ext(cfn.suffix().toLower());
-    if (ext == "png" || ext == "jpg" || ext == "jpeg" || ext == "bmp") {
+    if (supported.contains(ext)) {
         if (canonicalPath) *canonicalPath = cfn.canonicalFilePath();
         return true;
     }
@@ -1165,53 +1161,27 @@ void MViewer::showGeneratedPicture(QPixmap const &in)
     scaleImage(current_r,ui->scrollArea_2,ui->label_2,ui->label_4,1);
 }
 
-void MViewer::pluginTriggered(MillaGenericPlugin* plug, QAction* sender)
+void MViewer::enableShortcuts(QObjectList const &children, bool en)
 {
-    if (!current_l.valid && plug->isFilter()) return; //don't waste our time
-
-    prepareLongProcessing();
-    QSize sz(ui->scrollArea_2->width(),ui->scrollArea_2->height());
-    QPixmap out(plugins.pluginAction(ui->actionAlways_show_GUI->isChecked(),current_l,plug,sender,sz,
-                                     ([plug,this] (auto k, auto v) { return this->pluginConfigCallback(plug,k,v); }),
-                                     ([this] (auto p, auto) { this->pluginTimedOut(p); }) ));
-    prepareLongProcessing(true);
-
-    last_plugin = std::pair<MillaGenericPlugin*,QAction*>(plug,sender);
-
-    if (!out.isNull()) showGeneratedPicture(out);
-}
-
-void MViewer::pluginTimedOut(MillaGenericPlugin* plug)
-{
-    qDebug() << "[PLUGINS] Timeout for " << plug->getPluginName();
-    //receive another "frame"
-    QVariant r(plug->action(QSize(ui->scrollArea_2->width(),ui->scrollArea_2->height())));
-    showGeneratedPicture((r.canConvert<QPixmap>())? r.value<QPixmap>() : QPixmap());
-}
-
-QVariant MViewer::pluginConfigCallback(MillaGenericPlugin* plug, QString const &key, QVariant const &val)
-{
-    if (plug->isFilter()) return QVariant(); //for now, filter plugins doesn't support configuration callbacks
-
-    if (key == "get_left_image" && val.isNull()) {
-        return (current_l.valid)? current_l.picture : QPixmap();
-
-    } else if (key == "set_event_filter" && val.canConvert<QObjectPtr>()) {
-        ui->menuBar->setEnabled(false);                                         //FIXME: debug only!!!!!!!
-        plugins.addFilter(plug,ui->scrollArea_2,val.value<QObjectPtr>());
-        return true;
-
+    if (!en) {
+        for (auto &i : children) {
+            enableShortcuts(i->children(),en);
+            if (QString(i->metaObject()->className()) != "QAction") continue;
+            QAction* ptr = dynamic_cast<QAction*>(i);
+            if (ptr) {
+            qDebug() << "Action found: " << ptr->text();
+            ptr->setShortcut(QKeySequence(""));
+            }
+        }
     }
-    return QVariant();
 }
 
 void MViewer::on_actionRepeat_last_triggered()
 {
-    if (!last_plugin.first || !last_plugin.second) return;
+    plugins.repeatLastPlugin();
+}
 
-    //toggle checkbox before calling triggered() method
-    if (last_plugin.second->isCheckable()) last_plugin.second->toggle();
-
-    //now call main method
-    pluginTriggered(last_plugin.first,last_plugin.second);
+void MViewer::on_actionAlways_show_GUI_triggered()
+{
+    plugins.setForceUI(ui->actionAlways_show_GUI->isChecked());
 }

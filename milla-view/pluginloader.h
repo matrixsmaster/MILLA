@@ -8,11 +8,26 @@
 #include <QDir>
 #include <QList>
 #include <QObject>
+#include <QVariant>
 #include <QMenu>
 #include <QAction>
 #include <QTimer>
+#include <QScrollArea>
+#include <QLabel>
+#include <QMainWindow>
 #include <map>
 #include "plugins.h"
+
+struct MillaPluginContext {
+    MImageListRecord* current;
+    QScrollArea* area;
+    QLabel* widget;
+    QMainWindow* window;
+
+    bool valid() const {
+        return (current && area && widget && window);
+    }
+};
 
 class MillaPluginLoader : public QObject
 {
@@ -22,22 +37,28 @@ public:
     MillaPluginLoader();
     virtual ~MillaPluginLoader();
 
-    void addPluginsToMenu(QMenu &m, PluginCB mcb, ProgressCB pcb);
+    void setViewerContext(MillaPluginContext const &ctx) { context = ctx; }
+
+    void setForceUI(bool f) { forceUI = f; }
+
+    void addPluginsToMenu(QMenu &m, ProgressCB pcb);
 
     QString listPlugins();
 
-    QPixmap pluginAction(bool forceUI, MImageListRecord const &pic, MillaGenericPlugin* plug, QAction* sender, QSize const &space, PlugConfCB f_config, PluginCB f_timeout);
-
-    void addFilter(MillaGenericPlugin* plug, QObjectPtr obj, QObjectPtr flt);
+    void repeatLastPlugin();
 
 private:
-    PluginCB menu_cb;
+    MillaPluginContext context;
+    std::pair<QString,QAction*> last_plugin;
+    bool forceUI = false;
 
     std::map<QString,MillaGenericPlugin*> plugins;
     std::map<MillaGenericPlugin*,QTimer> timers;
     std::map<MillaGenericPlugin*,std::pair<QObjectPtr,QObjectPtr>> filters;
 
-    void pluginCallback(QString name, QAction *sender);
+    void pluginAction(QString name, QAction* sender);
+    void pluginTimedOut(MillaGenericPlugin* plug);
+    QVariant pluginConfigCallback(MillaGenericPlugin* plug, QString const &key, QVariant const &val);
 };
 
 #endif // MILLAPLUGINLOADER_H
