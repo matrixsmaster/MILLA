@@ -103,6 +103,12 @@ QPixmap MillaPluginLoader::pluginAction(bool forceUI, MImageListRecord const &pi
                     disconnect(&(timers[plug]),&QTimer::timeout,nullptr,nullptr);
                     timers.erase(plug);
                 }
+                //remove filter (if any)
+                if (filters.count(plug)) {
+                    filters.at(plug).first->removeEventFilter(filters.at(plug).second);
+                    filters.erase(plug);
+                    qDebug() << "[PLUGINS] Event filter removed for " << plug->getPluginName();
+                }
                 qDebug() << "[PLUGINS] " << plug->getPluginName() << " stopped";
 
             } else { //startup sequence should NOT be changed in future
@@ -135,4 +141,12 @@ QPixmap MillaPluginLoader::pluginAction(bool forceUI, MImageListRecord const &pi
     }
 
     return out;
+}
+
+void MillaPluginLoader::addFilter(MillaGenericPlugin* plug, QObjectPtr obj, QObjectPtr flt)
+{
+    filters[plug] = std::pair<QObjectPtr,QObjectPtr>(obj,flt);
+    obj->installEventFilter(flt);
+
+    qDebug() << "[PLUGINS] Registered event filter for " << plug->getPluginName();
 }

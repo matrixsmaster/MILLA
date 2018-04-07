@@ -1,0 +1,13 @@
+{
+    "Move": {
+        "File": ":/cursors-1.png",
+        "HotX": 11,
+        "HotY": 2
+    },
+
+    "Click": {
+        "File": ":/cursors-2.png",
+        "HotX": 8,
+        "HotY": 5
+    }
+}

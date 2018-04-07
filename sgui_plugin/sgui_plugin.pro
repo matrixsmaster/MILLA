@@ -18,10 +18,12 @@ DEFINES += SGUI_HEADER_EXTERNAL_INCLUDE
 
 SOURCES += main.cpp\
         dialog.cpp \
-    sguiplugin.cpp
+    sguiplugin.cpp \
+    sguieventsink.cpp
 
 HEADERS  += dialog.h \
-    sguiplugin.h
+    sguiplugin.h \
+    sguieventsink.h
 
 FORMS    += dialog.ui
 
@@ -30,4 +32,8 @@ LIBS    += -L../share/plugins -lsgui
 DESTDIR = ../share/plugins
 
 DISTFILES += \
-    sguiplugin.json
+    sguiplugin.json \
+    cursors.json
+
+RESOURCES += \
+    sgui_plugin.qrc

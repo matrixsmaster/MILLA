@@ -1183,8 +1183,7 @@ void MViewer::pluginTriggered(MillaGenericPlugin* plug, QAction* sender)
 
 void MViewer::pluginTimedOut(MillaGenericPlugin* plug)
 {
-    qDebug() << "[PLUGINS] timeout for " << plug->getPluginName();
-
+    qDebug() << "[PLUGINS] Timeout for " << plug->getPluginName();
     //receive another "frame"
     QVariant r(plug->action(QSize(ui->scrollArea_2->width(),ui->scrollArea_2->height())));
     showGeneratedPicture((r.canConvert<QPixmap>())? r.value<QPixmap>() : QPixmap());
@@ -1198,7 +1197,8 @@ QVariant MViewer::pluginConfigCallback(MillaGenericPlugin* plug, QString const &
         return (current_l.valid)? current_l.picture : QPixmap();
 
     } else if (key == "set_event_filter" && val.canConvert<QObjectPtr>()) {
-        ui->label_2->installEventFilter(val.value<QObjectPtr>());
+        ui->menuBar->setEnabled(false);                                         //FIXME: debug only!!!!!!!
+        plugins.addFilter(plug,ui->scrollArea_2,val.value<QObjectPtr>());
         return true;
 
     }

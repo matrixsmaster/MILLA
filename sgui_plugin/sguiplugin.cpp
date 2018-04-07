@@ -1,6 +1,9 @@
 #include <QDebug>
 #include <QTextStream>
+#include <QFile>
 #include <QFileInfo>
+#include <QJsonDocument>
+#include <QJsonValue>
 #include "sguiplugin.h"
 
 SGUIPlugin::SGUIPlugin(QObject *parent) :
@@ -8,6 +11,13 @@ SGUIPlugin::SGUIPlugin(QObject *parent) :
     AbstractIO(0,0),
     MillaGenericPlugin()
 {
+    QFile js(":/cursors.json");
+    if (js.open(QIODevice::Text | QIODevice::ReadOnly)) {
+        QJsonObject doc = QJsonDocument::fromJson(js.readAll()).object();
+        js.close();
+        loadCursor("Move",opened,doc);
+        loadCursor("Click",closed,doc);
+    }
 }
 
 SGUIPlugin::~SGUIPlugin()
@@ -28,6 +38,17 @@ bool SGUIPlugin::finalize()
     cleanUp();
     qDebug() << "[SGUIPlugin] Finalize OK";
     return true;
+}
+
+void SGUIPlugin::loadCursor(QString const &name, SGUIPCursor &cur, QJsonObject &obj)
+{
+    if (!obj.contains(name)) return;
+
+    QJsonObject a = obj.take(name).toObject();
+    if (a.isEmpty()) return;
+
+    cur.pic = QPixmap(a.take("File").toString());
+    cur.hot = QPoint(a.take("HotX").toInt(),a.take("HotY").toInt());
 }
 
 void SGUIPlugin::cleanUp()
@@ -79,6 +100,12 @@ void SGUIPlugin::fireUp()
         return;
     }
 
+    if (config_cb) {
+        QVariant i;
+        i.setValue(QObjectPtr(&sink));
+        config_cb("set_event_filter",i);
+    }
+
     qDebug() << "[SGUIPlugin] SGUI started";
 }
 
@@ -88,7 +115,7 @@ QVariant SGUIPlugin::getParam(QString key)
         return info.timeout;
 
     } else if (key == "use_config_cb") {
-        return false;
+        return true;
 
     }
     return QVariant();
@@ -185,7 +212,7 @@ bool SGUIPlugin::setProperty(AIOPropertyType tp, int ival, const char* sval)
 
 bool SGUIPlugin::PollEvent(AIOEvent* e)
 {
-    return false;
+    return sink.pullEvent(e);
 }
 
 void SGUIPlugin::DrawFrame(uchar* ptr)
@@ -199,7 +226,6 @@ void SGUIPlugin::DrawFrame(uchar* ptr)
     memcpy(frame.bits(),ptr,sz.width()*sz.height()*4);
 }
 
-void SGUIPlugin::MouseControl(AIOMouseControlKind k, bool local, int x, int y)
+/*void SGUIPlugin::MouseControl(AIOMouseControlKind k, bool local, int x, int y)
 {
-
-}
+}*/

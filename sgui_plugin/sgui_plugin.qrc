@@ -1,0 +1,7 @@
+<RCC>
+    <qresource prefix="/">
+        <file>cursors-1.png</file>
+        <file>cursors-2.png</file>
+        <file>cursors.json</file>
+    </qresource>
+</RCC>

@@ -28,11 +28,14 @@ public:
 
     QPixmap pluginAction(bool forceUI, MImageListRecord const &pic, MillaGenericPlugin* plug, QAction* sender, QSize const &space, PlugConfCB f_config, PluginCB f_timeout);
 
+    void addFilter(MillaGenericPlugin* plug, QObjectPtr obj, QObjectPtr flt);
+
 private:
     PluginCB menu_cb;
 
     std::map<QString,MillaGenericPlugin*> plugins;
     std::map<MillaGenericPlugin*,QTimer> timers;
+    std::map<MillaGenericPlugin*,std::pair<QObjectPtr,QObjectPtr>> filters;
 
     void pluginCallback(QString name, QAction *sender);
 };
