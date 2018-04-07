@@ -180,10 +180,8 @@ QVariant MillaPluginLoader::pluginConfigCallback(MillaGenericPlugin* plug, QStri
         return (context.current->valid)? context.current->picture : QPixmap();
 
     } else if (key == "set_event_filter" && val.canConvert<QObjectPtr>()) {
-        //wnd->enableShortcuts(this->children(),false);
         filters[plug] = std::pair<QObjectPtr,QObjectPtr>(context.area,val.value<QObjectPtr>());
         context.area->installEventFilter(val.value<QObjectPtr>());
-        context.window->centralWidget()->installEventFilter(val.value<QObjectPtr>());
 
         qDebug() << "[PLUGINS] Registered event filter for " << plug->getPluginName();
         return true;

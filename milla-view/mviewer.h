@@ -60,10 +60,6 @@ public:
 
     void showGeneratedPicture(QPixmap const &in);
 
-protected:
-    void mouseMoveEvent(QMouseEvent* event);
-    void wtf(QObjectList const &lst);
-
 private slots:
     void on_pushButton_clicked();
 
@@ -226,6 +222,8 @@ private:
     void historyShowCurrent();
 
     void enableShortcuts(QObjectList const &children, bool en);
+
+    void enableMouseMoveEvents(QObjectList const &lst);
 };
 
 #endif // MVIEWER_H
