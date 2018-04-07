@@ -27,7 +27,7 @@
 #include "mimpexpmodule.h"
 #include "mmatcher.h"
 
-#define MILLA_VERSION "ver. 0.2.4"
+#define MILLA_VERSION "ver. 0.2.5"
 #define MILLA_SITE "http://github.com/matrixsmaster/MILLA"
 #define MILLA_EXTRA_CACHE_SIZE 1500
 #define MILLA_SUPPRTED_FORMATS { "png", "jpg", "jpeg", "bmp" }

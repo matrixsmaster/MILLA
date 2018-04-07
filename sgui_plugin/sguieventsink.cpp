@@ -99,8 +99,8 @@ bool SGUIEventSink::eventFilter(QObject *obj, QEvent *event)
     {
         QWheelEvent* wev = static_cast<QWheelEvent*>(event);
         ev.mouse.wheel = wev->angleDelta().y() / 15;
-        ev.mouse.x = wev->x();
-        ev.mouse.y = wev->y();
+        //ev.mouse.x = wev->x();
+        //ev.mouse.y = wev->y();
         qDebug() << "Wheel: " << ev.mouse.wheel;
     }
         break;

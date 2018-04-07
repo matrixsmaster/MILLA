@@ -195,7 +195,7 @@ bool SGUIPlugin::PollEvent(AIOEvent* e)
     case AIOE_MOUSEDOWN:
     case AIOE_MOUSEUP:
     case AIOE_MOUSEMOVE:
-    case AIOE_MOUSEWHEEL:
+    //case AIOE_MOUSEWHEEL:
     {
         QPoint p = mouse.Update(e->mouse,QSize(screen_w,screen_h));
         e->mouse.x = p.x();

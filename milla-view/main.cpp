@@ -4,6 +4,7 @@
 int main(int argc, char *argv[])
 {
     QApplication a(argc, argv);
+    setlocale(LC_NUMERIC,"C");
     srandom(time(NULL));
 
 #ifdef QT_DEBUG
