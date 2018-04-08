@@ -54,6 +54,7 @@ MViewer::MViewer(QWidget *parent) :
 
     cleanUp();
     updateTags();
+    db.readRecentDirs(ui->menuRecent_dirs,5);
 
     ui->listView_4->setModel(new MMemoryModel(ui->listView_4));
     ui->listView_4->setViewMode(QListView::ListMode);
@@ -61,9 +62,9 @@ MViewer::MViewer(QWidget *parent) :
     ui->listView_4->setWrapping(false);
     ui->listView_4->setWordWrap(true);
 
-    qDebug() << "[WND] Restore geometry: " << restoreGeometry(db.getWindowGeometryOrState(true));
-    qDebug() << "[WND] Restore state: " << restoreState(db.getWindowGeometryOrState(false));
-    qDebug() << "[Splitters] Restore state: " << db.restoreSplittersState(children());
+    restoreGeometry(db.getWindowGeometryOrState(true));
+    restoreState(db.getWindowGeometryOrState(false));
+    db.restoreSplittersState(children());
 }
 
 MViewer::~MViewer()
@@ -490,12 +491,16 @@ void MViewer::on_actionOpen_triggered()
     if (fn.isEmpty()) return;
     bool rec = QMessageBox::question(this, tr("Type of scan"), tr("Do recursive scan?"), QMessageBox::Yes | QMessageBox::No) == QMessageBox::Yes;
     openDirByFile(fn,rec);
+    db.addRecentDir(fn,true);
+    db.readRecentDirs(ui->menuRecent_dirs,5);
     on_actionDescending_triggered();
 }
 
 void MViewer::on_actionOpen_list_triggered()
 {
-    openDirByList(QFileDialog::getOpenFileName(this, tr("Open list of images"), "", tr(MILLA_OPEN_LIST)));
+    QString fn = QFileDialog::getOpenFileName(this, tr("Open list of images"), "", tr(MILLA_OPEN_LIST));
+    openDirByList(fn);
+    db.addRecentDir(fn,false);
     on_actionDescending_triggered();
 }
 
@@ -1215,4 +1220,9 @@ void MViewer::enableMouseMoveEvents(QObjectList const &lst)
         QWidget* ptr = dynamic_cast<QWidget*>(i);
         if (ptr) ptr->setMouseTracking(true);
     }
+}
+
+void MViewer::on_actionClear_triggered()
+{
+    db.clearRecentDirs(true);
 }

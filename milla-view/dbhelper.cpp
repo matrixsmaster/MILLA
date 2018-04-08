@@ -913,3 +913,58 @@ bool DBHelper::updateSplittersState(QObjectList const &lst)
     }
     return true;
 }
+
+bool DBHelper::readRecentDirs(QMenu* add_to, int maxcount)
+{
+    if (!add_to) return false;
+    if (!clearRecentDirs()) return false;
+
+    QSqlQuery q;
+    if (!q.exec("SELECT lastaccess, path FROM recent ORDER BY lastaccess DESC")) return false;
+
+    for (int n = 0; n < maxcount && q.next(); n++) {
+        QAction* a = add_to->addAction(q.value(1).toString());
+        recents[q.value(0).toUInt()] = a;
+    }
+
+    return true;
+}
+
+bool DBHelper::addRecentDir(QString const &path, bool dir)
+{
+    QFileInfo fi(path);
+    QString right = dir? fi.canonicalPath() : fi.canonicalFilePath();
+    if (right.isEmpty()) return false;
+    time_t stamp = time(NULL);
+
+    QSqlQuery q;
+    q.prepare("SELECT COUNT(lastaccess) FROM recent WHERE path = :p");
+    q.bindValue(":p",right);
+    if (!q.exec() || !q.next()) return false;
+
+    if (!q.value(0).toInt())
+        q.prepare("INSERT INTO recent (lastaccess, path) VALUES (:tm, :p)");
+    else
+        q.prepare("UPDATE recent SET lastaccess = :tm WHERE path = :p");
+    q.bindValue(":tm",(uint)stamp);
+    q.bindValue(":p",right);
+    bool ok = q.exec();
+
+    qDebug() << "[db] Saving recent dir (" << right << "):" << ok;
+    return ok;
+}
+
+bool DBHelper::clearRecentDirs(bool total)
+{
+    for (auto &i : recents)
+        if (i.second) {
+            delete i.second;
+            i.second = nullptr;
+        }
+
+    recents.clear();
+    if (!total) return true;
+
+    QSqlQuery q;
+    return q.exec("DELETE FROM recent");
+}

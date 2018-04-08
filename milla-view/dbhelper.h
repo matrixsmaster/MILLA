@@ -4,8 +4,10 @@
 #include <QString>
 #include <QStringList>
 #include <QCryptographicHash>
+#include <QFileInfo>
 #include <QDir>
 #include <QSplitter>
+#include <QMenu>
 #include "db_format.h"
 #include "shared.h"
 #include "cvhelper.h"
@@ -87,7 +89,15 @@ public:
 
     static bool updateSplittersState(QObjectList const &lst);
 
+    bool readRecentDirs(QMenu* add_to, int maxcount);
+
+    bool addRecentDir(QString const &path, bool dir);
+
+    bool clearRecentDirs(bool total = false);
+
 private:
+    std::map<time_t,QAction*> recents;
+
     bool checkAndCreate(const char *tname, const char *format);
 };
 

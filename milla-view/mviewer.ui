@@ -2529,9 +2529,16 @@
     <property name="title">
      <string>File</string>
     </property>
+    <widget class="QMenu" name="menuRecent_dirs">
+     <property name="title">
+      <string>Recent dirs</string>
+     </property>
+     <addaction name="actionClear"/>
+    </widget>
     <addaction name="actionOpen"/>
     <addaction name="actionOpen_list"/>
     <addaction name="actionClose"/>
+    <addaction name="menuRecent_dirs"/>
     <addaction name="separator"/>
     <addaction name="actionJump_to"/>
     <addaction name="actionRandom_image"/>
@@ -3036,6 +3043,11 @@
   <action name="actionClear_all">
    <property name="text">
     <string>Clear all</string>
+   </property>
+  </action>
+  <action name="actionClear">
+   <property name="text">
+    <string>Clear</string>
    </property>
   </action>
  </widget>
