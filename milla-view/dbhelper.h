@@ -94,11 +94,15 @@ public:
 
     bool readRecentDirs(QMenu* add_to, int maxcount, LoadFileCB cb);
 
-    bool addRecentDir(QString const &path, bool dir);
-
     bool clearRecentDirs(bool total = false);
 
-    QString getMostRecentDir();
+    static bool addRecentDir(QString const &path, bool dir);
+
+    static QString getMostRecentDir();
+
+    static QString getMemorySlot(int n);
+
+    static bool updateMemorySlot(int n, QString const &fn);
 
 private:
     std::map<time_t,QAction*> recents;

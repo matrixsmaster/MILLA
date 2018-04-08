@@ -2614,6 +2614,7 @@
       <string>Short-term memory</string>
      </property>
      <addaction name="actionClear_all"/>
+     <addaction name="separator"/>
     </widget>
     <addaction name="menuShort_term_memory"/>
     <addaction name="actionSwap_images"/>

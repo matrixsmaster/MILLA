@@ -52,15 +52,33 @@ MViewer::MViewer(QWidget *parent) :
         return !flag_stop_load_everything;
     });
 
-    cleanUp();
-    updateTags();
-    db.readRecentDirs(ui->menuRecent_dirs,MILLA_MAX_RECENT_DIRS,[this] (auto s) { this->loadRecentEntry(s); });
-
-    ui->listView_4->setModel(new MMemoryModel(ui->listView_4));
+    MMemoryModel* mmm = new MMemoryModel(ui->listView_4);
+    ui->listView_4->setModel(mmm);
     ui->listView_4->setViewMode(QListView::ListMode);
     ui->listView_4->setFlow(QListView::LeftToRight);
     ui->listView_4->setWrapping(false);
     ui->listView_4->setWordWrap(true);
+    for (int i = 0; i < MAXMEMORYSLOTS; i++) {
+        QAction* a = ui->menuShort_term_memory->addAction(QString::asprintf("Slot %d",i+1));
+        if (!a) break;
+        a->setShortcut(QKeySequence(QString::asprintf("F%d",i+1)));
+        connect(a,&QAction::triggered,this,[i,mmm,this] {
+            if (this->current_l.valid) {
+                mmm->setSlot(i,this->current_l);
+                ui->tabWidget->setCurrentIndex(3);
+            }
+        });
+    }
+    connect(ui->listView_4->selectionModel(),&QItemSelectionModel::selectionChanged,[this] {
+        MImageListRecord _r = ui->listView_4->selectionModel()->selectedIndexes().first().data(MImageListModel::FullDataRole).value<MImageListRecord>();
+        current_r = _r;
+        scaleImage(current_r,ui->scrollArea_2,ui->label_2,ui->label_4,1);
+        incViews(false);
+    });
+
+    cleanUp();
+    updateTags();
+    db.readRecentDirs(ui->menuRecent_dirs,MILLA_MAX_RECENT_DIRS,[this] (auto s) { this->loadRecentEntry(s); });
 
     restoreGeometry(db.getWindowGeometryOrState(true));
     restoreState(db.getWindowGeometryOrState(false));
@@ -661,8 +679,9 @@ void MViewer::resultsPresentation(QStringList lst, QListView* view, int tabIndex
 
     QList<MImageListRecord> out;
     ThumbnailModel* ptm = dynamic_cast<ThumbnailModel*>(ui->listView->model());
+    bool fnd = false;
 
-    if (!ui->actionGlobal_search->isChecked() && ptm) {
+    if (ptm) {
         QList<MImageListRecord> &imgs = ptm->GetAllImages();
         for (auto &i : lst) {
             int idx = 0;
@@ -671,16 +690,15 @@ void MViewer::resultsPresentation(QStringList lst, QListView* view, int tabIndex
                 if (j.filename == i) break;
                 idx++;
             }
-            if (idx >= imgs.size()) {
-                qDebug() << "ALERT: Unable to match filename " << i;
-                return;
-            }
+            if (idx >= imgs.size()) break;
 
             ptm->LoadUp(idx);
             out.push_back(imgs.at(idx));
+            fnd = true;
         }
+    }
 
-    } else {
+    if (!fnd) {
         for (auto &i : lst) {
             MImageListRecord r;
             r.filename = i;

@@ -932,6 +932,21 @@ bool DBHelper::readRecentDirs(QMenu* add_to, int maxcount, LoadFileCB cb)
     return true;
 }
 
+bool DBHelper::clearRecentDirs(bool total)
+{
+    for (auto &i : recents)
+        if (i.second) {
+            delete i.second;
+            i.second = nullptr;
+        }
+
+    recents.clear();
+    if (!total) return true;
+
+    QSqlQuery q;
+    return q.exec("DELETE FROM recent");
+}
+
 bool DBHelper::addRecentDir(QString const &path, bool dir)
 {
     QFileInfo fi(path);
@@ -962,25 +977,38 @@ bool DBHelper::addRecentDir(QString const &path, bool dir)
     return ok;
 }
 
-bool DBHelper::clearRecentDirs(bool total)
-{
-    for (auto &i : recents)
-        if (i.second) {
-            delete i.second;
-            i.second = nullptr;
-        }
-
-    recents.clear();
-    if (!total) return true;
-
-    QSqlQuery q;
-    return q.exec("DELETE FROM recent");
-}
-
 QString DBHelper::getMostRecentDir()
 {
     QSqlQuery q;
     if (q.exec("SELECT path FROM recent ORDER BY lastaccess DESC LIMIT 1") && q.next())
         return q.value(0).toString();
     return QString();
+}
+
+QString DBHelper::getMemorySlot(int n)
+{
+    QSqlQuery q;
+    q.prepare("SELECT file FROM memory WHERE slot = :n");
+    q.bindValue(":n",n);
+    if (q.exec() && q.next()) return q.value(0).toString();
+    return QString();
+}
+
+bool DBHelper::updateMemorySlot(int n, QString const &fn)
+{
+    QSqlQuery q;
+    q.prepare("SELECT COUNT(file) FROM memory WHERE slot = :n");
+    q.bindValue(":n",n);
+    if (!q.exec() || !q.next()) return false;
+
+    if (!q.value(0).toInt())
+        q.prepare("INSERT INTO memory (slot, file) VALUES (:s, :fn)");
+    else
+        q.prepare("UPDATE memory SET file = :fn WHERE slot = :s");
+    q.bindValue(":s",n);
+    q.bindValue(":fn",fn);
+    bool ok = q.exec();
+
+    qDebug() << "[db] Updating memory slot" << n << ":" << ok;
+    return ok;
 }

@@ -83,3 +83,37 @@ void MImageListModel::SaveThumbnail(MImageListRecord &rec) const
     dat.open(QBuffer::WriteOnly);
     if (rec.thumb.save(&dat,"png")) DBHelper::updateThumbnail(rec,arr);
 }
+
+void MImageListModel::loadSingleFile(MImageListRecord &rec)
+{
+    if (rec.loaded || !rec.thumb.isNull() || rec.filename.isEmpty()) return;
+
+    if (rec.picture.isNull()) {
+        qDebug() << "[Model:load] Loading pixmap for " << rec.filename;
+        rec.picture = QPixmap(rec.filename);
+        ram_footprint += ItemSizeInBytes(rec);
+    }
+    rec.loaded = true;
+
+    if (!DBHelper::getThumbnail(rec)) {
+
+        if (!rec.picture.isNull()) {
+            rec.thumb = rec.picture.scaled(THUMBNAILSIZE,THUMBNAILSIZE,Qt::KeepAspectRatio,Qt::SmoothTransformation);
+            rec.modified = true;
+            qDebug() << "[Model:load] Created thumbnail for " << rec.filename;
+            SaveThumbnail(rec);
+
+        } else {
+            rec.thumb = QPixmap(THUMBNAILSIZE,THUMBNAILSIZE);
+            rec.thumb.fill(Qt::black);
+        }
+    }
+
+    if (rec.fnshort.isEmpty()) {
+        QFileInfo fi(rec.filename);
+        rec.fnshort = fi.fileName();
+        rec.filechanged = fi.lastModified().toTime_t();
+    }
+
+    rec.valid = true;
+}

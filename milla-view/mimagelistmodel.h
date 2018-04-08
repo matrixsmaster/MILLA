@@ -49,6 +49,8 @@ public:
 
     virtual QModelIndex getRecordIndex(const QString &fn, bool allowPartialMatch = false);
 
+    virtual void loadSingleFile(MImageListRecord &rec);
+
 protected:
     QList<MImageListRecord> images;
     size_t ram_footprint = 0;
