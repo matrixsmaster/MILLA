@@ -14,6 +14,7 @@ typedef std::map<QString,std::pair<unsigned,Qt::CheckState>> MTagCache;
 typedef std::function<bool(QString)> InitRecCB;
 typedef std::function<bool(double)> ProgressCB;
 typedef std::function<QVariant(QString,QVariant)> PlugConfCB;
+typedef std::function<void(QString)> LoadFileCB;
 
 struct MImageListRecord {
     QString filename, fnshort;

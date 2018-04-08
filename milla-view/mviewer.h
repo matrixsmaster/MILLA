@@ -28,7 +28,7 @@
 #include "mimpexpmodule.h"
 #include "mmatcher.h"
 
-#define MILLA_VERSION "ver. 0.3 RC 2"
+#define MILLA_VERSION "ver. 0.3 RC 3"
 #define MILLA_SITE "http://github.com/matrixsmaster/MILLA"
 #define MILLA_EXTRA_CACHE_SIZE 1500
 #define MILLA_SUPPRTED_FORMATS { "png", "jpg", "jpeg", "bmp" }
@@ -36,7 +36,7 @@
 #define MILLA_OPEN_LIST "Text Files [txt,lst] (*.txt *.lst)"
 #define MILLA_MAXMATCH_RESULTS 10
 #define MILLA_MAXTAG_RESULTS 300
-
+#define MILLA_MAX_RECENT_DIRS 10
 
 struct MHistory {
     QStringList files;
@@ -210,6 +210,8 @@ private:
 
     void openDirByList(QString const &fileName);
 
+    void postOpen(QString const &fileName, bool isDir);
+
     void resultsPresentation(QStringList lst, QListView *view, int tabIndex);
 
     void searchResults(QStringList lst);
@@ -227,6 +229,8 @@ private:
     void enableShortcuts(QObjectList const &children, bool en);
 
     void enableMouseMoveEvents(QObjectList const &lst);
+
+    void loadRecentEntry(QString const &entry);
 };
 
 #endif // MVIEWER_H

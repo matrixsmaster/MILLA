@@ -1,6 +1,7 @@
 #ifndef DBHELPER_H
 #define DBHELPER_H
 
+#include <QObject>
 #include <QString>
 #include <QStringList>
 #include <QCryptographicHash>
@@ -15,8 +16,10 @@
 
 typedef QList<std::tuple<QString,unsigned,bool>> MTagsCheckList;
 
-class DBHelper
+class DBHelper : public QObject
 {
+    Q_OBJECT
+
 public:
     DBHelper();
     virtual ~DBHelper();
@@ -89,11 +92,13 @@ public:
 
     static bool updateSplittersState(QObjectList const &lst);
 
-    bool readRecentDirs(QMenu* add_to, int maxcount);
+    bool readRecentDirs(QMenu* add_to, int maxcount, LoadFileCB cb);
 
     bool addRecentDir(QString const &path, bool dir);
 
     bool clearRecentDirs(bool total = false);
+
+    QString getMostRecentDir();
 
 private:
     std::map<time_t,QAction*> recents;

@@ -54,7 +54,7 @@ MViewer::MViewer(QWidget *parent) :
 
     cleanUp();
     updateTags();
-    db.readRecentDirs(ui->menuRecent_dirs,5);
+    db.readRecentDirs(ui->menuRecent_dirs,MILLA_MAX_RECENT_DIRS,[this] (auto s) { this->loadRecentEntry(s); });
 
     ui->listView_4->setModel(new MMemoryModel(ui->listView_4));
     ui->listView_4->setViewMode(QListView::ListMode);
@@ -415,12 +415,18 @@ void MViewer::openDirByFile(QString const &fileName, bool recursive)
     if (fileName.isEmpty()) return;
 
     QFileInfo bpf(fileName);
-    QString bpath = bpf.canonicalPath();
+    QString bpath;
+    if (bpf.isDir()) {
+        QDir dr(fileName);
+        bpath = dr.canonicalPath();
+    } else
+        bpath = bpf.canonicalPath();
     if (bpath.isEmpty()) return;
 
     QStringList lst;
     scanDirectory(bpath,lst,recursive);
     showImageList(lst);
+    postOpen(fileName,true);
 }
 
 void MViewer::openDirByList(QString const &fileName)
@@ -449,12 +455,23 @@ void MViewer::openDirByList(QString const &fileName)
     }
 
     showImageList(lst);
+    postOpen(fileName,false);
+}
+
+void MViewer::postOpen(QString const &fileName, bool isDir)
+{
+    db.addRecentDir(fileName,isDir);
+    db.readRecentDirs(ui->menuRecent_dirs,MILLA_MAX_RECENT_DIRS,[this] (auto s) { this->loadRecentEntry(s); });
+    on_actionDescending_triggered();
 }
 
 void MViewer::processArguments()
 {
     QStringList args = QApplication::arguments();
-    if (args.size() < 2) return;
+    if (args.size() < 2) {
+        loadRecentEntry(db.getMostRecentDir());
+        return;
+    }
     args.erase(args.begin());
 
     if (args.size() == 1) {
@@ -489,19 +506,19 @@ void MViewer::on_actionOpen_triggered()
 {
     QString fn = QFileDialog::getOpenFileName(this, tr("Open image and directory"), "", tr(MILLA_OPEN_FILE));
     if (fn.isEmpty()) return;
+
     bool rec = QMessageBox::question(this, tr("Type of scan"), tr("Do recursive scan?"), QMessageBox::Yes | QMessageBox::No) == QMessageBox::Yes;
     openDirByFile(fn,rec);
-    db.addRecentDir(fn,true);
-    db.readRecentDirs(ui->menuRecent_dirs,5);
-    on_actionDescending_triggered();
+
+    QString canon;
+    ThumbnailModel* ptm = dynamic_cast<ThumbnailModel*>(ui->listView->model());
+    if (ptm && isLoadableFile(fn,&canon)) ui->listView->setCurrentIndex(ptm->getRecordIndex(canon));
 }
 
 void MViewer::on_actionOpen_list_triggered()
 {
     QString fn = QFileDialog::getOpenFileName(this, tr("Open list of images"), "", tr(MILLA_OPEN_LIST));
     openDirByList(fn);
-    db.addRecentDir(fn,false);
-    on_actionDescending_triggered();
 }
 
 void MViewer::on_actionFit_triggered()
@@ -1225,4 +1242,12 @@ void MViewer::enableMouseMoveEvents(QObjectList const &lst)
 void MViewer::on_actionClear_triggered()
 {
     db.clearRecentDirs(true);
+}
+
+void MViewer::loadRecentEntry(QString const &entry)
+{
+    QFileInfo fi(entry);
+    if (!fi.exists()) return;
+    if (fi.isDir()) openDirByFile(entry);
+    else openDirByList(entry);
 }

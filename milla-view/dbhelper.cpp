@@ -2,7 +2,7 @@
 
 static int instance = 0;
 
-DBHelper::DBHelper()
+DBHelper::DBHelper() : QObject()
 {
     instance++;
 }
@@ -914,7 +914,7 @@ bool DBHelper::updateSplittersState(QObjectList const &lst)
     return true;
 }
 
-bool DBHelper::readRecentDirs(QMenu* add_to, int maxcount)
+bool DBHelper::readRecentDirs(QMenu* add_to, int maxcount, LoadFileCB cb)
 {
     if (!add_to) return false;
     if (!clearRecentDirs()) return false;
@@ -923,8 +923,10 @@ bool DBHelper::readRecentDirs(QMenu* add_to, int maxcount)
     if (!q.exec("SELECT lastaccess, path FROM recent ORDER BY lastaccess DESC")) return false;
 
     for (int n = 0; n < maxcount && q.next(); n++) {
-        QAction* a = add_to->addAction(q.value(1).toString());
+        QString s = q.value(1).toString();
+        QAction* a = add_to->addAction(s);
         recents[q.value(0).toUInt()] = a;
+        connect(a,&QAction::triggered,this,[cb,s] { cb(s); });
     }
 
     return true;
@@ -933,7 +935,13 @@ bool DBHelper::readRecentDirs(QMenu* add_to, int maxcount)
 bool DBHelper::addRecentDir(QString const &path, bool dir)
 {
     QFileInfo fi(path);
-    QString right = dir? fi.canonicalPath() : fi.canonicalFilePath();
+    QString right;
+    if (fi.isDir()) {
+        QDir dr(path);
+        right = dr.canonicalPath();
+    } else
+        right = dir? fi.canonicalPath() : fi.canonicalFilePath();
+
     if (right.isEmpty()) return false;
     time_t stamp = time(NULL);
 
@@ -967,4 +975,12 @@ bool DBHelper::clearRecentDirs(bool total)
 
     QSqlQuery q;
     return q.exec("DELETE FROM recent");
+}
+
+QString DBHelper::getMostRecentDir()
+{
+    QSqlQuery q;
+    if (q.exec("SELECT path FROM recent ORDER BY lastaccess DESC LIMIT 1") && q.next())
+        return q.value(0).toString();
+    return QString();
 }
