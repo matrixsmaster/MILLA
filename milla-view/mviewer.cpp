@@ -322,6 +322,7 @@ void MViewer::scaleImage(const MImageListRecord &rec, QScrollArea* scrl, QLabel*
 
     scaleFactor *= factor;
     if (scaleFactor <= FLT_EPSILON) scaleFactor = 1;
+    qDebug() << "Scale factor =" << scaleFactor;
 
     scrl->setWidgetResizable(false);
     lbl->setPixmap(QPixmap());
@@ -1268,4 +1269,70 @@ void MViewer::loadRecentEntry(QString const &entry)
     if (!fi.exists()) return;
     if (fi.isDir()) openDirByFile(entry);
     else openDirByList(entry);
+}
+
+void MViewer::on_actionRotate_90_CW_triggered()
+{
+    rotateImages(true);
+}
+
+void MViewer::on_actionRotate_90_CCW_triggered()
+{
+    rotateImages(false);
+}
+
+void MViewer::rotateImages(bool cw)
+{
+    QTransform rotmat;
+    rotmat.rotate(cw? 90 : -90);
+
+    if (current_l.valid) {
+        current_l.picture = QPixmap::fromImage(current_l.picture.toImage().transformed(rotmat));
+        scaleImage(current_l,ui->scrollArea,ui->label,ui->label_3,1);
+    }
+    if (current_r.valid) {
+        current_r.picture = QPixmap::fromImage(current_r.picture.toImage().transformed(rotmat));
+        scaleImage(current_r,ui->scrollArea_2,ui->label_2,ui->label_4,1);
+    }
+}
+
+void MViewer::on_actionFlip_vertical_triggered()
+{
+    flipImages(true);
+}
+
+void MViewer::on_actionFlip_horizontal_triggered()
+{
+    flipImages(false);
+}
+
+void MViewer::flipImages(bool vertical)
+{
+    if (current_l.valid) {
+        current_l.picture = QPixmap::fromImage(current_l.picture.toImage().mirrored(!vertical,vertical));
+        scaleImage(current_l,ui->scrollArea,ui->label,ui->label_3,1);
+    }
+    if (current_r.valid) {
+        current_r.picture = QPixmap::fromImage(current_r.picture.toImage().mirrored(!vertical,vertical));
+        scaleImage(current_r,ui->scrollArea_2,ui->label_2,ui->label_4,1);
+    }
+}
+
+void MViewer::on_actionZoom_in_triggered()
+{
+    if (current_l.valid) scaleImage(current_l,ui->scrollArea,ui->label,ui->label_3,1.1);
+    if (current_r.valid) scaleImage(current_r,ui->scrollArea_2,ui->label_2,ui->label_4,1.1);
+}
+
+void MViewer::on_actionZoom_out_triggered()
+{
+    if (current_l.valid) scaleImage(current_l,ui->scrollArea,ui->label,ui->label_3,0.9);
+    if (current_r.valid) scaleImage(current_r,ui->scrollArea_2,ui->label_2,ui->label_4,0.9);
+}
+
+void MViewer::on_actionReset_zoom_triggered()
+{
+    scaleFactor = 1;
+    if (current_l.valid) scaleImage(current_l,ui->scrollArea,ui->label,ui->label_3,1);
+    if (current_r.valid) scaleImage(current_r,ui->scrollArea_2,ui->label_2,ui->label_4,1);
 }

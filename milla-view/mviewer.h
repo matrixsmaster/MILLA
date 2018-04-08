@@ -152,6 +152,20 @@ private slots:
 
     void on_actionClear_triggered();
 
+    void on_actionRotate_90_CW_triggered();
+
+    void on_actionRotate_90_CCW_triggered();
+
+    void on_actionFlip_vertical_triggered();
+
+    void on_actionFlip_horizontal_triggered();
+
+    void on_actionZoom_in_triggered();
+
+    void on_actionZoom_out_triggered();
+
+    void on_actionReset_zoom_triggered();
+
 private:
     Ui::MViewer *ui;
     DBHelper db;
@@ -231,6 +245,10 @@ private:
     void enableMouseMoveEvents(QObjectList const &lst);
 
     void loadRecentEntry(QString const &entry);
+
+    void rotateImages(bool cw);
+
+    void flipImages(bool vertical);
 };
 
 #endif // MVIEWER_H
