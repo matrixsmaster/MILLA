@@ -1,5 +1,20 @@
 #include "dbhelper.h"
 
+static int instance = 0;
+
+DBHelper::DBHelper()
+{
+    instance++;
+}
+
+DBHelper::~DBHelper()
+{
+    if (--instance == 0) {
+        QSqlDatabase::database().close();
+        qDebug() << "[db] Database closed";
+    }
+}
+
 bool DBHelper::initDatabase()
 {
     QSqlDatabase db = QSqlDatabase::addDatabase("QSQLITE");
@@ -17,15 +32,16 @@ bool DBHelper::initDatabase()
     ok = q.exec("SELECT version FROM meta") && q.next();
     qDebug() << "[db] Read meta table: " << ok;
     if (!ok) {
-        QSqlQuery qq;
-        ok = qq.exec("CREATE TABLE meta (" DBF_META ")");
+        q.clear();
+        ok = q.exec("CREATE TABLE meta (" DBF_META ")");
         qDebug() << "[db] Create new meta table: " << ok;
-        qq.clear();
-        qq.prepare("INSERT INTO meta (version) VALUES (:ver)");
-        qq.bindValue(":ver",DB_VERSION);
-        ok = qq.exec();
+        q.clear();
+        q.prepare("INSERT INTO meta (version) VALUES (:ver)");
+        q.bindValue(":ver",DB_VERSION);
+        ok = q.exec();
         qDebug() << "[db] Inserting current DB version tag " << DB_VERSION << ": " << ok;
         if (!ok) return false;
+
     } else {
         qDebug() << "[db] version: " << q.value(0).toInt();
         if (DB_VERSION != q.value(0).toInt()) {
@@ -34,43 +50,27 @@ bool DBHelper::initDatabase()
         }
     }
 
-    q.clear();
-    ok = DB_CORRECT_TABLE_CHECK(q,"'stats'");
-    qDebug() << "[db] Read stats table: " << ok;
-    if (!ok) {
-        QSqlQuery qq;
-        ok = qq.exec("CREATE TABLE stats (" DBF_STATS ")");
-        qDebug() << "[db] Create new stats table: " << ok;
-        if (!ok) return false;
+    QList<std::pair<const char*,const char*>> tabs = DB_CONTENTS;
+    for (auto &i : tabs) {
+        if (!checkAndCreate(i.first,i.second)) return false;
     }
 
-    q.clear();
-    ok = DB_CORRECT_TABLE_CHECK(q,"'tags'");
-    qDebug() << "[db] Read tags table: " << ok;
-    if (!ok) {
-        QSqlQuery qq;
-        ok = qq.exec("CREATE TABLE tags (" DBF_TAGS ")");
-        qDebug() << "[db] Create new tags table: " << ok;
-        if (!ok) return false;
-    }
+    return ok;
+}
 
-    q.clear();
-    ok = DB_CORRECT_TABLE_CHECK(q,"'links'");
-    qDebug() << "[db] Read links table: " << ok;
-    if (!ok) {
-        QSqlQuery qq;
-        ok = qq.exec("CREATE TABLE links (" DBF_LINKS ")");
-        qDebug() << "[db] Create new links table: " << ok;
-        if (!ok) return false;
-    }
+bool DBHelper::checkAndCreate(const char* tname, const char* format)
+{
+    QSqlQuery q;
 
-    q.clear();
-    ok = DB_CORRECT_TABLE_CHECK(q,"'thumbs'");
-    qDebug() << "[db] Read thumbs table: " << ok;
+    QString qr = QString::asprintf(DBF_TABLE_CHECK "'%s'",tname);
+    bool ok = q.exec(qr) && q.next();
+    qDebug() << "[db] Read" << tname << "table:" << ok;
+
     if (!ok) {
-        QSqlQuery qq;
-        ok = qq.exec("CREATE TABLE thumbs (" DBF_THUMBS ")");
-        qDebug() << "[db] Create new thumbs table: " << ok;
+        q.clear();
+        qr = QString::asprintf("CREATE TABLE %s (%s)",tname,format);
+        ok = q.exec(qr);
+        qDebug() << "[db] Create new" << tname << "table: " << ok;
     }
 
     return ok;
@@ -830,4 +830,86 @@ QString DBHelper::detectExactCopies(ProgressCB progress_cb)
     }
 
     return res;
+}
+
+QByteArray DBHelper::getWindowGeometryOrState(bool geom)
+{
+    QSqlQuery q;
+    if (geom)
+        q.exec("SELECT geometry FROM window WHERE name = 'MainWindow'");
+    else
+        q.exec("SELECT state FROM window WHERE name = 'MainWindow'");
+    if (!q.exec() || !q.next()) return QByteArray();
+    return q.value(0).toByteArray();
+}
+
+bool DBHelper::updateWindowGeometryAndState(QByteArray const &geom, QByteArray const &state)
+{
+    QSqlQuery q;
+    q.exec("SELECT COUNT(geometry) FROM window WHERE name = 'MainWindow'");
+    if (!q.exec() || !q.next()) return false;
+
+    if (!q.value(0).toInt())
+        q.prepare("INSERT INTO window (name, geometry, state) VALUES ('MainWindow', :g, :s)");
+    else
+        q.prepare("UPDATE window SET geometry = :g, state = :s WHERE name = 'MainWindow'");
+    q.bindValue(":g",geom);
+    q.bindValue(":s",state);
+
+    bool ok = q.exec();
+    qDebug() << "[db] Saving window geometry and state: " << ok;
+    return ok;
+}
+
+bool DBHelper::restoreSplittersState(QObjectList const &lst)
+{
+    for (auto &i : lst) {
+        if (!restoreSplittersState(i->children())) return false;
+
+        if (QString(i->metaObject()->className()) != "QSplitter") continue;
+        QSplitter* ptr = dynamic_cast<QSplitter*>(i);
+        if (!ptr) continue;
+
+        QSqlQuery q;
+        q.prepare("SELECT state FROM window WHERE name = :n");
+        q.bindValue(":n",ptr->objectName());
+        if (!q.exec() || !q.next()) {
+            qDebug() << "[db] Failed to get state of" << ptr->objectName();
+            return false;
+        }
+
+        ptr->restoreState(q.value(0).toByteArray());
+    }
+    return true;
+}
+
+bool DBHelper::updateSplittersState(QObjectList const &lst)
+{
+    for (auto &i : lst) {
+        if (!updateSplittersState(i->children())) return false;
+
+        if (QString(i->metaObject()->className()) != "QSplitter") continue;
+        QSplitter* ptr = dynamic_cast<QSplitter*>(i);
+        if (!ptr) continue;
+
+        QSqlQuery q;
+        q.prepare("SELECT COUNT(state) FROM window WHERE name = :n");
+        q.bindValue(":n",ptr->objectName());
+        if (!q.exec() || !q.next()) {
+            qDebug() << "ALERT: Unable to qeury for state existence of" << ptr->objectName();
+            return false;
+        }
+
+        if (!q.value(0).toInt())
+            q.prepare("INSERT INTO window (name, state) VALUES (:n, :s)");
+        else
+            q.prepare("UPDATE window SET state = :s WHERE name = :n");
+        q.bindValue(":n",ptr->objectName());
+        q.bindValue(":s",ptr->saveState());
+        bool ok = q.exec();
+
+        qDebug() << "[db] Splitter" << ptr->objectName() << "saved:" << ok;
+        if (!ok) return false;
+    }
+    return true;
 }

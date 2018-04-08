@@ -4,6 +4,7 @@
 SResultModel::SResultModel(QList<MImageListRecord> items, QObject *parent)
     : MImageListModel(parent)
 {
+    do_shorten = true;
     images = items;
     curitem = images.begin();
     connect(&timer,&QTimer::timeout,this,[this] { Loader(); });

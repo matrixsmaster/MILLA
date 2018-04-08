@@ -11,11 +11,17 @@
 #define DB_FILEPATH "/.milla/storage.db"
 #endif
 
-#define DB_VERSION 1
+#define DB_VERSION 2
+
+#define DB_CONTENTS {   {"stats",   DBF_STATS}, \
+                        {"tags",    DBF_TAGS}, \
+                        {"links",   DBF_LINKS}, \
+                        {"thumbs",  DBF_THUMBS}, \
+                        {"memory",  DBF_MEMORY}, \
+                        {"recent",  DBF_RECENT}, \
+                        {"window",  DBF_WINDOW} }
 
 #define DBF_TABLE_CHECK "SELECT name FROM sqlite_master WHERE type='table' AND name="
-
-#define DB_CORRECT_TABLE_CHECK(Q,TAB) (Q.exec(DBF_TABLE_CHECK TAB) && Q.next())
 
 #define DBF_META "version INT"
 
@@ -47,6 +53,12 @@
 #define DBF_TAGS "key UNSIGNED INT, tag TEXT, rating UNSIGNED BIGINT"
 
 #define DBF_TAGS_SHORT "key, tag, rating"
+
+#define DBF_MEMORY "slot INT, file TEXT"
+
+#define DBF_RECENT "lastaccess UNSIGNED INT, path TEXT"
+
+#define DBF_WINDOW "name TEXT, geometry BLOB, state BLOB"
 
 #define DB_CORRECT_TAG_KEY_GET "SELECT key FROM tags ORDER BY key DESC LIMIT 1"
 

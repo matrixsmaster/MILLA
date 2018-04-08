@@ -5,6 +5,7 @@
 #include <QStringList>
 #include <QCryptographicHash>
 #include <QDir>
+#include <QSplitter>
 #include "db_format.h"
 #include "shared.h"
 #include "cvhelper.h"
@@ -15,8 +16,8 @@ typedef QList<std::tuple<QString,unsigned,bool>> MTagsCheckList;
 class DBHelper
 {
 public:
-    DBHelper() {}
-    virtual ~DBHelper() {}
+    DBHelper();
+    virtual ~DBHelper();
 
     bool initDatabase();
 
@@ -77,6 +78,17 @@ public:
     static void sanitizeTags(ProgressCB progress_cb);
 
     static QString detectExactCopies(ProgressCB progress_cb);
+
+    static QByteArray getWindowGeometryOrState(bool geom);
+
+    static bool updateWindowGeometryAndState(QByteArray const &geom, QByteArray const &state);
+
+    static bool restoreSplittersState(QObjectList const &lst);
+
+    static bool updateSplittersState(QObjectList const &lst);
+
+private:
+    bool checkAndCreate(const char *tname, const char *format);
 };
 
 #endif // DBHELPER_H

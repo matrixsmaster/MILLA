@@ -1317,6 +1317,16 @@
                 </item>
                </layout>
               </widget>
+              <widget class="QWidget" name="tab_3">
+               <attribute name="title">
+                <string>Memory</string>
+               </attribute>
+               <layout class="QHBoxLayout" name="horizontalLayout_17">
+                <item>
+                 <widget class="QListView" name="listView_4"/>
+                </item>
+               </layout>
+              </widget>
              </widget>
             </item>
            </layout>
@@ -2592,7 +2602,15 @@
     <property name="title">
      <string>Tools</string>
     </property>
+    <widget class="QMenu" name="menuShort_term_memory">
+     <property name="title">
+      <string>Short-term memory</string>
+     </property>
+     <addaction name="actionClear_all"/>
+    </widget>
+    <addaction name="menuShort_term_memory"/>
     <addaction name="actionSwap_images"/>
+    <addaction name="separator"/>
     <addaction name="actionClear_image_cache"/>
     <addaction name="actionSanitize_DB"/>
     <addaction name="actionFind_duplicates"/>
@@ -3013,6 +3031,11 @@
    </property>
    <property name="text">
     <string>Hotkeys enabled</string>
+   </property>
+  </action>
+  <action name="actionClear_all">
+   <property name="text">
+    <string>Clear all</string>
    </property>
   </action>
  </widget>

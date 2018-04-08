@@ -54,12 +54,24 @@ MViewer::MViewer(QWidget *parent) :
 
     cleanUp();
     updateTags();
+
+    ui->listView_4->setModel(new MMemoryModel(ui->listView_4));
+    ui->listView_4->setViewMode(QListView::ListMode);
+    ui->listView_4->setFlow(QListView::LeftToRight);
+    ui->listView_4->setWrapping(false);
+    ui->listView_4->setWordWrap(true);
+
+    qDebug() << "[WND] Restore geometry: " << restoreGeometry(db.getWindowGeometryOrState(true));
+    qDebug() << "[WND] Restore state: " << restoreState(db.getWindowGeometryOrState(false));
+    qDebug() << "[Splitters] Restore state: " << db.restoreSplittersState(children());
 }
 
 MViewer::~MViewer()
 {
+    db.updateWindowGeometryAndState(saveGeometry(),saveState());
+    db.updateSplittersState(children());
+
     if (loadingMovie) delete loadingMovie;
-    QSqlDatabase::database().close();
     delete ui;
 }
 
