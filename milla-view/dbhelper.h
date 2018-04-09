@@ -88,13 +88,9 @@ public:
 
     static bool updateWindowGeometryAndState(QByteArray const &geom, QByteArray const &state);
 
-    static bool restoreSplittersState(QObjectList const &lst);
+    static bool restoreViewerState(QObjectList const &lst);
 
-    static bool updateSplittersState(QObjectList const &lst);
-
-    static bool getViewerSettings(MViewSettings &sett);
-
-    static bool updateViewerSettings(MViewSettings const &sett);
+    static bool updateViewerState(QObjectList const &lst);
 
     bool readRecentDirs(QMenu* add_to, int maxcount, LoadFileCB cb);
 

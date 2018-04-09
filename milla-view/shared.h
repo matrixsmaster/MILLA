@@ -31,18 +31,5 @@ typedef QObject* QObjectPtr;
 
 Q_DECLARE_METATYPE(QObjectPtr)
 
-struct MViewSettings {
-    enum EFlags {
-        FitToViewport = 0x1,
-        ShowFaces = 0x2,
-        CenterOnFace = 0x4,
-        ShowLinked = 0x8,
-        ShowReverseLinks = 0x10,
-        ThumbCloud = 0x20,
-        HotkeysEnabled = 0x40
-    } flags;
-    float scale;
-};
-
 #endif // SHARED_H
 

@@ -861,42 +861,58 @@ bool DBHelper::updateWindowGeometryAndState(QByteArray const &geom, QByteArray c
     return ok;
 }
 
-bool DBHelper::restoreSplittersState(QObjectList const &lst)
+bool DBHelper::restoreViewerState(QObjectList const &lst)
 {
     for (auto &i : lst) {
-        if (!restoreSplittersState(i->children())) return false;
+        if (!restoreViewerState(i->children())) return false;
+        if (i->objectName().isEmpty()) continue;
 
-        if (QString(i->metaObject()->className()) != "QSplitter") continue;
-        QSplitter* ptr = dynamic_cast<QSplitter*>(i);
-        if (!ptr) continue;
+        if (    QString(i->metaObject()->className()) != "QSplitter" &&
+                QString(i->metaObject()->className()) != "QAction")     continue;
 
         QSqlQuery q;
         q.prepare("SELECT state FROM window WHERE name = :n");
-        q.bindValue(":n",ptr->objectName());
-        if (!q.exec() || !q.next()) {
-            qDebug() << "[db] Failed to get state of" << ptr->objectName();
-            return false;
-        }
+        q.bindValue(":n",i->objectName());
+        if (!q.exec() || !q.next()) continue;
 
-        ptr->restoreState(q.value(0).toByteArray());
+        if (QString(i->metaObject()->className()) == "QSplitter") {
+            QSplitter* ptr = dynamic_cast<QSplitter*>(i);
+            if (ptr) ptr->restoreState(q.value(0).toByteArray());
+
+        } else {
+            QAction* ptr = dynamic_cast<QAction*>(i);
+            if (!ptr || !ptr->isCheckable()) continue;
+            bool b = q.value(0).toByteArray().at(0);
+            if (ptr->isChecked() != b) ptr->trigger();
+        }
     }
     return true;
 }
 
-bool DBHelper::updateSplittersState(QObjectList const &lst)
+bool DBHelper::updateViewerState(QObjectList const &lst)
 {
     for (auto &i : lst) {
-        if (!updateSplittersState(i->children())) return false;
+        if (!updateViewerState(i->children())) return false;
+        if (i->objectName().isEmpty()) continue;
 
-        if (QString(i->metaObject()->className()) != "QSplitter") continue;
-        QSplitter* ptr = dynamic_cast<QSplitter*>(i);
-        if (!ptr) continue;
+        QSplitter* spl = nullptr;
+        QAction* act = nullptr;
+
+        if (QString(i->metaObject()->className()) == "QSplitter") spl = dynamic_cast<QSplitter*>(i);
+        if (QString(i->metaObject()->className()) == "QAction") act = dynamic_cast<QAction*>(i);
+
+        if (!spl && !act) continue;
+        if (act && !act->isCheckable()) continue;
+
+        QByteArray tmp;
+        if (spl) tmp = spl->saveState();
+        else tmp.append(act->isChecked());
 
         QSqlQuery q;
         q.prepare("SELECT COUNT(state) FROM window WHERE name = :n");
-        q.bindValue(":n",ptr->objectName());
+        q.bindValue(":n",i->objectName());
         if (!q.exec() || !q.next()) {
-            qDebug() << "ALERT: Unable to qeury for state existence of" << ptr->objectName();
+            qDebug() << "ALERT: Unable to qeury for state existence of" << i->objectName();
             return false;
         }
 
@@ -904,46 +920,14 @@ bool DBHelper::updateSplittersState(QObjectList const &lst)
             q.prepare("INSERT INTO window (name, state) VALUES (:n, :s)");
         else
             q.prepare("UPDATE window SET state = :s WHERE name = :n");
-        q.bindValue(":n",ptr->objectName());
-        q.bindValue(":s",ptr->saveState());
+        q.bindValue(":n",i->objectName());
+        q.bindValue(":s",tmp);
         bool ok = q.exec();
 
-        qDebug() << "[db] Splitter" << ptr->objectName() << "saved:" << ok;
+        qDebug() << "[db] Object" << i->objectName() << "saved:" << ok;
         if (!ok) return false;
     }
     return true;
-}
-
-bool DBHelper::getViewerSettings(MViewSettings &sett)
-{
-    QSqlQuery q;
-    q.exec("SELECT state FROM window WHERE name = 'Viewer'");
-    if (!q.exec() || !q.next()) return false;
-
-    const char* arr = q.value(0).toByteArray().constData();
-    memcpy(&sett,arr,sizeof(sett));
-    return true;
-}
-
-bool DBHelper::updateViewerSettings(MViewSettings const &sett)
-{
-    QSqlQuery q;
-    q.exec("SELECT COUNT(state) FROM window WHERE name = 'Viewer'");
-    if (!q.exec() || !q.next()) return false;
-
-    QByteArray state;
-    state.resize(sizeof(sett));
-    memcpy(state.data(),&sett,sizeof(sett));
-
-    if (!q.value(0).toInt())
-        q.prepare("INSERT INTO window (name, state) VALUES ('Viewer', :s)");
-    else
-        q.prepare("UPDATE window SET state = :s WHERE name = 'Viewer'");
-    q.bindValue(":s",state);
-
-    bool ok = q.exec();
-    qDebug() << "[db] Saving Viewer state: " << ok;
-    return ok;
 }
 
 bool DBHelper::readRecentDirs(QMenu* add_to, int maxcount, LoadFileCB cb)

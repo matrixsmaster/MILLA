@@ -88,13 +88,13 @@ MViewer::MViewer(QWidget *parent) :
 
     restoreGeometry(db.getWindowGeometryOrState(true));
     restoreState(db.getWindowGeometryOrState(false));
-    db.restoreSplittersState(children());
+    db.restoreViewerState(children());
 }
 
 MViewer::~MViewer()
 {
     db.updateWindowGeometryAndState(saveGeometry(),saveState());
-    db.updateSplittersState(children());
+    db.updateViewerState(children());
 
     if (loadingMovie) delete loadingMovie;
     delete ui;
