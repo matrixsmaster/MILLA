@@ -914,6 +914,38 @@ bool DBHelper::updateSplittersState(QObjectList const &lst)
     return true;
 }
 
+bool DBHelper::getViewerSettings(MViewSettings &sett)
+{
+    QSqlQuery q;
+    q.exec("SELECT state FROM window WHERE name = 'Viewer'");
+    if (!q.exec() || !q.next()) return false;
+
+    const char* arr = q.value(0).toByteArray().constData();
+    memcpy(&sett,arr,sizeof(sett));
+    return true;
+}
+
+bool DBHelper::updateViewerSettings(MViewSettings const &sett)
+{
+    QSqlQuery q;
+    q.exec("SELECT COUNT(state) FROM window WHERE name = 'Viewer'");
+    if (!q.exec() || !q.next()) return false;
+
+    QByteArray state;
+    state.resize(sizeof(sett));
+    memcpy(state.data(),&sett,sizeof(sett));
+
+    if (!q.value(0).toInt())
+        q.prepare("INSERT INTO window (name, state) VALUES ('Viewer', :s)");
+    else
+        q.prepare("UPDATE window SET state = :s WHERE name = 'Viewer'");
+    q.bindValue(":s",state);
+
+    bool ok = q.exec();
+    qDebug() << "[db] Saving Viewer state: " << ok;
+    return ok;
+}
+
 bool DBHelper::readRecentDirs(QMenu* add_to, int maxcount, LoadFileCB cb)
 {
     if (!add_to) return false;

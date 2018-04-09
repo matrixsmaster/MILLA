@@ -92,6 +92,10 @@ public:
 
     static bool updateSplittersState(QObjectList const &lst);
 
+    static bool getViewerSettings(MViewSettings &sett);
+
+    static bool updateViewerSettings(MViewSettings const &sett);
+
     bool readRecentDirs(QMenu* add_to, int maxcount, LoadFileCB cb);
 
     bool clearRecentDirs(bool total = false);
