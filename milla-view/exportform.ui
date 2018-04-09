@@ -16,6 +16,10 @@
   <property name="windowTitle">
    <string>Export image data</string>
   </property>
+  <property name="windowIcon">
+   <iconset resource="milla-view.qrc">
+    <normaloff>:/milla.png</normaloff>:/milla.png</iconset>
+  </property>
   <layout class="QGridLayout" name="gridLayout">
    <item row="0" column="0" rowspan="8">
     <widget class="QGroupBox" name="groupBox">
@@ -269,7 +273,9 @@
    </item>
   </layout>
  </widget>
- <resources/>
+ <resources>
+  <include location="milla-view.qrc"/>
+ </resources>
  <connections>
   <connection>
    <sender>buttonBox</sender>

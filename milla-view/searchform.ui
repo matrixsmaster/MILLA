@@ -16,6 +16,10 @@
   <property name="windowTitle">
    <string>Search</string>
   </property>
+  <property name="windowIcon">
+   <iconset resource="milla-view.qrc">
+    <normaloff>:/milla.png</normaloff>:/milla.png</iconset>
+  </property>
   <widget class="QDialogButtonBox" name="buttonBox">
    <property name="geometry">
     <rect>
@@ -565,7 +569,9 @@
    </property>
   </widget>
  </widget>
- <resources/>
+ <resources>
+  <include location="milla-view.qrc"/>
+ </resources>
  <connections>
   <connection>
    <sender>buttonBox</sender>
