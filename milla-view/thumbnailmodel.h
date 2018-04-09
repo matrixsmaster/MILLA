@@ -16,7 +16,7 @@ public:
         SortByTimeDesc
     };
 
-    explicit ThumbnailModel(QStringList files, QObject *parent = 0);
+    explicit ThumbnailModel(QStringList files, ProgressCB loading_cb, QObject *parent = 0);
     virtual ~ThumbnailModel();
 
     void LoadUp(int idx, bool force_reload = false);

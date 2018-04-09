@@ -178,6 +178,7 @@ private:
     QPushButton* stopButton;
     QMovie* loadingMovie;
     QLabel* loadingLabel = nullptr;
+    ProgressCB thumbload_pbar;
 
     bool flag_stop_load_everything = false;
     double scaleFactor = 1;

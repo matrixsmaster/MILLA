@@ -1,9 +1,11 @@
 #include "thumbnailmodel.h"
 #include "dbhelper.h"
 
-ThumbnailModel::ThumbnailModel(QStringList files, QObject *parent)
+ThumbnailModel::ThumbnailModel(QStringList files, ProgressCB loading_cb, QObject *parent)
     : MImageListModel(parent)
 {
+    double prg = 0, dp = 100.f / (double)(files.size());
+
     for (auto &i : files) {
         MImageListRecord rec;
         rec.filename = i;
@@ -19,6 +21,9 @@ ThumbnailModel::ThumbnailModel(QStringList files, QObject *parent)
         rec.fnshort = fi.fileName();
 
         images.append(rec);
+
+        prg += dp;
+        if (loading_cb) loading_cb(prg);
     }
 }
 

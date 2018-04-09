@@ -26,6 +26,12 @@ MViewer::MViewer(QWidget *parent) :
     stopButton->setEnabled(false);
     ui->statusBar->addPermanentWidget(stopButton);
 
+    thumbload_pbar = ([this] (auto v) {
+        this->progressBar->setValue(floor(v));
+        QCoreApplication::processEvents();
+        return true;
+    });
+
     connect(&view_timer,&QTimer::timeout,this,[this] {
         if (progressBar->value() < 100)
             progressBar->setValue(progressBar->value()+1);
@@ -278,7 +284,7 @@ void MViewer::showImageList(QStringList const &lst)
     cleanUp();
 
     bool purelist = !(ui->actionThumbnails_cloud->isChecked());
-    ThumbnailModel* ptr = new ThumbnailModel(lst,ui->listView);
+    ThumbnailModel* ptr = new ThumbnailModel(lst,thumbload_pbar,ui->listView);
 
     ptr->setShortenFilenames(!purelist);
     ui->listView->setModel(ptr);
@@ -1147,7 +1153,7 @@ void MViewer::historyShowCurrent()
     } else {
         //load arbitary file using ThumbnailModel instance
         QStringList ls = { (*history.cur) };
-        ptm = new ThumbnailModel(ls);
+        ptm = new ThumbnailModel(ls,0);
         ptm->LoadUp(0);
         current_l = ptm->data(ptm->getRecordIndex(0),MImageListModel::FullDataRole).value<MImageListRecord>();
         delete ptm;
