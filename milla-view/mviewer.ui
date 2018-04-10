@@ -665,7 +665,7 @@
                        <rect>
                         <x>0</x>
                         <y>0</y>
-                        <width>298</width>
+                        <width>297</width>
                         <height>365</height>
                        </rect>
                       </property>
@@ -2649,6 +2649,7 @@
     <addaction name="actionClear_image_cache"/>
     <addaction name="actionSanitize_DB"/>
     <addaction name="actionFind_duplicates"/>
+    <addaction name="actionApply_tagset"/>
    </widget>
    <widget class="QMenu" name="menuHelp">
     <property name="title">
@@ -3110,6 +3111,11 @@
    </property>
    <property name="shortcut">
     <string>0</string>
+   </property>
+  </action>
+  <action name="actionApply_tagset">
+   <property name="text">
+    <string>Apply tagset to all loaded images</string>
    </property>
   </action>
  </widget>

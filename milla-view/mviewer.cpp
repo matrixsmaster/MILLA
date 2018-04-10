@@ -762,9 +762,19 @@ void MViewer::on_actionRefine_search_triggered()
         ptm = dynamic_cast<MImageListModel*>(ui->listView_3->model());
     else
         ptm = dynamic_cast<MImageListModel*>(ui->listView_2->model()? ui->listView_2->model() : ui->listView->model());
-    if (!ptm) return;
-
-    searchResults(db.parametricSearch(flt,ptm->GetAllImages()));
+    if (!ptm || ui->actionGlobal_search->isChecked()) {
+        QList<MImageListRecord> lst;
+        QStringList fls =  db.getAllFiles();
+        for (auto &i : fls) {
+            MImageListRecord r;
+            QFileInfo fi(i);
+            r.filename = i;
+            r.filechanged = fi.lastModified().toTime_t();
+            lst.push_back(r);
+        }
+        searchResults(db.parametricSearch(flt,lst));
+    } else
+        searchResults(db.parametricSearch(flt,ptm->GetAllImages()));
 }
 
 void MViewer::on_actionSwap_images_triggered()
@@ -1358,4 +1368,39 @@ void MViewer::on_lineEdit_2_textChanged(const QString &arg1)
         delete (ui->listWidget->takeItem(i));
         i--;
     }
+}
+
+void MViewer::on_actionApply_tagset_triggered()
+{
+    ThumbnailModel* ptm = dynamic_cast<ThumbnailModel*>(ui->listView->model());
+    if (!current_l.valid || !ptm) return;
+
+    double prg = 0, dp = 100.f / (double)(ptm->GetAllImages().size());
+
+    prepareLongProcessing();
+    for (auto &i : ptm->GetAllImages()) {
+        MTagsCheckList lst = db.getFileTags(i.filename);
+        MTagCache out;
+
+        for (auto &j : lst) {
+            if (!std::get<2>(j)) continue;
+            out[std::get<0>(j)] = std::pair<unsigned,Qt::CheckState>(std::get<1>(j),Qt::Checked);
+        }
+
+        for (auto &j : tags_cache) {
+            if (j.second.second != Qt::Checked) continue;
+            if (!out.count(j.first)) db.updateTags(j.first,true); //increment tag counter
+            out[j.first] = j.second;
+        }
+
+        bool ok = db.updateFileTags(i.filename,out);
+        qDebug() << "[Tags] Applying to" << i.filename << ":" << ok;
+
+        prg += dp;
+        progressBar->setValue(floor(prg));
+        QCoreApplication::processEvents();
+        if (flag_stop_load_everything) break;
+    }
+    prepareLongProcessing(true);
+    ui->statusBar->showMessage("Finished setting tags");
 }
