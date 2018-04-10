@@ -711,19 +711,25 @@ void DBHelper::sanitizeLinks(ProgressCB progress_cb)
         prg += dp;
         if (progress_cb && !progress_cb(prg)) return;
 
-        if (known_shas.contains(qa.value(0).toByteArray()) && known_shas.contains(qa.value(1).toByteArray()))
-            continue;
-        q.clear();
-        q.prepare("SELECT file FROM stats WHERE sha256 = :sha1 OR sha256 = :sha2");
-        q.bindValue(":sha1",qa.value(0).toByteArray());
-        q.bindValue(":sha2",qa.value(1).toByteArray());
-        if (q.exec() && q.next() && q.next()) { //there must be two consecutive records
-            known_shas.insert(qa.value(0).toByteArray());
-            known_shas.insert(qa.value(1).toByteArray());
-            continue;
+        if (qa.value(0).toByteArray() == qa.value(1).toByteArray())
+            qDebug() << "[Sanitizer] File linked to itself detected";
+
+        else {
+
+            if (known_shas.contains(qa.value(0).toByteArray()) && known_shas.contains(qa.value(1).toByteArray()))
+                continue;
+            q.clear();
+            q.prepare("SELECT file FROM stats WHERE sha256 = :sha1 OR sha256 = :sha2");
+            q.bindValue(":sha1",qa.value(0).toByteArray());
+            q.bindValue(":sha2",qa.value(1).toByteArray());
+            if (q.exec() && q.next() && q.next()) { //there must be two consecutive records
+                known_shas.insert(qa.value(0).toByteArray());
+                known_shas.insert(qa.value(1).toByteArray());
+                continue;
+            }
+            qDebug() << "[Sanitizer] Lost file with sha " << qa.value(0).toByteArray().toHex();
         }
 
-        qDebug() << "[Sanitizer] Lost file with sha " << qa.value(0).toByteArray().toHex();
         to_remove.push_back(std::pair<QByteArray,QByteArray>(qa.value(0).toByteArray(),qa.value(1).toByteArray()));
     }
 
@@ -749,15 +755,18 @@ void DBHelper::sanitizeLinks(ProgressCB progress_cb)
 
 void DBHelper::sanitizeTags(ProgressCB progress_cb)
 {
-    QSqlQuery q,qa,qw;
-    if (!q.exec("SELECT COUNT(tags) FROM stats") || !qa.exec("SELECT tags FROM stats")) {
+    QSqlQuery q,qa,qz;
+    if (!q.exec("SELECT COUNT(tags) FROM stats") || !qa.exec("SELECT tags, ntags, file FROM stats")) {
         qDebug() << "[db] Unable to query stats table for tags listing";
         return;
     }
-    if (!qw.exec("SELECT COUNT(key) FROM tags")) {
-        qDebug() << "[db] Unable to query tags table";
+    if (!qz.exec("SELECT key FROM tags")) {
+        qDebug() << "[db] Unable to query tags table for tags listing";
         return;
     }
+
+    QSet<unsigned> all;
+    while (qz.next()) all.insert(qz.value(0).toUInt());
 
     double prg = 0, dp = q.next()? 50.f / (double)(q.value(0).toInt()) : 0;
 
@@ -770,17 +779,39 @@ void DBHelper::sanitizeTags(ProgressCB progress_cb)
         QStringList ls = qa.value(0).toString().split(',',QString::SkipEmptyParts);
         if (ls.isEmpty()) continue;
 
-        for (auto &j : ls) {
-            unsigned ji = j.toUInt();
+        bool mod = false;
+        for (auto j = ls.begin(); j != ls.end();) {
+            unsigned ji = j->toUInt();
+
+            if (!all.contains(ji)) {
+                mod = true;
+                j = ls.erase(j);
+                qDebug() << "[Sanitizer] Removing unknown tag index" << ji;
+                continue;
+            }
+
             if (used_tags.count(ji)) used_tags[ji]++;
             else used_tags[ji] = 1;
+            ++j;
+        }
+
+        if (qa.value(1).toInt() != ls.size()) mod = true;
+
+        if (mod) {
+            QSqlQuery wq;
+            QString ln2 = ls.empty()? "" : ln2 = ls.join(',') + ",";
+            wq.prepare("UPDATE stats SET tags = :tg, ntags = :nt WHERE file = :fn");
+            wq.bindValue(":tg",ln2);
+            wq.bindValue(":nt",ls.size());
+            wq.bindValue(":fn",qa.value(2).toString());
+            wq.exec();
         }
     }
 
     qDebug() << "[Sanitizer] " << used_tags.size() << " tags currently in use";
 
     prg = 50;
-    dp = qw.next()? 50.f / (double)(qw.value(0).toInt()) : 0;
+    dp = all.empty()? 0 : 50.f / (double)(all.size());
 
     for (auto &i : used_tags) {
         int n;

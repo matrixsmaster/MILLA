@@ -328,7 +328,7 @@ void MViewer::scaleImage(const MImageListRecord &rec, QScrollArea* scrl, QLabel*
 
     scaleFactor *= factor;
     if (scaleFactor <= FLT_EPSILON) scaleFactor = 1;
-    qDebug() << "Scale factor =" << scaleFactor;
+    //qDebug() << "Scale factor =" << scaleFactor;
 
     scrl->setWidgetResizable(false);
     lbl->setPixmap(QPixmap());
@@ -385,7 +385,7 @@ unsigned MViewer::incViews(bool left)
         if (add) {
             history.files.push_back(current_l.filename);
             history.cur = history.files.end();
-            qDebug() << "history size now" << history.files.size() << "; we just pushed " << current_l.filename;
+            //qDebug() << "history size now" << history.files.size() << "; we just pushed " << current_l.filename;
         }
     }
 
@@ -1176,7 +1176,7 @@ void MViewer::on_actionRandom_image_triggered()
     ThumbnailModel* ptm = dynamic_cast<ThumbnailModel*>(ui->listView->model());
     if (!ptm || ptm->GetAllImages().empty()) return;
     double idx = (double)random() / (double)RAND_MAX * (double)(ptm->GetAllImages().size());
-    qDebug() << "Randomly selecting item " << idx;
+    //qDebug() << "Randomly selecting item " << idx;
     ui->listView->setCurrentIndex(ptm->getRecordIndex(floor(idx)));
 }
 
