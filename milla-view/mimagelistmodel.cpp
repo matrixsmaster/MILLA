@@ -108,6 +108,7 @@ void MImageListModel::loadSingleFile(MImageListRecord &rec)
             rec.thumb.fill(Qt::black);
         }
     }
+    rec.touched = DBHelper::getLastViewTime(rec.filename);
 
     if (rec.fnshort.isEmpty()) {
         QFileInfo fi(rec.filename);

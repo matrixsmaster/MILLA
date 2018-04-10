@@ -48,7 +48,7 @@ void ThumbnailModel::LoadUp(int idx, bool force_reload)
 
     images[idx].thumb = images[idx].picture.scaled(THUMBNAILSIZE,THUMBNAILSIZE,Qt::KeepAspectRatio,Qt::SmoothTransformation);
     images[idx].modified = true;
-    images[idx].touched = time(NULL);
+    images[idx].touched = DBHelper::getLastViewTime(images[idx].filename);
     images[idx].filechanged = fi.lastModified().toTime_t();
 
     SaveThumbnail(images[idx]);

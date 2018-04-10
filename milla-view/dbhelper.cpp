@@ -202,8 +202,8 @@ MImageExtras DBHelper::getExtrasFromDB(QString const &fn)
 {
     MImageExtras res;
     QSqlQuery q;
-    q.prepare("SELECT sizex, sizey, grayscale, faces, facerects, hist, sha256, length FROM stats WHERE file = (:fn)");
-    q.bindValue(":fn",fn);;
+    q.prepare("SELECT sizex, sizey, grayscale, faces, facerects, hist, sha256, length FROM stats WHERE file = :fn");
+    q.bindValue(":fn",fn);
     if (!q.exec() || !q.next()) return res;
 
     res.picsize = QSize(q.value(0).toUInt(), q.value(1).toUInt());
@@ -227,6 +227,15 @@ MImageExtras DBHelper::getExtrasFromDB(QString const &fn)
 
     res.valid = true;
     return res;
+}
+
+time_t DBHelper::getLastViewTime(QString const &fn)
+{
+    QSqlQuery q;
+    q.prepare("SELECT lastview FROM stats WHERE file = :fn");
+    q.bindValue(":fn",fn);
+    if (q.exec() || q.next()) return q.value(0).toUInt();
+    return time(NULL);
 }
 
 bool DBHelper::insertTag(QString const &ntag, unsigned &key)
@@ -543,12 +552,12 @@ QStringList DBHelper::parametricSearch(SearchFormData flt, QList<MImageListRecor
 {
     QSqlQuery q;
     size_t area;
-    std::multimap<int,QString> tmap;
+    std::multimap<uint,QString> tmap;
     std::set<QString> tlst;
 
     for (auto &i : from) {
         q.clear();
-        q.prepare("SELECT rating, likes, views, faces, grayscale, sizex, sizey, ntags, notes FROM stats WHERE file = :fn");
+        q.prepare("SELECT rating, likes, views, faces, grayscale, sizex, sizey, ntags, notes, lastview FROM stats WHERE file = :fn");
         q.bindValue(":fn",i.filename);
         if (q.exec() && q.next()) {
 
@@ -558,18 +567,28 @@ QStringList DBHelper::parametricSearch(SearchFormData flt, QList<MImageListRecor
             if (q.value(3).toInt() < flt.minface || q.value(3).toInt() >= flt.maxface) continue;
             if (flt.colors > -1 && flt.colors != (q.value(4).toInt()>0)) continue;
             if (i.filechanged < flt.minmtime || i.filechanged > flt.maxmtime) continue;
+            if (q.value(9).toUInt() < flt.minstime || q.value(9).toUInt() > flt.maxstime) continue;
             if (flt.wo_tags && q.value(7).toInt()) continue;
             if (flt.w_notes && q.value(8).toString().isEmpty()) continue;
+            if (!flt.text_notes.isEmpty() && !q.value(8).toString().contains(flt.text_notes,Qt::CaseInsensitive)) continue;
 
             area = q.value(5).toUInt() * q.value(6).toUInt();
             if (area < flt.minsize || area > flt.maxsize) continue;
 
+            if (!flt.text_fn.isEmpty() || !flt.text_path.isEmpty()) {
+                QFileInfo fi(i.filename);
+                if (!flt.text_fn.isEmpty() && !fi.baseName().contains(flt.text_fn,Qt::CaseInsensitive)) continue;
+                if (!flt.text_path.isEmpty() && !fi.path().contains(flt.text_path,Qt::CaseInsensitive)) continue;
+                qDebug() << fi.baseName() << fi.filePath();
+            }
+
             switch (flt.sort) {
-            case SRFRM_RATING: tmap.insert(std::pair<int,QString>(q.value(0).toInt(), i.filename)); break;
-            case SRFRM_KUDOS: tmap.insert(std::pair<int,QString>(q.value(1).toInt(), i.filename)); break;
-            case SRFRM_VIEWS: tmap.insert(std::pair<int,QString>(q.value(2).toUInt(), i.filename)); break;
-            case SRFRM_DATE: tmap.insert(std::pair<int,QString>(i.filechanged, i.filename)); break;
-            case SRFRM_FACES: tmap.insert(std::pair<int,QString>(q.value(3).toInt(), i.filename)); break;
+            case SRFRM_RATING: tmap.insert(std::pair<uint,QString>(q.value(0).toInt(), i.filename)); break;
+            case SRFRM_KUDOS: tmap.insert(std::pair<uint,QString>(q.value(1).toInt(), i.filename)); break;
+            case SRFRM_VIEWS: tmap.insert(std::pair<uint,QString>(q.value(2).toUInt(), i.filename)); break;
+            case SRFRM_DATE: tmap.insert(std::pair<uint,QString>(i.filechanged, i.filename)); break;
+            case SRFRM_FACES: tmap.insert(std::pair<uint,QString>(q.value(3).toInt(), i.filename)); break;
+            case SRFRM_LASTSEEN: tmap.insert(std::pair<uint,QString>(q.value(9).toUInt(), i.filename)); break;
             default: tlst.insert(i.filename);
             }
 
@@ -1027,4 +1046,10 @@ bool DBHelper::updateMemorySlot(int n, QString const &fn)
 
     qDebug() << "[db] Updating memory slot" << n << ":" << ok;
     return ok;
+}
+
+bool DBHelper::eraseMemory()
+{
+    QSqlQuery q;
+    return q.exec("DELETE FROM memory");
 }

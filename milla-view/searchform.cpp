@@ -30,10 +30,16 @@ void SearchForm::on_buttonBox_accepted()
 
     sdata.minmtime = (ui->checkBox_3->isChecked()? 0 : QDateTime(ui->calendarWidget->selectedDate()).toTime_t());
     sdata.maxmtime = (ui->checkBox_3->isChecked()? -1 : QDateTime(ui->calendarWidget_2->selectedDate()).toTime_t());
+    sdata.minstime = (ui->checkBox_5->isChecked()? 0 : QDateTime(ui->calendarWidget_3->selectedDate()).toTime_t());
+    sdata.maxstime = (ui->checkBox_5->isChecked()? -1 : QDateTime(ui->calendarWidget_4->selectedDate()).toTime_t());
 
     sdata.minsize = getSize(ui->comboBox,ok);
     sdata.maxsize = getSize(ui->comboBox_2,ok);
     if (!ok) sdata.maxsize = -1;
+
+    sdata.text_fn = ui->lineEdit->text();
+    sdata.text_path = ui->lineEdit_2->text();
+    sdata.text_notes = ui->lineEdit_3->text();
 
     sdata.wo_tags = ui->checkBox->isChecked();
     sdata.w_notes = ui->checkBox_4->isChecked();
@@ -46,6 +52,7 @@ void SearchForm::on_buttonBox_accepted()
     if (ui->radioButton_6->isChecked()) sdata.sort = SRFRM_DATE;
     if (ui->radioButton_7->isChecked()) sdata.sort = SRFRM_NAME;
     if (ui->radioButton_8->isChecked()) sdata.sort = SRFRM_FACES;
+    if (ui->radioButton_4->isChecked()) sdata.sort = SRFRM_LASTSEEN;
 
     sdata.maxresults = ui->spinBox_7->value();
 }

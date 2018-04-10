@@ -10,7 +10,7 @@
     <x>0</x>
     <y>0</y>
     <width>660</width>
-    <height>388</height>
+    <height>492</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -67,7 +67,7 @@
        <item row="0" column="1">
         <widget class="QLabel" name="label_3">
          <property name="text">
-          <string>Minimum size</string>
+          <string>Minimum image size</string>
          </property>
         </widget>
        </item>
@@ -153,7 +153,7 @@
        <item row="1" column="1">
         <widget class="QLabel" name="label_4">
          <property name="text">
-          <string>Maximum size</string>
+          <string>Maximum image size</string>
          </property>
         </widget>
        </item>
@@ -397,9 +397,39 @@
         <widget class="QCalendarWidget" name="calendarWidget_2"/>
        </item>
        <item row="2" column="0">
+        <widget class="QLabel" name="label_8">
+         <property name="text">
+          <string>Last seen after:</string>
+         </property>
+        </widget>
+       </item>
+       <item row="2" column="1">
+        <widget class="QLabel" name="label_9">
+         <property name="text">
+          <string>Last seen before:</string>
+         </property>
+        </widget>
+       </item>
+       <item row="3" column="0">
+        <widget class="QCalendarWidget" name="calendarWidget_3"/>
+       </item>
+       <item row="3" column="1">
+        <widget class="QCalendarWidget" name="calendarWidget_4"/>
+       </item>
+       <item row="4" column="0">
         <widget class="QCheckBox" name="checkBox_3">
          <property name="text">
           <string>Ignore modification time</string>
+         </property>
+         <property name="checked">
+          <bool>true</bool>
+         </property>
+        </widget>
+       </item>
+       <item row="4" column="1">
+        <widget class="QCheckBox" name="checkBox_5">
+         <property name="text">
+          <string>Ignore time of last view</string>
          </property>
          <property name="checked">
           <bool>true</bool>
@@ -461,6 +491,13 @@
            <widget class="QRadioButton" name="radioButton_8">
             <property name="text">
              <string># of faces</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QRadioButton" name="radioButton_4">
+            <property name="text">
+             <string>Last time seen</string>
             </property>
            </widget>
           </item>

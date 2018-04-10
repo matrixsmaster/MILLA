@@ -31,3 +31,19 @@ void MMemoryModel::setSlot(int n, MImageListRecord const &rec)
     endInsertRows();
     DBHelper::updateMemorySlot(n,rec.filename);
 }
+
+void MMemoryModel::clear()
+{
+    beginInsertRows(QModelIndex(),images.size(),images.size());
+    images.clear();
+    for (int i = 0; i < MAXMEMORYSLOTS; i++) {
+        MImageListRecord rec;
+        rec.thumb = QPixmap(THUMBNAILSIZE,THUMBNAILSIZE);
+        rec.thumb.fill(Qt::black);
+        rec.fnshort = QString::asprintf("Slot %d",i+1);
+        rec.valid = true;
+        images.push_back(rec);
+    }
+    endInsertRows();
+    DBHelper::eraseMemory();
+}

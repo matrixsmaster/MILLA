@@ -2402,7 +2402,7 @@
         <item>
          <widget class="QFrame" name="frame_6">
           <property name="frameShape">
-           <enum>QFrame::NoFrame</enum>
+           <enum>QFrame::Panel</enum>
           </property>
           <property name="frameShadow">
            <enum>QFrame::Plain</enum>
@@ -2470,6 +2470,28 @@
            <item>
             <widget class="QListWidget" name="listWidget"/>
            </item>
+           <item>
+            <widget class="QFrame" name="frame_15">
+             <property name="frameShape">
+              <enum>QFrame::StyledPanel</enum>
+             </property>
+             <property name="frameShadow">
+              <enum>QFrame::Raised</enum>
+             </property>
+             <layout class="QHBoxLayout" name="horizontalLayout_18">
+              <item>
+               <widget class="QLabel" name="label_5">
+                <property name="text">
+                 <string>Quick filter</string>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QLineEdit" name="lineEdit_2"/>
+              </item>
+             </layout>
+            </widget>
+           </item>
           </layout>
          </widget>
         </item>
@@ -2503,7 +2525,7 @@
            <item>
             <widget class="QPushButton" name="pushButton">
              <property name="text">
-              <string>Add</string>
+              <string>Create tag</string>
              </property>
             </widget>
            </item>

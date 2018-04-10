@@ -14,6 +14,8 @@ public:
     virtual ~MMemoryModel() {}
 
     void setSlot(int n, MImageListRecord const &rec);
+
+    void clear();
 };
 
 #endif // MMEMORYMODEL_H

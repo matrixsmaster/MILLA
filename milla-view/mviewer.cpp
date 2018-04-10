@@ -362,7 +362,6 @@ void MViewer::scaleImage(const MImageListRecord &rec, QScrollArea* scrl, QLabel*
         } else
             lbl->setPixmap(rec.picture.scaled(nsz,Qt::KeepAspectRatio,Qt::SmoothTransformation));
     }
-
 }
 
 unsigned MViewer::incViews(bool left)
@@ -1341,4 +1340,22 @@ void MViewer::on_actionReset_zoom_triggered()
     scaleFactor = 1;
     if (current_l.valid) scaleImage(current_l,ui->scrollArea,ui->label,ui->label_3,1);
     if (current_r.valid) scaleImage(current_r,ui->scrollArea_2,ui->label_2,ui->label_4,1);
+}
+
+void MViewer::on_actionClear_all_triggered()
+{
+    MMemoryModel* mmm = dynamic_cast<MMemoryModel*>(ui->listView_4->model());
+    if (mmm) mmm->clear();
+}
+
+void MViewer::on_lineEdit_2_textChanged(const QString &arg1)
+{
+    if (current_l.valid) updateTags(current_l.filename);
+    else updateTags();
+
+    for (int i = 0; i < ui->listWidget->count(); i++) {
+        if (ui->listWidget->item(i)->text().contains(arg1)) continue;
+        delete (ui->listWidget->takeItem(i));
+        i--;
+    }
 }

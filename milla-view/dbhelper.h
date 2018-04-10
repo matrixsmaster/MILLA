@@ -42,6 +42,8 @@ public:
 
     static MImageExtras getExtrasFromDB(QString const &fn);
 
+    static time_t getLastViewTime(QString const &fn);
+
     static bool insertTag(QString const &ntag, unsigned &key);
 
     static int getFileRating(QString const &fn);
@@ -103,6 +105,8 @@ public:
     static QString getMemorySlot(int n);
 
     static bool updateMemorySlot(int n, QString const &fn);
+
+    static bool eraseMemory();
 
 private:
     std::map<time_t,QAction*> recents;

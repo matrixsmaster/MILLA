@@ -19,6 +19,7 @@ enum SearchFormSort {
     SRFRM_DATE,
     SRFRM_NAME,
     SRFRM_FACES,
+    SRFRM_LASTSEEN
 };
 
 struct SearchFormData {
@@ -27,7 +28,9 @@ struct SearchFormData {
     int minface, maxface;
     int colors;
     time_t minmtime, maxmtime;
+    time_t minstime, maxstime;
     size_t minsize, maxsize;
+    QString text_notes, text_path, text_fn;
     bool wo_tags;
     bool w_notes;
     bool linked_only;
