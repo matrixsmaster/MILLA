@@ -4,16 +4,16 @@
 #include <QDialog>
 
 namespace Ui {
-class Dialog;
+class PixMixCfgDialog;
 }
 
-class Dialog : public QDialog
+class PixMixCfgDialog : public QDialog
 {
     Q_OBJECT
 
 public:
-    explicit Dialog(QWidget *parent = 0);
-    ~Dialog();
+    explicit PixMixCfgDialog(QWidget *parent = 0);
+    ~PixMixCfgDialog();
 
     int getRadius();
 
@@ -21,7 +21,7 @@ private slots:
     void on_buttonBox_accepted();
 
 private:
-    Ui::Dialog *ui;
+    Ui::PixMixCfgDialog *ui;
     int radius;
 };
 

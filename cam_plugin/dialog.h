@@ -4,19 +4,22 @@
 #include <QDialog>
 
 namespace Ui {
-class Dialog;
+class CamCfgDialog;
 }
 
-class Dialog : public QDialog
+class CamCfgDialog : public QDialog
 {
     Q_OBJECT
 
 public:
-    explicit Dialog(QWidget *parent = 0);
-    ~Dialog();
+    explicit CamCfgDialog(QWidget *parent = 0);
+    ~CamCfgDialog();
+
+    void setMaxID(int n);
+    int getID();
 
 private:
-    Ui::Dialog *ui;
+    Ui::CamCfgDialog *ui;
 };
 
 #endif // DIALOG_H

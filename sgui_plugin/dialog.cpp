@@ -2,28 +2,28 @@
 #include "dialog.h"
 #include "ui_dialog.h"
 
-Dialog::Dialog(QWidget *parent) :
+SGUICfgDialog::SGUICfgDialog(QWidget *parent) :
     QDialog(parent),
-    ui(new Ui::Dialog)
+    ui(new Ui::SGUICfgDialog)
 {
     ui->setupUi(this);
 }
 
-Dialog::~Dialog()
+SGUICfgDialog::~SGUICfgDialog()
 {
     delete ui;
 }
 
-void Dialog::on_pushButton_clicked()
+void SGUICfgDialog::on_pushButton_clicked()
 {
     ui->lineEdit->setText(QFileDialog::getOpenFileName(this, tr("Select VFS file"), "", tr("Virtual File System (*.vfs *.VFS)")));
 }
 
-void Dialog::on_buttonBox_accepted()
+void SGUICfgDialog::on_buttonBox_accepted()
 {
 }
 
-SGUIPluginGUIRec Dialog::getInfo()
+SGUIPluginGUIRec SGUICfgDialog::getInfo()
 {
     SGUIPluginGUIRec r;
 

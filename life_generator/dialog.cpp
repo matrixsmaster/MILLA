@@ -2,19 +2,19 @@
 #include "dialog.h"
 #include "ui_dialog.h"
 
-Dialog::Dialog(QWidget *parent) :
+LifeCfgDialog::LifeCfgDialog(QWidget *parent) :
     QDialog(parent),
-    ui(new Ui::Dialog)
+    ui(new Ui::LifeCfgDialog)
 {
     ui->setupUi(this);
 }
 
-Dialog::~Dialog()
+LifeCfgDialog::~LifeCfgDialog()
 {
     delete ui;
 }
 
-void Dialog::on_buttonBox_accepted()
+void LifeCfgDialog::on_buttonBox_accepted()
 {
     if (ui->lineEdit->text().isEmpty()) return;
 
@@ -29,7 +29,7 @@ void Dialog::on_buttonBox_accepted()
     dat = d.split(QChar('\n'),QString::SkipEmptyParts);
 }
 
-void Dialog::on_pushButton_clicked()
+void LifeCfgDialog::on_pushButton_clicked()
 {
     ui->lineEdit->setText(QFileDialog::getOpenFileName(this, tr("Import from"), "", tr("Life 1.05 Files [txt,lif,life] (*.txt *.lif *.life)")));
 }

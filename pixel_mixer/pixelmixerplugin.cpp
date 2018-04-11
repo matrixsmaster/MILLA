@@ -27,7 +27,7 @@ bool PixelMixerPlugin::finalize()
 void PixelMixerPlugin::showUI()
 {
     qDebug() << "[PixMix] Showing interface";
-    Dialog dlg;
+    PixMixCfgDialog dlg;
     once = dlg.exec();
     radius = dlg.getRadius();
 }

@@ -28,7 +28,7 @@ public:
     bool finalize();
 
     void showUI();
-    void setConfigCB(PlugConfCB cb)     {}
+    void setConfigCB(PlugConfCB)        {}
     void setProgressCB(ProgressCB)      {}
 
     QVariant getParam(QString key);

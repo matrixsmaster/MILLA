@@ -4,7 +4,7 @@
 #include <QDialog>
 
 namespace Ui {
-class Dialog;
+class SGUICfgDialog;
 }
 
 struct SGUIPluginGUIRec {
@@ -13,13 +13,13 @@ struct SGUIPluginGUIRec {
     bool valid = false;
 };
 
-class Dialog : public QDialog
+class SGUICfgDialog : public QDialog
 {
     Q_OBJECT
 
 public:
-    explicit Dialog(QWidget *parent = 0);
-    ~Dialog();
+    explicit SGUICfgDialog(QWidget *parent = 0);
+    ~SGUICfgDialog();
 
     SGUIPluginGUIRec getInfo();
 
@@ -29,7 +29,7 @@ private slots:
     void on_buttonBox_accepted();
 
 private:
-    Ui::Dialog *ui;
+    Ui::SGUICfgDialog *ui;
 };
 
 #endif // DIALOG_H

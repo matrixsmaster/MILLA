@@ -182,7 +182,7 @@ void MViewer::prepareLongProcessing(bool finish)
     flag_stop_load_everything = false;
 
     if (finish) {
-        QApplication::restoreOverrideCursor();
+        //QApplication::restoreOverrideCursor();
         loadingMovie->stop();
         if (loadingLabel) {
             ui->statusBar->removeWidget(loadingLabel);
@@ -191,7 +191,7 @@ void MViewer::prepareLongProcessing(bool finish)
         }
 
     } else {
-        QApplication::setOverrideCursor(Qt::WaitCursor);
+        //QApplication::setOverrideCursor(Qt::WaitCursor);
         loadingLabel = new QLabel(this);
         loadingLabel->setMovie(loadingMovie);
         ui->statusBar->insertWidget(1,loadingLabel);

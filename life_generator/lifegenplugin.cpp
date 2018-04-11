@@ -23,7 +23,7 @@ bool LifeGenPlugin::finalize()
 
 void LifeGenPlugin::showUI()
 {
-    Dialog dlg;
+    LifeCfgDialog dlg;
     if (dlg.exec()) text_life = dlg.getData();
     else text_life.clear();
 }

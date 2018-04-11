@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>Dialog</class>
- <widget class="QDialog" name="Dialog">
+ <class>SGUICfgDialog</class>
+ <widget class="QDialog" name="SGUICfgDialog">
   <property name="windowModality">
    <enum>Qt::ApplicationModal</enum>
   </property>
@@ -15,6 +15,10 @@
   </property>
   <property name="windowTitle">
    <string>SGUI settings</string>
+  </property>
+  <property name="windowIcon">
+   <iconset resource="../milla-view/milla-view.qrc">
+    <normaloff>:/milla.png</normaloff>:/milla.png</iconset>
   </property>
   <layout class="QVBoxLayout" name="verticalLayout">
    <item>
@@ -100,12 +104,14 @@
   </layout>
  </widget>
  <layoutdefault spacing="6" margin="11"/>
- <resources/>
+ <resources>
+  <include location="../milla-view/milla-view.qrc"/>
+ </resources>
  <connections>
   <connection>
    <sender>buttonBox</sender>
    <signal>accepted()</signal>
-   <receiver>Dialog</receiver>
+   <receiver>SGUICfgDialog</receiver>
    <slot>accept()</slot>
    <hints>
     <hint type="sourcelabel">
@@ -121,7 +127,7 @@
   <connection>
    <sender>buttonBox</sender>
    <signal>rejected()</signal>
-   <receiver>Dialog</receiver>
+   <receiver>SGUICfgDialog</receiver>
    <slot>reject()</slot>
    <hints>
     <hint type="sourcelabel">

@@ -1,14 +1,24 @@
 #include "dialog.h"
 #include "ui_dialog.h"
 
-Dialog::Dialog(QWidget *parent) :
+CamCfgDialog::CamCfgDialog(QWidget *parent) :
     QDialog(parent),
-    ui(new Ui::Dialog)
+    ui(new Ui::CamCfgDialog)
 {
     ui->setupUi(this);
 }
 
-Dialog::~Dialog()
+CamCfgDialog::~CamCfgDialog()
 {
     delete ui;
+}
+
+void CamCfgDialog::setMaxID(int n)
+{
+    ui->spinBox->setMaximum(n);
+}
+
+int CamCfgDialog::getID()
+{
+    return ui->spinBox->value();
 }

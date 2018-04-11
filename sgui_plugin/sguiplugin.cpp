@@ -45,7 +45,7 @@ void SGUIPlugin::cleanUp()
 
 void SGUIPlugin::showUI()
 {
-    Dialog dlg;
+    SGUICfgDialog dlg;
     if (dlg.exec()) {
         info = dlg.getInfo();
 

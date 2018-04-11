@@ -26,7 +26,8 @@ bool CameraPlugin::init()
         QFileInfo fi(nm);
         if (!fi.exists()) break;
     }
-    qDebug() << "[CAM] Total cameras count:" << maxcamnum;
+    qDebug() << "[CAMPlugin] Total cameras count:" << maxcamnum;
+    qDebug() << "[CAMPlugin] Init OK";
     return true;
 }
 
@@ -36,12 +37,16 @@ bool CameraPlugin::finalize()
         delete camera;
         camera = nullptr;
     }
+    qDebug() << "[CAMPlugin] Finalize OK";
     return true;
 }
 
 void CameraPlugin::showUI()
 {
-    //
+    CamCfgDialog dlg;
+    dlg.setMaxID(maxcamnum-1);
+    if (dlg.exec()) cameraidx = dlg.getID();
+    else cameraidx = 0;
 }
 
 QVariant CameraPlugin::getParam(QString key)
