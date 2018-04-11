@@ -1,12 +1,14 @@
 #include "cvhelper.h"
 #include "dbhelper.h"
 
+using namespace cv;
+
 CVHelper::~CVHelper()
 {
     facedetector.Finalize();
 }
 
-cv::Mat CVHelper::quickConvert(QImage &in) //FIXME: not always working
+Mat CVHelper::quickConvert(QImage &in) //FIXME: not always working
 {
     if (in.format() != QImage::Format_RGB888) {
         in = in.convertToFormat(QImage::Format_RGB888);
@@ -15,10 +17,8 @@ cv::Mat CVHelper::quickConvert(QImage &in) //FIXME: not always working
     return cv::Mat(in.size().height(),in.size().width(),CV_8UC3,in.bits());
 }
 
-cv::Mat CVHelper::slowConvert(QImage const &in)
+Mat CVHelper::slowConvert(QImage const &in)
 {
-    using namespace cv;
-
     QImage n;
     if (in.format() != QImage::Format_RGB888) {
         qDebug() << "converting";
@@ -38,7 +38,33 @@ cv::Mat CVHelper::slowConvert(QImage const &in)
     return r;
 }
 
-QByteArray CVHelper::storeMat(cv::Mat const &in)
+QImage CVHelper::quickConvertBack(Mat &in)
+{
+    QImage n(in.cols,in.rows,QImage::Format_RGBA8888);
+    if (in.type() != CV_8UC4) in.convertTo(in,CV_8UC4);
+    memcpy(n.bits(),in.ptr(),in.cols*in.rows*4);
+    return n;
+}
+
+QImage CVHelper::slowConvertBack(Mat &in)
+{
+    if (in.type() != CV_8UC3) in.convertTo(in,CV_8UC3);
+    QImage n(in.cols,in.rows,QImage::Format_RGB888);
+
+    uchar* frm = in.ptr();
+    for (int j,i = 0; i < n.height(); i++) {
+        uchar* ptr = n.scanLine(i);
+        for (j = 0; j < n.width(); j++,frm+=3) {
+            *ptr++ = frm[2];
+            *ptr++ = frm[1];
+            *ptr++ = frm[0];
+        }
+    }
+
+    return n;
+}
+
+QByteArray CVHelper::storeMat(Mat const &in)
 {
     QByteArray harr;
     harr.append((char*)&(in.cols),sizeof(in.cols));
@@ -58,9 +84,9 @@ QByteArray CVHelper::storeMat(cv::Mat const &in)
     return harr;
 }
 
-cv::Mat CVHelper::loadMat(QByteArray const &arr)
+Mat CVHelper::loadMat(QByteArray const &arr)
 {
-    cv::Mat res;
+    Mat res;
     const char* ptr = arr.constData();
     const int* iptr = (const int*)ptr;
     const size_t* uptr;
@@ -92,7 +118,6 @@ cv::Mat CVHelper::loadMat(QByteArray const &arr)
 
 MImageExtras CVHelper::collectImageExtraData(QString const &fn, QPixmap const &org)
 {
-    using namespace cv;
     MImageExtras res;
 
     //convert Pixmap into Mat

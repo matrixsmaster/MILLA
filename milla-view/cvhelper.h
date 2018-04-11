@@ -40,6 +40,10 @@ public:
 
     static cv::Mat slowConvert(QImage const &in);
 
+    static QImage quickConvertBack(cv::Mat &in);
+
+    static QImage slowConvertBack(cv::Mat &in);
+
     static QByteArray storeMat(cv::Mat const &in);
 
     static cv::Mat loadMat(QByteArray const &arr);
