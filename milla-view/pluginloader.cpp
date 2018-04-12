@@ -71,8 +71,32 @@ void MillaPluginLoader::updateSupportedFileFormats(QStringList &lst)
         if (i.second->isFileFormat()) {
             QVariant d(i.second->getParam("supported_formats"));
             if (!d.canConvert<QStringList>()) continue;
-            for (auto &j : d.value<QStringList>()) lst.push_back(j);
+            for (auto &j : d.value<QStringList>()) {
+                lst.push_back(j);
+                formats[i.second].push_back(j);
+            }
         }
+}
+
+bool MillaPluginLoader::openFileFormat(QString const &fn)
+{
+    QFileInfo fi(fn);
+    if (!fi.exists()) return false;
+    QString ext = fi.suffix().toLower();
+    auto fmt = std::find_if(formats.begin(),formats.end(),[ext] (auto const &l) { return l.second.contains(ext); });
+    if (fmt == formats.end()) return false;
+
+    MillaGenericPlugin* plug = fmt->first;
+    if (!plug->setParam("filename",fn) || !actions.count(plug->getPluginName())) return false;
+
+    QAction* act = actions.at(plug->getPluginName());
+    act->toggle();
+    pluginAction(plug->getPluginName(),act);
+    if (act->isCheckable() && !act->isChecked()) { //repeat action if it was disabled
+        act->toggle();
+        pluginAction(plug->getPluginName(),act);
+    }
+    return true;
 }
 
 void MillaPluginLoader::pluginAction(QString name, QAction* sender)

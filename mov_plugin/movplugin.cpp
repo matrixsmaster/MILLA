@@ -43,6 +43,7 @@ bool MovPlugin::setParam(QString key, QVariant val)
             clip.setFileName(clipfile.absoluteFilePath());
             if (clip.isValid()) {
                 clip.start();
+                qDebug() << "[MovPlugin] Clip started";
                 return true;
             } else {
                 qDebug() << "[MovPlugin] ALERT: Unable to load movie clip";
@@ -51,11 +52,13 @@ bool MovPlugin::setParam(QString key, QVariant val)
 
         } else if (!val.value<bool>() && clip.state() == QMovie::Running) {
             clip.stop();
+            qDebug() << "[MovPlugin] Clip stopped";
             return true;
         }
 
     } else if (key == "filename") {
         clipfile = QFileInfo(val.toString());
+        return true;
 
     }
     return false;
@@ -64,7 +67,7 @@ bool MovPlugin::setParam(QString key, QVariant val)
 QVariant MovPlugin::action(QVariant in)
 {
     if (in.isValid() && clip.isValid() && clip.state() == QMovie::Running) {
-        //
+        return clip.currentPixmap();
     }
     return QVariant();
 }

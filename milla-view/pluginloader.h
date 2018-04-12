@@ -60,6 +60,7 @@ private:
     std::map<QString,QAction*> actions;
     std::map<MillaGenericPlugin*,QTimer> timers;
     std::map<MillaGenericPlugin*,std::pair<QObjectPtr,QObjectPtr>> filters;
+    std::map<MillaGenericPlugin*,QStringList> formats;
 
     void pluginAction(QString name, QAction* sender);
     void pluginTimedOut(MillaGenericPlugin* plug);

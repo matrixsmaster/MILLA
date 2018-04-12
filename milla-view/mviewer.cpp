@@ -320,6 +320,8 @@ void MViewer::showSelectedImage()
     leftImageMetaUpdate();
     checkExtraCache();
 
+    qDebug() << "Opening as special file format: " << plugins.openFileFormat(current_l.filename);
+
     view_timer.start(20);
 }
 
