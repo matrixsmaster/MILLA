@@ -1230,6 +1230,7 @@ void MViewer::showGeneratedPicture(QPixmap const &in)
     current_r.fnshort = "Generated Picture";
     current_r.picture = in;
     current_r.loaded = true;
+    current_r.generated = true;
     current_r.valid = true;
 
     //and show it
@@ -1376,6 +1377,28 @@ void MViewer::on_lineEdit_2_textChanged(const QString &arg1)
     }
 }
 
+void MViewer::copyTagsetTo(QString const &fn)
+{
+    if (fn.isEmpty()) return;
+
+    MTagsCheckList lst = db.getFileTags(fn);
+    MTagCache out;
+
+    for (auto &j : lst) {
+        if (!std::get<2>(j)) continue;
+        out[std::get<0>(j)] = std::pair<unsigned,Qt::CheckState>(std::get<1>(j),Qt::Checked);
+    }
+
+    for (auto &j : tags_cache) {
+        if (j.second.second != Qt::Checked) continue;
+        if (!out.count(j.first)) db.updateTags(j.first,true); //increment tag counter
+        out[j.first] = j.second;
+    }
+
+    bool ok = db.updateFileTags(fn,out);
+    qDebug() << "[Tags] Applying to" << fn << ":" << ok;
+}
+
 void MViewer::on_actionApply_tagset_triggered()
 {
     ThumbnailModel* ptm = dynamic_cast<ThumbnailModel*>(ui->listView->model());
@@ -1385,23 +1408,7 @@ void MViewer::on_actionApply_tagset_triggered()
 
     prepareLongProcessing();
     for (auto &i : ptm->GetAllImages()) {
-        MTagsCheckList lst = db.getFileTags(i.filename);
-        MTagCache out;
-
-        for (auto &j : lst) {
-            if (!std::get<2>(j)) continue;
-            out[std::get<0>(j)] = std::pair<unsigned,Qt::CheckState>(std::get<1>(j),Qt::Checked);
-        }
-
-        for (auto &j : tags_cache) {
-            if (j.second.second != Qt::Checked) continue;
-            if (!out.count(j.first)) db.updateTags(j.first,true); //increment tag counter
-            out[j.first] = j.second;
-        }
-
-        bool ok = db.updateFileTags(i.filename,out);
-        qDebug() << "[Tags] Applying to" << i.filename << ":" << ok;
-
+        copyTagsetTo(i.filename);
         prg += dp;
         progressBar->setValue(floor(prg));
         QCoreApplication::processEvents();
@@ -1409,4 +1416,13 @@ void MViewer::on_actionApply_tagset_triggered()
     }
     prepareLongProcessing(true);
     ui->statusBar->showMessage("Finished setting tags");
+}
+
+void MViewer::on_actionApply_tagset_from_left_to_right_triggered()
+{
+    if (!current_l.valid || !current_r.valid || current_r.generated) return;
+    if (!db.isStatRecordExists(current_r.filename)) return;
+
+    copyTagsetTo(current_r.filename);
+    ui->statusBar->showMessage("Tags copied");
 }

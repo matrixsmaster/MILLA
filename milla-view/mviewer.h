@@ -28,7 +28,7 @@
 #include "mimpexpmodule.h"
 #include "mmatcher.h"
 
-#define MILLA_VERSION "ver. 0.3.4"
+#define MILLA_VERSION "ver. 0.3.5"
 #define MILLA_SITE "http://github.com/matrixsmaster/MILLA"
 #define MILLA_EXTRA_CACHE_SIZE 1500
 #define MILLA_SUPPRTED_FORMATS { "png", "jpg", "jpeg", "bmp" }
@@ -172,6 +172,8 @@ private slots:
 
     void on_actionApply_tagset_triggered();
 
+    void on_actionApply_tagset_from_left_to_right_triggered();
+
 private:
     Ui::MViewer *ui;
     DBHelper db;
@@ -256,6 +258,8 @@ private:
     void rotateImages(bool cw);
 
     void flipImages(bool vertical);
+
+    void copyTagsetTo(QString const &fn);
 };
 
 #endif // MVIEWER_H

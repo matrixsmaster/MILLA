@@ -2650,6 +2650,7 @@
     <addaction name="actionSanitize_DB"/>
     <addaction name="actionFind_duplicates"/>
     <addaction name="actionApply_tagset"/>
+    <addaction name="actionApply_tagset_from_left_to_right"/>
    </widget>
    <widget class="QMenu" name="menuHelp">
     <property name="title">
@@ -3116,6 +3117,14 @@
   <action name="actionApply_tagset">
    <property name="text">
     <string>Apply tagset to all loaded images</string>
+   </property>
+  </action>
+  <action name="actionApply_tagset_from_left_to_right">
+   <property name="text">
+    <string>Apply tagset from left to right</string>
+   </property>
+   <property name="shortcut">
+    <string>Shift+T</string>
    </property>
   </action>
  </widget>

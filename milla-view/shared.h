@@ -22,6 +22,7 @@ struct MImageListRecord {
     time_t touched = 0, filechanged = 0;
     bool loaded = false;
     bool modified = true;
+    bool generated = false;
     bool valid = false;
 };
 
