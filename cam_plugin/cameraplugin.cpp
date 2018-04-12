@@ -53,10 +53,6 @@ QVariant CameraPlugin::getParam(QString key)
 {
     if (key == "update_delay") {
         return int(floor(1000.f / (double)MILLA_CAMERA_FPS));
-
-    } else if (key == "use_config_cb") {
-        return false;
-
     }
     return QVariant();
 }

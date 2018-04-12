@@ -18,6 +18,7 @@ public:
 
     bool isFilter()         { return true; }
     bool isContinous()      { return false; }
+    bool isFileFormat()     { return false; }
 
     bool init();
     bool finalize();

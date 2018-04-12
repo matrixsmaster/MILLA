@@ -57,6 +57,7 @@ MViewer::MViewer(QWidget *parent) :
         QCoreApplication::processEvents();
         return !flag_stop_load_everything;
     });
+    plugins.updateSupportedFileFormats(supported);
 
     MMemoryModel* mmm = new MMemoryModel(ui->listView_4);
     ui->listView_4->setModel(mmm);
@@ -528,7 +529,10 @@ void MViewer::processArguments()
 
 void MViewer::on_actionOpen_triggered()
 {
-    QString fn = QFileDialog::getOpenFileName(this, tr("Open image and directory"), "", tr(MILLA_OPEN_FILE));
+    QString flt(MILLA_OPEN_FILE);
+    flt += " (*." + supported.join(" *.") + ")";
+
+    QString fn = QFileDialog::getOpenFileName(this, tr("Open image and directory"), "", flt);
     if (fn.isEmpty()) return;
 
     bool rec = QMessageBox::question(this, tr("Type of scan"), tr("Do recursive scan?"), QMessageBox::Yes | QMessageBox::No) == QMessageBox::Yes;

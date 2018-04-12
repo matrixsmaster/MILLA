@@ -45,6 +45,7 @@ void MillaPluginLoader::addPluginsToMenu(QMenu &m, ProgressCB pcb)
             break;
         }
 
+        actions[i.second->getPluginName()] = a;
         a->setToolTip(i.second->getPluginDesc());
         m.setToolTipsVisible(true);
         if (i.second->isContinous()) a->setCheckable(true);
@@ -62,6 +63,16 @@ QString MillaPluginLoader::listPlugins()
         out += QString::asprintf("%02d) %s: %s\n",n++,i.first.toStdString().c_str(),i.second->getPluginDesc().toStdString().c_str());
     }
     return out;
+}
+
+void MillaPluginLoader::updateSupportedFileFormats(QStringList &lst)
+{
+    for (auto &i : plugins)
+        if (i.second->isFileFormat()) {
+            QVariant d(i.second->getParam("supported_formats"));
+            if (!d.canConvert<QStringList>()) continue;
+            for (auto &j : d.value<QStringList>()) lst.push_back(j);
+        }
 }
 
 void MillaPluginLoader::pluginAction(QString name, QAction* sender)

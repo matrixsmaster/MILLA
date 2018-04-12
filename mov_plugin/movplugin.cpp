@@ -1,0 +1,70 @@
+#include <QDebug>
+#include "movplugin.h"
+
+MovPlugin::MovPlugin(QObject *parent) : QObject(parent)
+{
+}
+
+bool MovPlugin::init()
+{
+    qDebug() << "[MovPlugin] Supports" << clip.supportedFormats().join(", ");
+    qDebug() << "[MovPlugin] Init OK";
+    return true;
+}
+
+bool MovPlugin::finalize()
+{
+    qDebug() << "[MovPlugin] Finalize OK";
+    return true;
+}
+
+void MovPlugin::showUI()
+{
+}
+
+QVariant MovPlugin::getParam(QString key)
+{
+    if (key == "update_delay") {
+        return int(floor(1000.f / (double)MILLA_ANIMATION_FPS));
+
+    } else if (key == "supported_formats") {
+        QStringList out;
+        for (auto &i : clip.supportedFormats()) out.push_back(i);
+        return out;
+
+    }
+    return QVariant();
+}
+
+bool MovPlugin::setParam(QString key, QVariant val)
+{
+    if (key == "process_started") {
+        if (val.value<bool>() && clipfile.exists()) {
+            clip.setFileName(clipfile.absoluteFilePath());
+            if (clip.isValid()) {
+                clip.start();
+                return true;
+            } else {
+                qDebug() << "[MovPlugin] ALERT: Unable to load movie clip";
+                return false;
+            }
+
+        } else if (!val.value<bool>() && clip.state() == QMovie::Running) {
+            clip.stop();
+            return true;
+        }
+
+    } else if (key == "filename") {
+        clipfile = QFileInfo(val.toString());
+
+    }
+    return false;
+}
+
+QVariant MovPlugin::action(QVariant in)
+{
+    if (in.isValid() && clip.isValid() && clip.state() == QMovie::Running) {
+        //
+    }
+    return QVariant();
+}
