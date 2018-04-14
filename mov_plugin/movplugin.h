@@ -16,7 +16,7 @@ class MovPlugin : public QObject, public MillaGenericPlugin
 
 public:
     MovPlugin(QObject *parent = 0);
-    virtual ~MovPlugin() {}
+    virtual ~MovPlugin();
 
     QString getPluginName() { return "SilentMovie"; }
     QString getPluginDesc() { return "A silent animated clip player."; }
@@ -39,7 +39,7 @@ public:
 
 private:
     QFileInfo clipfile;
-    QMovie clip;
+    QMovie* clip = nullptr;
 };
 
 #endif // MOVPLUGIN_H
