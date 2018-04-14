@@ -26,7 +26,8 @@ SOURCES += main.cpp\
     pluginloader.cpp \
     dbhelper.cpp \
     mmatcher.cpp \
-    mmemorymodel.cpp
+    mmemorymodel.cpp \
+    mimageops.cpp
 
 HEADERS  += mviewer.h \
     thumbnailmodel.h \
@@ -44,7 +45,8 @@ HEADERS  += mviewer.h \
     dbhelper.h \
     mmatcher.h \
     shared.h \
-    mmemorymodel.h
+    mmemorymodel.h \
+    mimageops.h
 
 FORMS    += mviewer.ui \
     searchform.ui \

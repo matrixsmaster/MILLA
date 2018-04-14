@@ -27,8 +27,9 @@
 #include "exportform.h"
 #include "mimpexpmodule.h"
 #include "mmatcher.h"
+#include "mimageops.h"
 
-#define MILLA_VERSION "ver. 0.3.6"
+#define MILLA_VERSION "ver. 0.3.7"
 #define MILLA_SITE "http://github.com/matrixsmaster/MILLA"
 #define MILLA_EXTRA_CACHE_SIZE 1500
 #define MILLA_SUPPRTED_FORMATS { "png", "jpg", "jpeg", "bmp" }
@@ -173,6 +174,8 @@ private slots:
     void on_actionApply_tagset_triggered();
 
     void on_actionApply_tagset_from_left_to_right_triggered();
+
+    void on_actionConcatenate_triggered();
 
 private:
     Ui::MViewer *ui;

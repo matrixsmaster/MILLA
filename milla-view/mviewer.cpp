@@ -319,6 +319,7 @@ void MViewer::showSelectedImage()
     scaleImage(current_l,ui->scrollArea,ui->label,ui->label_3,1);
     leftImageMetaUpdate();
     checkExtraCache();
+    ui->lineEdit_2->clear();
 
     qDebug() << "Opening as special file format: " << plugins.openFileFormat(current_l.filename);
 
@@ -1223,7 +1224,7 @@ void MViewer::on_actionFind_duplicates_triggered()
 
 void MViewer::showGeneratedPicture(QPixmap const &in)
 {
-    if (in.isNull()) return; //skip of no result were given
+    if (in.isNull()) return; //skip if no input were given
 
     //set current right image to generated one
     current_r = MImageListRecord();
@@ -1425,4 +1426,9 @@ void MViewer::on_actionApply_tagset_from_left_to_right_triggered()
 
     copyTagsetTo(current_r.filename);
     ui->statusBar->showMessage("Tags copied");
+}
+
+void MViewer::on_actionConcatenate_triggered()
+{
+    showGeneratedPicture(MImageOps::concatenate(current_l.picture,current_r.picture));
 }

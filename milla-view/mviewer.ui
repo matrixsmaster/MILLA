@@ -1327,6 +1327,11 @@
                 </item>
                </layout>
               </widget>
+              <widget class="QWidget" name="tab_4">
+               <attribute name="title">
+                <string>Story</string>
+               </attribute>
+              </widget>
              </widget>
             </item>
            </layout>
@@ -2489,6 +2494,19 @@
               <item>
                <widget class="QLineEdit" name="lineEdit_2"/>
               </item>
+              <item>
+               <widget class="QPushButton" name="pushButton_3">
+                <property name="maximumSize">
+                 <size>
+                  <width>32</width>
+                  <height>16777215</height>
+                 </size>
+                </property>
+                <property name="text">
+                 <string>X</string>
+                </property>
+               </widget>
+              </item>
              </layout>
             </widget>
            </item>
@@ -2596,6 +2614,7 @@
     <addaction name="actionZoom_in"/>
     <addaction name="actionZoom_out"/>
     <addaction name="actionReset_zoom"/>
+    <addaction name="actionConcatenate"/>
     <addaction name="separator"/>
     <addaction name="menuPreferences"/>
    </widget>
@@ -3127,6 +3146,11 @@
     <string>Shift+T</string>
    </property>
   </action>
+  <action name="actionConcatenate">
+   <property name="text">
+    <string>Concatenate</string>
+   </property>
+  </action>
  </widget>
  <layoutdefault spacing="6" margin="11"/>
  <customwidgets>
@@ -3139,7 +3163,24 @@
  <resources>
   <include location="milla-view.qrc"/>
  </resources>
- <connections/>
+ <connections>
+  <connection>
+   <sender>pushButton_3</sender>
+   <signal>clicked()</signal>
+   <receiver>lineEdit_2</receiver>
+   <slot>clear()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>939</x>
+     <y>511</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>882</x>
+     <y>511</y>
+    </hint>
+   </hints>
+  </connection>
+ </connections>
  <designerdata>
   <property name="gridDeltaX">
    <number>10</number>
