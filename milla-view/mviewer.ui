@@ -666,7 +666,7 @@
                         <x>0</x>
                         <y>0</y>
                         <width>297</width>
-                        <height>365</height>
+                        <height>336</height>
                        </rect>
                       </property>
                       <layout class="QHBoxLayout" name="horizontalLayout_12">
@@ -1197,7 +1197,7 @@
                         <x>0</x>
                         <y>0</y>
                         <width>302</width>
-                        <height>365</height>
+                        <height>336</height>
                        </rect>
                       </property>
                       <layout class="QHBoxLayout" name="horizontalLayout_11">
@@ -1331,6 +1331,77 @@
                <attribute name="title">
                 <string>Story</string>
                </attribute>
+               <layout class="QHBoxLayout" name="horizontalLayout_19">
+                <item>
+                 <layout class="QVBoxLayout" name="verticalLayout_5">
+                  <property name="spacing">
+                   <number>2</number>
+                  </property>
+                  <item>
+                   <widget class="QPushButton" name="pushButton_4">
+                    <property name="text">
+                     <string>&lt;&lt; Prev</string>
+                    </property>
+                   </widget>
+                  </item>
+                  <item>
+                   <widget class="QPushButton" name="pushButton_9">
+                    <property name="text">
+                     <string>Clear</string>
+                    </property>
+                   </widget>
+                  </item>
+                  <item>
+                   <widget class="QPushButton" name="pushButton_5">
+                    <property name="text">
+                     <string>Insert before</string>
+                    </property>
+                   </widget>
+                  </item>
+                 </layout>
+                </item>
+                <item>
+                 <layout class="QVBoxLayout" name="verticalLayout_7">
+                  <property name="spacing">
+                   <number>2</number>
+                  </property>
+                  <item>
+                   <widget class="QLineEdit" name="lineEdit_3"/>
+                  </item>
+                  <item>
+                   <widget class="QPlainTextEdit" name="plainTextEdit_2"/>
+                  </item>
+                 </layout>
+                </item>
+                <item>
+                 <layout class="QVBoxLayout" name="verticalLayout_6">
+                  <property name="spacing">
+                   <number>2</number>
+                  </property>
+                  <item>
+                   <widget class="QPushButton" name="pushButton_6">
+                    <property name="text">
+                     <string>Next &gt;&gt;</string>
+                    </property>
+                   </widget>
+                  </item>
+                  <item>
+                   <widget class="QPushButton" name="pushButton_8">
+                    <property name="text">
+                     <string>Save</string>
+                    </property>
+                   </widget>
+                  </item>
+                  <item>
+                   <widget class="QPushButton" name="pushButton_7">
+                    <property name="text">
+                     <string>Insert after</string>
+                    </property>
+                   </widget>
+                  </item>
+                 </layout>
+                </item>
+               </layout>
               </widget>
              </widget>
             </item>
@@ -2601,6 +2672,7 @@
       <string>Preferences</string>
      </property>
      <addaction name="actionHotkeys_enabled"/>
+     <addaction name="actionEdit_both_images"/>
     </widget>
     <addaction name="actionLink_left_to_right"/>
     <addaction name="actionLink_bidirectional"/>
@@ -3149,6 +3221,17 @@
   <action name="actionConcatenate">
    <property name="text">
     <string>Concatenate</string>
+   </property>
+  </action>
+  <action name="actionEdit_both_images">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Edit both images</string>
    </property>
   </action>
  </widget>

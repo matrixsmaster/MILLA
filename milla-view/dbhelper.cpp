@@ -101,6 +101,8 @@ QString DBHelper::getCanonicalPath(QString const &fn)
 
 QByteArray DBHelper::getSHA256(QString const &fn, qint64* size)
 {
+    if (fn.isEmpty()) return QByteArray();
+
     QCryptographicHash hash(QCryptographicHash::Sha256);
     QByteArray shasum;
     QFile mfile(fn);
@@ -159,14 +161,19 @@ bool DBHelper::updateThumbnail(MImageListRecord &rec, QByteArray const &png)
 
 bool DBHelper::isStatRecordExists(QString const &fn)
 {
+    if (fn.isEmpty()) return false;
+
     QSqlQuery q;
     q.prepare("SELECT views FROM stats WHERE file = (:fn)");
     q.bindValue(":fn",fn);
+
     return (q.exec() && q.next());
 }
 
 bool DBHelper::updateStatRecord(QString const &fn, MImageExtras &rec, bool update)
 {
+    if (fn.isEmpty()) return false;
+
     int fcn = 0;
     QString fcdat;
     for (auto &i : rec.rois)
@@ -201,6 +208,8 @@ bool DBHelper::updateStatRecord(QString const &fn, MImageExtras &rec, bool updat
 MImageExtras DBHelper::getExtrasFromDB(QString const &fn)
 {
     MImageExtras res;
+    if (fn.isEmpty()) return res;
+
     QSqlQuery q;
     q.prepare("SELECT sizex, sizey, grayscale, faces, facerects, hist, sha256, length FROM stats WHERE file = :fn");
     q.bindValue(":fn",fn);
@@ -231,6 +240,8 @@ MImageExtras DBHelper::getExtrasFromDB(QString const &fn)
 
 time_t DBHelper::getLastViewTime(QString const &fn)
 {
+    if (fn.isEmpty()) return time(NULL);
+
     QSqlQuery q;
     q.prepare("SELECT lastview FROM stats WHERE file = :fn");
     q.bindValue(":fn",fn);
@@ -240,6 +251,8 @@ time_t DBHelper::getLastViewTime(QString const &fn)
 
 bool DBHelper::insertTag(QString const &ntag, unsigned &key)
 {
+    if (ntag.isEmpty()) return false;
+
     QSqlQuery q;
     q.prepare("SELECT * FROM tags WHERE tag = (:tg)");
     q.bindValue(":tg",ntag);
@@ -280,6 +293,7 @@ int DBHelper::getFileRating(QString const &fn)
 
 bool DBHelper::updateFileRating(QString const &fn, int n)
 {
+    if (fn.isEmpty()) return false;
     if (n < 0) n = 0;
     if (n > 5) n = 5;
 
@@ -295,6 +309,9 @@ bool DBHelper::updateFileRating(QString const &fn, int n)
 
 unsigned DBHelper::getFileViews(QString const &fn, bool &ok)
 {
+    ok = false;
+    if (fn.isEmpty()) return 0;
+
     QSqlQuery q;
     q.prepare("SELECT views FROM stats WHERE file = (:fn)");
     q.bindValue(":fn",fn);
@@ -308,6 +325,8 @@ unsigned DBHelper::getFileViews(QString const &fn, bool &ok)
 
 bool DBHelper::updateFileViews(QString const &fn, unsigned n)
 {
+    if (fn.isEmpty()) return false;
+
     QSqlQuery q;
     q.prepare("UPDATE stats SET views = :v, lastview = :tm WHERE file = :fn");
     q.bindValue(":v",n);
@@ -347,6 +366,8 @@ MTagsCheckList DBHelper::getFileTags(QString const &fn)
 
 bool DBHelper::updateTags(QString const &tag, bool checked)
 {
+    if (tag.isEmpty()) return false;
+
     QSqlQuery q;
     q.prepare("SELECT rating FROM tags WHERE tag = :tg");
     q.bindValue(":tg",tag);
@@ -371,6 +392,8 @@ bool DBHelper::updateTags(QString const &tag, bool checked)
 
 bool DBHelper::updateFileTags(QString const &fn, MTagCache const &cache)
 {
+    if (fn.isEmpty()) return false;
+
     QString tgs;
     int ntg = 0;
     for (auto &i : cache)
@@ -392,6 +415,8 @@ bool DBHelper::updateFileTags(QString const &fn, MTagCache const &cache)
 
 int DBHelper::updateFileKudos(QString const &fn, int delta)
 {
+    if (fn.isEmpty()) return 0;
+
     int n = delta;
     QSqlQuery q;
     q.prepare("SELECT likes FROM stats WHERE file = :fn");
@@ -416,6 +441,8 @@ int DBHelper::updateFileKudos(QString const &fn, int delta)
 
 QString DBHelper::getFileNotes(QString const &fn)
 {
+    if (fn.isEmpty()) return QString();
+
     QSqlQuery q;
     q.prepare("SELECT notes FROM stats WHERE file = :fn");
     q.bindValue(":fn",fn);
@@ -425,6 +452,8 @@ QString DBHelper::getFileNotes(QString const &fn)
 
 bool DBHelper::updateFileNotes(QString const &fn, QString &notes)
 {
+    if (fn.isEmpty()) return false;
+
     QSqlQuery q;
     q.prepare("UPDATE stats SET notes = :nt WHERE file = :fn");
     q.bindValue(":nt",notes);
@@ -630,6 +659,7 @@ QStringList DBHelper::getAllFiles()
 bool DBHelper::removeFile(QString const &fn)
 {
     QSqlQuery q;
+    if (fn.isEmpty()) return false;
 
     //remove it from stats table...
     q.prepare("DELETE FROM stats WHERE file = :fn");

@@ -13,7 +13,7 @@ QPixmap MImageOps::concatenate(QPixmap const &a, QPixmap const &b)
     QSize rs(a.size().width()+b.size().width(), std::max(a.size().height(),b.size().height()));
     QPixmap op_a = a.scaledToHeight(rs.height(),Qt::SmoothTransformation);
     QPixmap op_b = b.scaledToHeight(rs.height(),Qt::SmoothTransformation);
-    rs.setWidth(op_a.size().width() + op_b.size().height());
+    rs.setWidth(op_a.size().width() + op_b.size().width());
 
     QImage res(rs,QImage::Format_RGB32);
     QPainter p(&res);

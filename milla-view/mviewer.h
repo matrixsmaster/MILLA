@@ -29,7 +29,7 @@
 #include "mmatcher.h"
 #include "mimageops.h"
 
-#define MILLA_VERSION "ver. 0.3.7"
+#define MILLA_VERSION "ver. 0.3.8"
 #define MILLA_SITE "http://github.com/matrixsmaster/MILLA"
 #define MILLA_EXTRA_CACHE_SIZE 1500
 #define MILLA_SUPPRTED_FORMATS { "png", "jpg", "jpeg", "bmp" }
@@ -38,10 +38,23 @@
 #define MILLA_MAXMATCH_RESULTS 10
 #define MILLA_MAXTAG_RESULTS 300
 #define MILLA_MAX_RECENT_DIRS 10
+#define MILLA_SCALE_UP 1.1
+#define MILLA_SCALE_DOWN 0.9
 
 struct MHistory {
     QStringList files;
     QStringList::iterator cur;
+};
+
+struct MMacroRecord {
+    enum {
+        FlipVertical,
+        FlipHorizontal,
+        RotateCW,
+        RotateCCW,
+        //
+    } action;
+    MImageListRecord left, right;
 };
 
 namespace Ui {
@@ -264,5 +277,7 @@ private:
 
     void copyTagsetTo(QString const &fn);
 };
+
+#define SHORT_RIGHT_EDITABLE current_r.valid && ui->actionEdit_both_images->isChecked()
 
 #endif // MVIEWER_H

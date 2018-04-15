@@ -70,7 +70,7 @@ MViewer::MViewer(QWidget *parent) :
         if (!a) break;
         a->setShortcut(QKeySequence(QString::asprintf("F%d",i+1)));
         connect(a,&QAction::triggered,this,[i,mmm,this] {
-            if (this->current_l.valid) {
+            if (this->current_l.valid && !this->current_l.generated) {
                 mmm->setSlot(i,this->current_l);
                 ui->tabWidget->setCurrentIndex(3);
             }
@@ -372,6 +372,7 @@ unsigned MViewer::incViews(bool left)
 {
     if ((left && !current_l.valid) || (!left && !current_r.valid)) return 0;
     QString fn = (left? current_l : current_r).filename;
+    if (fn.isEmpty()) return 0;
     qDebug() << "Incrementing views counter for " << fn;
 
     bool ok;
@@ -398,7 +399,7 @@ unsigned MViewer::incViews(bool left)
 
 void MViewer::leftImageMetaUpdate()
 {
-    if (current_l.valid) {
+    if (current_l.valid && !current_l.generated) {
         updateTags(current_l.filename);
         updateStars(current_l.filename);
         if (ui->actionShow_linked_image->isChecked())
@@ -658,7 +659,7 @@ void MViewer::on_listWidget_itemClicked(QListWidgetItem *item)
         return;
     }
 
-    if (!current_l.valid) {
+    if (!current_l.valid || current_l.generated) {
         //revert change
         item->setCheckState(Qt::Unchecked);
         return;
@@ -806,7 +807,7 @@ void MViewer::on_actionQuit_triggered()
 
 void MViewer::on_actionLink_left_to_right_triggered()
 {
-    if (!current_l.valid || !current_r.valid) return;
+    if (!current_l.valid || !current_r.valid || current_l.generated || current_r.generated) return;
 
     MImageExtras extl = getExtraCacheLine(current_l.filename);
     MImageExtras extr = getExtraCacheLine(current_r.filename);
@@ -852,7 +853,7 @@ void MViewer::on_actionAbout_triggered()
 
 void MViewer::on_pushButton_2_clicked()
 {
-    if (current_l.valid)
+    if (current_l.valid && !current_l.generated)
         db.updateFileNotes(current_l.filename,ui->plainTextEdit->toPlainText().replace('\"','\''));
 }
 
@@ -869,7 +870,7 @@ void MViewer::on_actionKudos_to_right_image_triggered()
 void MViewer::kudos(MImageListRecord const &to, int delta)
 {
     ui->lcdNumber_2->display(0);
-    if (!to.valid) return;
+    if (!to.valid || to.generated) return;
     ui->lcdNumber_2->display(db.updateFileKudos(to.filename,delta));
 }
 
@@ -1313,7 +1314,7 @@ void MViewer::rotateImages(bool cw)
         current_l.picture = QPixmap::fromImage(current_l.picture.toImage().transformed(rotmat));
         scaleImage(current_l,ui->scrollArea,ui->label,ui->label_3,1);
     }
-    if (current_r.valid) {
+    if (SHORT_RIGHT_EDITABLE) {
         current_r.picture = QPixmap::fromImage(current_r.picture.toImage().transformed(rotmat));
         scaleImage(current_r,ui->scrollArea_2,ui->label_2,ui->label_4,1);
     }
@@ -1335,7 +1336,7 @@ void MViewer::flipImages(bool vertical)
         current_l.picture = QPixmap::fromImage(current_l.picture.toImage().mirrored(!vertical,vertical));
         scaleImage(current_l,ui->scrollArea,ui->label,ui->label_3,1);
     }
-    if (current_r.valid) {
+    if (SHORT_RIGHT_EDITABLE) {
         current_r.picture = QPixmap::fromImage(current_r.picture.toImage().mirrored(!vertical,vertical));
         scaleImage(current_r,ui->scrollArea_2,ui->label_2,ui->label_4,1);
     }
@@ -1343,21 +1344,21 @@ void MViewer::flipImages(bool vertical)
 
 void MViewer::on_actionZoom_in_triggered()
 {
-    if (current_l.valid) scaleImage(current_l,ui->scrollArea,ui->label,ui->label_3,1.1);
-    if (current_r.valid) scaleImage(current_r,ui->scrollArea_2,ui->label_2,ui->label_4,1.1);
+    if (current_l.valid) scaleImage(current_l,ui->scrollArea,ui->label,ui->label_3,MILLA_SCALE_UP);
+    if (SHORT_RIGHT_EDITABLE) scaleImage(current_r,ui->scrollArea_2,ui->label_2,ui->label_4,MILLA_SCALE_UP);
 }
 
 void MViewer::on_actionZoom_out_triggered()
 {
-    if (current_l.valid) scaleImage(current_l,ui->scrollArea,ui->label,ui->label_3,0.9);
-    if (current_r.valid) scaleImage(current_r,ui->scrollArea_2,ui->label_2,ui->label_4,0.9);
+    if (current_l.valid) scaleImage(current_l,ui->scrollArea,ui->label,ui->label_3,MILLA_SCALE_DOWN);
+    if (SHORT_RIGHT_EDITABLE) scaleImage(current_r,ui->scrollArea_2,ui->label_2,ui->label_4,MILLA_SCALE_DOWN);
 }
 
 void MViewer::on_actionReset_zoom_triggered()
 {
     scaleFactor = 1;
     if (current_l.valid) scaleImage(current_l,ui->scrollArea,ui->label,ui->label_3,1);
-    if (current_r.valid) scaleImage(current_r,ui->scrollArea_2,ui->label_2,ui->label_4,1);
+    if (SHORT_RIGHT_EDITABLE) scaleImage(current_r,ui->scrollArea_2,ui->label_2,ui->label_4,1);
 }
 
 void MViewer::on_actionClear_all_triggered()
@@ -1403,7 +1404,7 @@ void MViewer::copyTagsetTo(QString const &fn)
 void MViewer::on_actionApply_tagset_triggered()
 {
     ThumbnailModel* ptm = dynamic_cast<ThumbnailModel*>(ui->listView->model());
-    if (!current_l.valid || !ptm) return;
+    if (!current_l.valid || current_l.generated || !ptm) return;
 
     double prg = 0, dp = 100.f / (double)(ptm->GetAllImages().size());
 
