@@ -29,7 +29,7 @@
 #include "mmatcher.h"
 #include "mimageops.h"
 
-#define MILLA_VERSION "ver. 0.3.8"
+#define MILLA_VERSION "ver. 0.3.10"
 #define MILLA_SITE "http://github.com/matrixsmaster/MILLA"
 #define MILLA_EXTRA_CACHE_SIZE 1500
 #define MILLA_SUPPRTED_FORMATS { "png", "jpg", "jpeg", "bmp" }
@@ -44,17 +44,6 @@
 struct MHistory {
     QStringList files;
     QStringList::iterator cur;
-};
-
-struct MMacroRecord {
-    enum {
-        FlipVertical,
-        FlipHorizontal,
-        RotateCW,
-        RotateCCW,
-        //
-    } action;
-    MImageListRecord left, right;
 };
 
 namespace Ui {
@@ -190,6 +179,12 @@ private slots:
 
     void on_actionConcatenate_triggered();
 
+    void on_pushButton_9_clicked();
+
+    void on_pushButton_4_clicked();
+
+    void on_pushButton_6_clicked();
+
 private:
     Ui::MViewer *ui;
     DBHelper db;
@@ -212,6 +207,7 @@ private:
     MTagCache tags_cache;
     MHistory history;
     std::map<QAction*,QKeySequence> hotkeys;
+    MImageOps a_story;
 
     void cleanUp();
 
@@ -271,13 +267,9 @@ private:
 
     void loadRecentEntry(QString const &entry);
 
-    void rotateImages(bool cw);
-
-    void flipImages(bool vertical);
-
     void copyTagsetTo(QString const &fn);
-};
 
-#define SHORT_RIGHT_EDITABLE current_r.valid && ui->actionEdit_both_images->isChecked()
+    void updateStory(QPixmap const &result);
+};
 
 #endif // MVIEWER_H

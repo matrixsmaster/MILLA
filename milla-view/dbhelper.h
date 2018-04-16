@@ -9,6 +9,7 @@
 #include <QDir>
 #include <QSplitter>
 #include <QMenu>
+#include <ctime>
 #include "db_format.h"
 #include "shared.h"
 #include "cvhelper.h"

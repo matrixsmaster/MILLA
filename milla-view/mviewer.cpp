@@ -492,6 +492,7 @@ void MViewer::postOpen(QString const &fileName, bool isDir)
     db.addRecentDir(fileName,isDir);
     db.readRecentDirs(ui->menuRecent_dirs,MILLA_MAX_RECENT_DIRS,[this] (auto s) { this->loadRecentEntry(s); });
     on_actionDescending_triggered();
+    a_story.clear();
 }
 
 void MViewer::processArguments()
@@ -1295,70 +1296,49 @@ void MViewer::loadRecentEntry(QString const &entry)
     else openDirByList(entry);
 }
 
+void MViewer::updateStory(QPixmap const &result)
+{
+    showGeneratedPicture(result);
+    ui->label_6->setText(QString::asprintf("Step %d/%d",a_story.position()+1,a_story.size()));
+}
+
 void MViewer::on_actionRotate_90_CW_triggered()
 {
-    rotateImages(true);
+    updateStory(a_story.rotate(current_l,true));
 }
 
 void MViewer::on_actionRotate_90_CCW_triggered()
 {
-    rotateImages(false);
-}
-
-void MViewer::rotateImages(bool cw)
-{
-    QTransform rotmat;
-    rotmat.rotate(cw? 90 : -90);
-
-    if (current_l.valid) {
-        current_l.picture = QPixmap::fromImage(current_l.picture.toImage().transformed(rotmat));
-        scaleImage(current_l,ui->scrollArea,ui->label,ui->label_3,1);
-    }
-    if (SHORT_RIGHT_EDITABLE) {
-        current_r.picture = QPixmap::fromImage(current_r.picture.toImage().transformed(rotmat));
-        scaleImage(current_r,ui->scrollArea_2,ui->label_2,ui->label_4,1);
-    }
+    updateStory(a_story.rotate(current_l,false));
 }
 
 void MViewer::on_actionFlip_vertical_triggered()
 {
-    flipImages(true);
+    updateStory(a_story.flip(current_l,true));
 }
 
 void MViewer::on_actionFlip_horizontal_triggered()
 {
-    flipImages(false);
-}
-
-void MViewer::flipImages(bool vertical)
-{
-    if (current_l.valid) {
-        current_l.picture = QPixmap::fromImage(current_l.picture.toImage().mirrored(!vertical,vertical));
-        scaleImage(current_l,ui->scrollArea,ui->label,ui->label_3,1);
-    }
-    if (SHORT_RIGHT_EDITABLE) {
-        current_r.picture = QPixmap::fromImage(current_r.picture.toImage().mirrored(!vertical,vertical));
-        scaleImage(current_r,ui->scrollArea_2,ui->label_2,ui->label_4,1);
-    }
+    updateStory(a_story.flip(current_l,false));
 }
 
 void MViewer::on_actionZoom_in_triggered()
 {
     if (current_l.valid) scaleImage(current_l,ui->scrollArea,ui->label,ui->label_3,MILLA_SCALE_UP);
-    if (SHORT_RIGHT_EDITABLE) scaleImage(current_r,ui->scrollArea_2,ui->label_2,ui->label_4,MILLA_SCALE_UP);
+    if (current_r.valid) scaleImage(current_r,ui->scrollArea_2,ui->label_2,ui->label_4,MILLA_SCALE_UP);
 }
 
 void MViewer::on_actionZoom_out_triggered()
 {
     if (current_l.valid) scaleImage(current_l,ui->scrollArea,ui->label,ui->label_3,MILLA_SCALE_DOWN);
-    if (SHORT_RIGHT_EDITABLE) scaleImage(current_r,ui->scrollArea_2,ui->label_2,ui->label_4,MILLA_SCALE_DOWN);
+    if (current_r.valid) scaleImage(current_r,ui->scrollArea_2,ui->label_2,ui->label_4,MILLA_SCALE_DOWN);
 }
 
 void MViewer::on_actionReset_zoom_triggered()
 {
     scaleFactor = 1;
     if (current_l.valid) scaleImage(current_l,ui->scrollArea,ui->label,ui->label_3,1);
-    if (SHORT_RIGHT_EDITABLE) scaleImage(current_r,ui->scrollArea_2,ui->label_2,ui->label_4,1);
+    if (current_r.valid) scaleImage(current_r,ui->scrollArea_2,ui->label_2,ui->label_4,1);
 }
 
 void MViewer::on_actionClear_all_triggered()
@@ -1431,5 +1411,23 @@ void MViewer::on_actionApply_tagset_from_left_to_right_triggered()
 
 void MViewer::on_actionConcatenate_triggered()
 {
-    showGeneratedPicture(MImageOps::concatenate(current_l.picture,current_r.picture));
+    updateStory(a_story.concatenate(current_l,current_r));
+}
+
+void MViewer::on_pushButton_9_clicked()
+{
+    a_story.clear();
+    ui->label_6->setText("Step 0/0");
+    ui->lineEdit_3->clear();
+    ui->plainTextEdit_2->clear();
+}
+
+void MViewer::on_pushButton_4_clicked()
+{
+    updateStory(a_story.previous());
+}
+
+void MViewer::on_pushButton_6_clicked()
+{
+    updateStory(a_story.next());
 }

@@ -665,8 +665,8 @@
                        <rect>
                         <x>0</x>
                         <y>0</y>
-                        <width>297</width>
-                        <height>336</height>
+                        <width>322</width>
+                        <height>334</height>
                        </rect>
                       </property>
                       <layout class="QHBoxLayout" name="horizontalLayout_12">
@@ -1196,8 +1196,8 @@
                        <rect>
                         <x>0</x>
                         <y>0</y>
-                        <width>302</width>
-                        <height>336</height>
+                        <width>327</width>
+                        <height>334</height>
                        </rect>
                       </property>
                       <layout class="QHBoxLayout" name="horizontalLayout_11">
@@ -1331,7 +1331,7 @@
                <attribute name="title">
                 <string>Story</string>
                </attribute>
-               <layout class="QHBoxLayout" name="horizontalLayout_19">
+               <layout class="QHBoxLayout" name="horizontalLayout_20">
                 <item>
                  <layout class="QVBoxLayout" name="verticalLayout_5">
                   <property name="spacing">
@@ -1366,7 +1366,28 @@
                    <number>2</number>
                   </property>
                   <item>
-                   <widget class="QLineEdit" name="lineEdit_3"/>
+                   <layout class="QHBoxLayout" name="horizontalLayout_19">
+                    <property name="spacing">
+                     <number>4</number>
+                    </property>
+                    <item>
+                     <widget class="QLabel" name="label_7">
+                      <property name="text">
+                       <string>Story name</string>
+                      </property>
+                     </widget>
+                    </item>
+                    <item>
+                     <widget class="QLineEdit" name="lineEdit_3"/>
+                    </item>
+                    <item>
+                     <widget class="QLabel" name="label_6">
+                      <property name="text">
+                       <string>Step 0/0</string>
+                      </property>
+                     </widget>
+                    </item>
+                   </layout>
                   </item>
                   <item>
                    <widget class="QPlainTextEdit" name="plainTextEdit_2"/>
@@ -2672,7 +2693,6 @@
       <string>Preferences</string>
      </property>
      <addaction name="actionHotkeys_enabled"/>
-     <addaction name="actionEdit_both_images"/>
     </widget>
     <addaction name="actionLink_left_to_right"/>
     <addaction name="actionLink_bidirectional"/>
@@ -3221,17 +3241,6 @@
   <action name="actionConcatenate">
    <property name="text">
     <string>Concatenate</string>
-   </property>
-  </action>
-  <action name="actionEdit_both_images">
-   <property name="checkable">
-    <bool>true</bool>
-   </property>
-   <property name="checked">
-    <bool>true</bool>
-   </property>
-   <property name="text">
-    <string>Edit both images</string>
    </property>
   </action>
  </widget>
