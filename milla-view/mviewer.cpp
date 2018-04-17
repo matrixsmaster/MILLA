@@ -492,7 +492,7 @@ void MViewer::postOpen(QString const &fileName, bool isDir)
     db.addRecentDir(fileName,isDir);
     db.readRecentDirs(ui->menuRecent_dirs,MILLA_MAX_RECENT_DIRS,[this] (auto s) { this->loadRecentEntry(s); });
     on_actionDescending_triggered();
-    a_story.clear();
+    on_pushButton_9_clicked();
 }
 
 void MViewer::processArguments()
@@ -1299,7 +1299,8 @@ void MViewer::loadRecentEntry(QString const &entry)
 void MViewer::updateStory(QPixmap const &result)
 {
     showGeneratedPicture(result);
-    ui->label_6->setText(QString::asprintf("Step %d/%d",a_story.position()+1,a_story.size()));
+    ui->label_6->setText(QString::asprintf("Step %d/%d",a_story.position(),a_story.size()));
+    ui->plainTextEdit_2->setPlainText(a_story.getComment());
 }
 
 void MViewer::on_actionRotate_90_CW_triggered()
@@ -1324,12 +1325,16 @@ void MViewer::on_actionFlip_horizontal_triggered()
 
 void MViewer::on_actionZoom_in_triggered()
 {
+    ui->actionCenter_on_face->setChecked(false);
+    ui->actionShow_faces->setChecked(false);
     if (current_l.valid) scaleImage(current_l,ui->scrollArea,ui->label,ui->label_3,MILLA_SCALE_UP);
     if (current_r.valid) scaleImage(current_r,ui->scrollArea_2,ui->label_2,ui->label_4,MILLA_SCALE_UP);
 }
 
 void MViewer::on_actionZoom_out_triggered()
 {
+    ui->actionCenter_on_face->setChecked(false);
+    ui->actionShow_faces->setChecked(false);
     if (current_l.valid) scaleImage(current_l,ui->scrollArea,ui->label,ui->label_3,MILLA_SCALE_DOWN);
     if (current_r.valid) scaleImage(current_r,ui->scrollArea_2,ui->label_2,ui->label_4,MILLA_SCALE_DOWN);
 }
@@ -1424,10 +1429,48 @@ void MViewer::on_pushButton_9_clicked()
 
 void MViewer::on_pushButton_4_clicked()
 {
+    if (!a_story.isActive()) return;
+    a_story.addComment(ui->plainTextEdit_2->toPlainText());
     updateStory(a_story.previous());
 }
 
 void MViewer::on_pushButton_6_clicked()
 {
+    if (!a_story.isActive()) return;
+    a_story.addComment(ui->plainTextEdit_2->toPlainText());
     updateStory(a_story.next());
+}
+
+void MViewer::on_pushButton_8_clicked()
+{
+    if (db.updateStory(ui->lineEdit_3->text().replace('\"','\''),&a_story))
+        ui->statusBar->showMessage("Story saved");
+}
+
+void MViewer::on_pushButton_5_clicked()
+{
+    if (!a_story.isActive()) return;
+    a_story.addComment(ui->plainTextEdit_2->toPlainText());
+    if (a_story.moveCurrent(true)) updateStory(a_story.current());
+}
+
+void MViewer::on_pushButton_7_clicked()
+{
+    if (!a_story.isActive()) return;
+    a_story.addComment(ui->plainTextEdit_2->toPlainText());
+    if (a_story.moveCurrent(false)) updateStory(a_story.current());
+}
+
+void MViewer::on_actionPick_a_story_triggered()
+{
+    if (!ui->lineEdit_3->text().isEmpty()) {
+        if (QMessageBox::question(this, tr("Question"), tr("Do you want to save current story?"), QMessageBox::Yes | QMessageBox::No) == QMessageBox::Yes)
+            on_pushButton_8_clicked();
+    }
+
+    StorySelector dlg;
+    if (!dlg.exec() || dlg.getStoryTitle().isEmpty()) return;
+
+    if (db.loadStory(dlg.getStoryTitle(),&a_story)) ui->statusBar->showMessage("Story loaded.");
+    else ui->statusBar->showMessage("Unable to load story selected!");
 }

@@ -28,8 +28,9 @@
 #include "mimpexpmodule.h"
 #include "mmatcher.h"
 #include "mimageops.h"
+#include "storyselector.h"
 
-#define MILLA_VERSION "ver. 0.3.10"
+#define MILLA_VERSION "ver. 0.4 RC 1"
 #define MILLA_SITE "http://github.com/matrixsmaster/MILLA"
 #define MILLA_EXTRA_CACHE_SIZE 1500
 #define MILLA_SUPPRTED_FORMATS { "png", "jpg", "jpeg", "bmp" }
@@ -184,6 +185,14 @@ private slots:
     void on_pushButton_4_clicked();
 
     void on_pushButton_6_clicked();
+
+    void on_pushButton_8_clicked();
+
+    void on_pushButton_5_clicked();
+
+    void on_pushButton_7_clicked();
+
+    void on_actionPick_a_story_triggered();
 
 private:
     Ui::MViewer *ui;

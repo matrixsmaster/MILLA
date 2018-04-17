@@ -2698,6 +2698,7 @@
     <addaction name="actionLink_bidirectional"/>
     <addaction name="actionKudos_to_left_image"/>
     <addaction name="actionKudos_to_right_image"/>
+    <addaction name="actionSwap_images"/>
     <addaction name="separator"/>
     <addaction name="actionRotate_90_CW"/>
     <addaction name="actionRotate_90_CCW"/>
@@ -2755,7 +2756,7 @@
      <addaction name="separator"/>
     </widget>
     <addaction name="menuShort_term_memory"/>
-    <addaction name="actionSwap_images"/>
+    <addaction name="actionPick_a_story"/>
     <addaction name="separator"/>
     <addaction name="actionClear_image_cache"/>
     <addaction name="actionSanitize_DB"/>
@@ -3241,6 +3242,11 @@
   <action name="actionConcatenate">
    <property name="text">
     <string>Concatenate</string>
+   </property>
+  </action>
+  <action name="actionPick_a_story">
+   <property name="text">
+    <string>Pick a story</string>
    </property>
   </action>
  </widget>

@@ -1114,3 +1114,47 @@ bool DBHelper::eraseMemory()
     QSqlQuery q;
     return q.exec("DELETE FROM memory");
 }
+
+QStringList DBHelper::getStoriesList()
+{
+    QStringList res;
+    QSqlQuery q;
+    if (!q.exec("SELECT title FROM stories")) return res;
+
+    while (q.next()) res.push_back(q.value(0).toString());
+    return res;
+}
+
+bool DBHelper::updateStory(QString const &title, MImageOps* macro)
+{
+    if (title.isEmpty() || !macro) return false;
+
+    QSqlQuery q;
+    q.prepare("SELECT COUNT(title) FROM stories WHERE title = :t");
+    q.bindValue(":t",title);
+    if (!q.exec() || !q.next()) return false;
+
+    if (!q.value(0).toInt())
+        q.prepare("INSERT INTO stories (updated, title, actions) VALUES (:tm, :tit, :act)");
+    else
+        q.prepare("UPDATE stories SET updated = :tm, actions = :act WHERE title = :tit");
+    q.bindValue(":tm",(uint)time(NULL));
+    q.bindValue(":tit",title);
+    q.bindValue(":act",macro->serialize());
+    bool ok = q.exec();
+
+    qDebug() << "[db] Updating story" << title << ":" << ok;
+    return ok;
+}
+
+bool DBHelper::loadStory(QString const &title, MImageOps* macro)
+{
+    if (title.isEmpty() || !macro) return false;
+
+    QSqlQuery q;
+    q.prepare("SELECT actions FROM stories WHERE title = :t");
+    q.bindValue(":t",title);
+    if (!q.exec() || !q.next()) return false;
+
+    return macro->deserialize(q.value(0).toString());
+}

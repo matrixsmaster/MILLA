@@ -27,7 +27,8 @@ SOURCES += main.cpp\
     dbhelper.cpp \
     mmatcher.cpp \
     mmemorymodel.cpp \
-    mimageops.cpp
+    mimageops.cpp \
+    storyselector.cpp
 
 HEADERS  += mviewer.h \
     thumbnailmodel.h \
@@ -46,11 +47,13 @@ HEADERS  += mviewer.h \
     mmatcher.h \
     shared.h \
     mmemorymodel.h \
-    mimageops.h
+    mimageops.h \
+    storyselector.h
 
 FORMS    += mviewer.ui \
     searchform.ui \
-    exportform.ui
+    exportform.ui \
+    storyselector.ui
 
 CONFIG   += c++14
 QMAKE_CXXFLAGS  += -Wextra

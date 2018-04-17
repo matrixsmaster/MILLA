@@ -3,9 +3,11 @@
 
 #include <QDebug>
 #include <QList>
+#include <QString>
 #include <QPixmap>
 #include <QPainter>
 #include <algorithm>
+#include <utility>
 #include "shared.h"
 
 struct MMacroRecord {
@@ -19,6 +21,7 @@ struct MMacroRecord {
     } action;
     MImageListRecord left, right;
     QPixmap result;
+    QString comment;
 };
 
 class MImageOps
@@ -48,6 +51,16 @@ public:
     QPixmap next();
 
     QPixmap current();
+
+    bool moveCurrent(bool backward);
+
+    bool addComment(QString const &com);
+
+    QString getComment();
+
+    QString serialize();
+
+    bool deserialize(QString const &in);
 
 private:
     QList<MMacroRecord> history;

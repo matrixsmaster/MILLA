@@ -14,6 +14,7 @@
 #include "shared.h"
 #include "cvhelper.h"
 #include "searchform.h"
+#include "mimageops.h"
 
 typedef QList<std::tuple<QString,unsigned,bool>> MTagsCheckList;
 
@@ -108,6 +109,12 @@ public:
     static bool updateMemorySlot(int n, QString const &fn);
 
     static bool eraseMemory();
+
+    static QStringList getStoriesList();
+
+    static bool updateStory(QString const &title, MImageOps* macro);
+
+    static bool loadStory(QString const &title, MImageOps* macro);
 
 private:
     std::map<time_t,QAction*> recents;

@@ -87,3 +87,52 @@ QPixmap MImageOps::current()
     if (pos == history.end()) return QPixmap();
     return pos->result;
 }
+
+bool MImageOps::moveCurrent(bool backward)
+{
+    if (history.size() < 2) return false;
+    bool last = (pos == history.end());
+    if (last && !backward) return false;
+    if (last) --pos;
+
+    auto b = backward? pos-1 : pos+1;
+    swap<MMacroRecord>(*pos,*b);
+
+    if (last) pos = history.end();
+    return true;
+}
+
+bool MImageOps::addComment(QString const &com)
+{
+    if (pos == history.end()) return false;
+    pos->comment = com;
+    pos->comment.replace('\"','\'');
+    return true;
+}
+
+QString MImageOps::getComment()
+{
+    if (pos == history.end()) return QString();
+    return pos->comment;
+}
+
+QString MImageOps::serialize()
+{
+    QString res;
+    QTextStream ss(&res);
+    for (auto &i : history) {
+        ss << i.action << ";";
+        ss << "\"" << i.left.filename << "\";";
+        ss << "\"" << i.right.filename << "\";";
+        ss << "\"" << i.comment << "\";";
+    }
+    return res;
+}
+
+bool MImageOps::deserialize(QString const &in)
+{
+    if (in.isEmpty()) return true;
+
+    //
+    return false;
+}
