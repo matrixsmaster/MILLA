@@ -7,6 +7,8 @@ ThumbnailModel::ThumbnailModel(QStringList files, ProgressCB loading_cb, QObject
     double prg = 0, dp = 100.f / (double)(files.size());
 
     for (auto &i : files) {
+        if (i.isEmpty()) continue;
+
         MImageListRecord rec;
         rec.filename = i;
         rec.valid = true;
@@ -34,6 +36,7 @@ ThumbnailModel::~ThumbnailModel()
 
 void ThumbnailModel::LoadUp(int idx, bool force_reload)
 {
+    if (idx < 0 || idx >= images.size()) return;
     if (!force_reload && images.at(idx).loaded) return;
 
     images[idx].picture = QPixmap(images[idx].filename);

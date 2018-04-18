@@ -1,4 +1,5 @@
 #include "mimageops.h"
+#include "thumbnailmodel.h"
 
 using namespace std;
 
@@ -10,6 +11,40 @@ void MImageOps::clear()
 {
     history.clear();
     pos = history.begin();
+}
+
+void MImageOps::add(MMacroRecord &rec)
+{
+    if (loading) return;
+
+    if (rec.left.generated || rec.right.generated) {
+        bool gl = rec.left.generated && rec.left.valid;
+        bool gr = rec.right.generated && rec.right.valid;
+        QImage il,ir;
+        if (gl) il = rec.left.picture.toImage();
+        if (gr) ir = rec.right.picture.toImage();
+
+        int n = 0;
+        for (auto &i : history) {
+            QImage tmp = i.result.toImage();
+            if (gl && tmp == il) {
+                qDebug() << "[ImageOps] Left source detected as result of" << n << "th operation";
+                gl = false;
+                rec.link_l = n;
+                if (!gr) break;
+            }
+            if (gr && tmp == ir) {
+                qDebug() << "[ImageOps] Right source detected as result of" << n << "th operation";
+                gr = false;
+                rec.link_r = n;
+                if (!gl) break;
+            }
+            n++;
+        }
+    }
+
+    history.push_back(rec);
+    pos = history.end();
 }
 
 QPixmap MImageOps::rotate(MImageListRecord const &in, bool cw)
@@ -24,8 +59,7 @@ QPixmap MImageOps::rotate(MImageListRecord const &in, bool cw)
     rotmat.rotate(cw? 90 : -90);
     rec.result = QPixmap::fromImage(in.picture.toImage().transformed(rotmat));
 
-    history.push_back(rec);
-    pos = history.end();
+    add(rec);
     return rec.result;
 }
 
@@ -38,8 +72,7 @@ QPixmap MImageOps::flip(MImageListRecord const &in, bool vertical)
     rec.left = in;
     rec.result = QPixmap::fromImage(in.picture.toImage().mirrored(!vertical,vertical));
 
-    history.push_back(rec);
-    pos = history.end();
+    add(rec);
     return rec.result;
 }
 
@@ -65,8 +98,7 @@ QPixmap MImageOps::concatenate(MImageListRecord const &a, MImageListRecord const
     rec.right = b;
     rec.result = QPixmap::fromImage(res);
 
-    history.push_back(rec);
-    pos = history.end();
+    add(rec);
     return rec.result;
 }
 
@@ -123,7 +155,9 @@ QString MImageOps::serialize()
     for (auto &i : history) {
         ss << i.action << ";";
         ss << "\"" << i.left.filename << "\";";
+        ss << i.link_l << ";";
         ss << "\"" << i.right.filename << "\";";
+        ss << i.link_r << ";";
         ss << "\"" << i.comment << "\";";
     }
     return res;
@@ -131,8 +165,85 @@ QString MImageOps::serialize()
 
 bool MImageOps::deserialize(QString const &in)
 {
+    clear();
     if (in.isEmpty()) return true;
 
-    //
-    return false;
+    int fsm = 0;
+    QStringList lst = in.split(';');
+    QString acc;
+    MMacroRecord r;
+    for (auto &i : lst) {
+        acc += i;
+        if (!acc.isEmpty() && acc.at(0) == '\"') {
+            if (acc.at(acc.length()-1) != '\"') continue;
+            else acc = acc.mid(1,acc.size()-2);
+        }
+
+        switch (fsm) {
+        case 0:
+            r.action = static_cast<MMacroRecord::ActionType>(acc.toInt());
+            break;
+        case 1:
+            r.left.filename = acc;
+            break;
+        case 2:
+            r.link_l = acc.toInt();
+            break;
+        case 3:
+            r.right.filename = acc;
+            break;
+        case 4:
+            r.link_r = acc.toInt();
+            break;
+        case 5:
+            r.comment = acc;
+            break;
+        }
+
+        if (++fsm == 6) {
+            fsm = 0;
+            history.push_back(r);
+            r = MMacroRecord();
+        }
+        acc.clear();
+    }
+
+    //first pass - load files using ThumbnailModel instance
+    for (auto &i : history) {
+        QStringList ls = { i.left.filename, i.right.filename };
+        ThumbnailModel* ptm = new ThumbnailModel(ls,0);
+        ptm->LoadUp(0);
+        ptm->LoadUp(1);
+
+        if (!i.left.filename.isEmpty())
+            i.left = ptm->data(ptm->getRecordIndex(i.left.filename),MImageListModel::FullDataRole).value<MImageListRecord>();
+        if (!i.right.filename.isEmpty())
+            i.right = ptm->data(ptm->getRecordIndex(i.right.filename),MImageListModel::FullDataRole).value<MImageListRecord>();
+
+        delete ptm;
+    }
+
+    //second pass - resolve links and create images
+    loading = true;
+    for (auto &i : history) {
+        if (i.link_l >= 0 && i.link_l < history.size()) i.left.picture = history.at(i.link_l).result;
+        if (i.link_r >= 0 && i.link_r < history.size()) i.right.picture = history.at(i.link_r).result;
+        i.left.generated = i.left.filename.isEmpty();
+        i.left.valid = !i.left.picture.isNull();
+        i.right.generated = i.right.filename.isEmpty();
+        i.right.valid = !i.right.picture.isNull();
+
+        switch (i.action) {
+        case MMacroRecord::FlipVertical: i.result = flip(i.left,true); break;
+        case MMacroRecord::FlipHorizontal: i.result = flip(i.left,false); break;
+        case MMacroRecord::RotateCW: i.result = rotate(i.left,true); break;
+        case MMacroRecord::RotateCCW: i.result = rotate(i.left,false); break;
+        case MMacroRecord::Concatenate: i.result = concatenate(i.left,i.right); break;
+        case MMacroRecord::Crop: /*TODO*/ break;
+        }
+    }
+    loading = false;
+
+    pos = history.end();
+    return true;
 }

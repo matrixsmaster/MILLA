@@ -11,7 +11,7 @@
 #include "shared.h"
 
 struct MMacroRecord {
-    enum {
+    enum ActionType {
         FlipVertical,
         FlipHorizontal,
         RotateCW,
@@ -20,6 +20,7 @@ struct MMacroRecord {
         Crop
     } action;
     MImageListRecord left, right;
+    int link_l = -1, link_r = -1;
     QPixmap result;
     QString comment;
 };
@@ -65,6 +66,9 @@ public:
 private:
     QList<MMacroRecord> history;
     QList<MMacroRecord>::iterator pos;
+    bool loading = false;
+
+    void add(MMacroRecord &rec);
 };
 
 #endif // MIMAGEOPS_H
