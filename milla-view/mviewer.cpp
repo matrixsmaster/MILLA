@@ -1471,6 +1471,10 @@ void MViewer::on_actionPick_a_story_triggered()
     StorySelector dlg;
     if (!dlg.exec() || dlg.getStoryTitle().isEmpty()) return;
 
-    if (db.loadStory(dlg.getStoryTitle(),&a_story)) ui->statusBar->showMessage("Story loaded.");
-    else ui->statusBar->showMessage("Unable to load story selected!");
+    if (db.loadStory(dlg.getStoryTitle(),&a_story)) {
+        updateStory(a_story.first());
+        ui->lineEdit_3->setText(dlg.getStoryTitle());
+        ui->statusBar->showMessage("Story loaded.");
+    } else
+        ui->statusBar->showMessage("Unable to load story selected!");
 }

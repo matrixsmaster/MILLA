@@ -47,6 +47,8 @@ public:
 
     QPixmap crop(MImageListRecord const &in, QRect const &rct);
 
+    QPixmap first();
+
     QPixmap previous();
 
     QPixmap next();

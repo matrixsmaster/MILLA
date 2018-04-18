@@ -102,6 +102,13 @@ QPixmap MImageOps::concatenate(MImageListRecord const &a, MImageListRecord const
     return rec.result;
 }
 
+QPixmap MImageOps::first()
+{
+    if (history.empty()) return QPixmap();
+    pos = history.begin();
+    return current();
+}
+
 QPixmap MImageOps::previous()
 {
     if (pos != history.begin()) --pos;
@@ -128,6 +135,15 @@ bool MImageOps::moveCurrent(bool backward)
     if (last) --pos;
 
     auto b = backward? pos-1 : pos+1;
+    int ip = pos - history.begin();
+    int ib = b - history.begin();
+
+    for (auto &i : history) {
+        if (i.link_l == ip) i.link_l = ib;
+        if (i.link_l == ib) i.link_l = ip;
+        if (i.link_r == ip) i.link_r = ib;
+        if (i.link_r == ib) i.link_r = ip;
+    }
     swap<MMacroRecord>(*pos,*b);
 
     if (last) pos = history.end();
@@ -223,23 +239,31 @@ bool MImageOps::deserialize(QString const &in)
         delete ptm;
     }
 
-    //second pass - resolve links and create images
+    //second pass(es) - resolve links and create images
     loading = true;
-    for (auto &i : history) {
-        if (i.link_l >= 0 && i.link_l < history.size()) i.left.picture = history.at(i.link_l).result;
-        if (i.link_r >= 0 && i.link_r < history.size()) i.right.picture = history.at(i.link_r).result;
-        i.left.generated = i.left.filename.isEmpty();
-        i.left.valid = !i.left.picture.isNull();
-        i.right.generated = i.right.filename.isEmpty();
-        i.right.valid = !i.right.picture.isNull();
+    bool done = false;
+    for (int failsafe = 0; !done && failsafe < history.size(); failsafe++) {
+        done = true;
+        for (auto &i : history) {
+            if (!i.result.isNull()) continue;
 
-        switch (i.action) {
-        case MMacroRecord::FlipVertical: i.result = flip(i.left,true); break;
-        case MMacroRecord::FlipHorizontal: i.result = flip(i.left,false); break;
-        case MMacroRecord::RotateCW: i.result = rotate(i.left,true); break;
-        case MMacroRecord::RotateCCW: i.result = rotate(i.left,false); break;
-        case MMacroRecord::Concatenate: i.result = concatenate(i.left,i.right); break;
-        case MMacroRecord::Crop: /*TODO*/ break;
+            if (i.link_l >= 0 && i.link_l < history.size()) i.left.picture = history.at(i.link_l).result;
+            if (i.link_r >= 0 && i.link_r < history.size()) i.right.picture = history.at(i.link_r).result;
+            i.left.generated = i.left.filename.isEmpty();
+            i.left.valid = !i.left.picture.isNull();
+            i.right.generated = i.right.filename.isEmpty();
+            i.right.valid = !i.right.picture.isNull();
+
+            switch (i.action) {
+            case MMacroRecord::FlipVertical: i.result = flip(i.left,true); break;
+            case MMacroRecord::FlipHorizontal: i.result = flip(i.left,false); break;
+            case MMacroRecord::RotateCW: i.result = rotate(i.left,true); break;
+            case MMacroRecord::RotateCCW: i.result = rotate(i.left,false); break;
+            case MMacroRecord::Concatenate: i.result = concatenate(i.left,i.right); break;
+            case MMacroRecord::Crop: /*TODO*/ break;
+            }
+
+            if (i.result.isNull()) done = false;
         }
     }
     loading = false;
