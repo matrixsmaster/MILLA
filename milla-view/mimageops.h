@@ -53,9 +53,9 @@ public:
 
     QPixmap first();
 
-    QPixmap previous();
+    QPixmap previous(bool commented_only = false);
 
-    QPixmap next();
+    QPixmap next(bool commented_only = false);
 
     QPixmap current();
 

@@ -1309,6 +1309,7 @@ void MViewer::updateStory(QPixmap const &result)
     showGeneratedPicture(result);
     ui->label_6->setText(QString::asprintf("Step %d/%d",a_story.position(),a_story.size()));
     ui->plainTextEdit_2->setPlainText(a_story.getComment());
+    ui->plainTextEdit_2->setEnabled(!result.isNull());
 }
 
 void MViewer::on_actionRotate_90_CW_triggered()
@@ -1439,18 +1440,20 @@ void MViewer::on_pushButton_4_clicked()
 {
     if (!a_story.isActive()) return;
     a_story.addComment(ui->plainTextEdit_2->toPlainText());
-    updateStory(a_story.previous());
+    updateStory(a_story.previous(ui->actionSkip_empty_story_steps->isChecked()));
 }
 
 void MViewer::on_pushButton_6_clicked()
 {
     if (!a_story.isActive()) return;
     a_story.addComment(ui->plainTextEdit_2->toPlainText());
-    updateStory(a_story.next());
+    updateStory(a_story.next(ui->actionSkip_empty_story_steps->isChecked()));
 }
 
 void MViewer::on_pushButton_8_clicked()
 {
+    if (!a_story.isActive()) return;
+    a_story.addComment(ui->plainTextEdit_2->toPlainText());
     if (db.updateStory(ui->lineEdit_3->text().replace('\"','\''),&a_story))
         ui->statusBar->showMessage("Story saved");
 }

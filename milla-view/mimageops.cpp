@@ -136,21 +136,30 @@ QPixmap MImageOps::first()
     return current();
 }
 
-QPixmap MImageOps::previous()
+QPixmap MImageOps::previous(bool commented_only)
 {
-    if (pos != history.begin()) --pos;
+    while (pos != history.begin()) {
+        --pos;
+        if (!commented_only || !pos->comment.isEmpty()) break;
+    }
     return current();
 }
 
-QPixmap MImageOps::next()
+QPixmap MImageOps::next(bool commented_only)
 {
-    if (pos != history.end()) ++pos;
+    while (pos != history.end()) {
+        ++pos;
+        if ((!commented_only) || (pos != history.end() && !pos->comment.isEmpty())) break;
+    }
     return current();
 }
 
 QPixmap MImageOps::current()
 {
-    if (pos == history.end()) return QPixmap();
+    if (pos == history.end()) {
+        if (history.empty()) return QPixmap();
+        --pos;
+    }
     return pos->result;
 }
 
