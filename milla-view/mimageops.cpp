@@ -122,6 +122,7 @@ QPixmap MImageOps::crop(MImageListRecord const &in, QRect const &rct)
     MMacroRecord rec;
     rec.action = MMacroRecord::Crop;
     rec.left = in;
+    rec.roi = rct;
     rec.result = QPixmap::fromImage(in.picture.toImage().copy(rct));
 
     add(rec);

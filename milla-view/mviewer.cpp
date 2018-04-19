@@ -1482,6 +1482,7 @@ void MViewer::on_actionPick_a_story_triggered()
     if (db.loadStory(dlg.getStoryTitle(),&a_story)) {
         updateStory(a_story.first());
         ui->lineEdit_3->setText(dlg.getStoryTitle());
+        ui->tabWidget->setCurrentIndex(4);
         ui->statusBar->showMessage("Story loaded.");
     } else
         ui->statusBar->showMessage("Unable to load story selected!");
@@ -1494,7 +1495,12 @@ void MViewer::on_actionAdd_to_story_triggered()
 
 void MViewer::on_actionCrop_triggered()
 {
-    //TODO
+    if (selection_fsm != 2 || !current_l.valid) return;
+    float scale = (current_l.picture.size().width() > current_l.picture.size().height())?
+                (double(current_l.picture.size().width()) / double(ui->scrollArea->size().width())) :
+                (double(current_l.picture.size().height()) / double(ui->scrollArea->size().height()));
+    QRect ns(selection.topLeft()*scale,selection.size()*scale);
+    updateStory(a_story.crop(current_l,ns & current_l.picture.rect()));
 }
 
 bool MViewer::eventFilter(QObject *obj, QEvent *event)
@@ -1513,7 +1519,6 @@ bool MViewer::eventFilter(QObject *obj, QEvent *event)
 
     QRect aligned = QStyle::alignedRect(QApplication::layoutDirection(),QFlag(ui->label->alignment()),ui->label->pixmap()->size(),ui->label->rect());
     QRect inter = aligned.intersected(ui->label->rect());
-    //qDebug() << inter.x() << inter.y();
 
     switch (selection_fsm) {
     case 0:
@@ -1538,7 +1543,6 @@ bool MViewer::eventFilter(QObject *obj, QEvent *event)
         selection_fsm = 0;
         break;
     }
-    //qDebug() << "Mode:" << selection_fsm << "; Start:" << selection.topLeft() << "; Size:" << selection.size();
 
     if (current_l.valid && selection_fsm) {
         QImage tmp = selection_bak.toImage();
@@ -1547,11 +1551,6 @@ bool MViewer::eventFilter(QObject *obj, QEvent *event)
         paintpen.setWidth(1);
         paintpen.setStyle(Qt::DashLine);
         painter.setPen(paintpen);
-        /*float scale = (tmp.size().width() > tmp.size().height())?
-                    (tmp.size().width() / ui->scrollArea->size().width()) :
-                    (tmp.size().height() / ui->scrollArea->size().height());
-        qDebug() << "scale = " << scale;
-        painter.drawRect(QRect(selection.topLeft()/scale, selection.size()/scale));*/
         painter.drawRect(selection);
         ui->label->setPixmap(QPixmap::fromImage(tmp));
     }
