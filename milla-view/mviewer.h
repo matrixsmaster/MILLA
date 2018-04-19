@@ -19,6 +19,7 @@
 #include <ctime>
 #include <cstdlib>
 #include <chrono>
+#include "shared.h"
 #include "pluginloader.h"
 #include "dbhelper.h"
 #include "thumbnailmodel.h"
@@ -30,8 +31,6 @@
 #include "mimageops.h"
 #include "storyselector.h"
 
-#define MILLA_VERSION "ver. 0.4 RC 3"
-#define MILLA_SITE "http://github.com/matrixsmaster/MILLA"
 #define MILLA_EXTRA_CACHE_SIZE 1500
 #define MILLA_SUPPRTED_FORMATS { "png", "jpg", "jpeg", "bmp" }
 #define MILLA_OPEN_FILE "Supported files"

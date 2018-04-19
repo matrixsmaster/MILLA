@@ -4,11 +4,12 @@
 #include <QtSql/QSqlDatabase>
 #include <QSqlQuery>
 #include <QSqlError>
+#include "shared.h"
 
 #ifdef QT_DEBUG
-#define DB_FILEPATH "/.milla/storage_debug.db"
+#define DB_FILEPATH MILLA_CONFIG_PATH "storage_debug.db"
 #else
-#define DB_FILEPATH "/.milla/storage.db"
+#define DB_FILEPATH MILLA_CONFIG_PATH "storage.db"
 #endif
 
 #define DB_VERSION 3
@@ -65,7 +66,7 @@
 
 #define DB_CORRECT_TAG_KEY_GET "SELECT key FROM tags ORDER BY key DESC LIMIT 1"
 
-#define DBF_LINKS "left BLOB, right BLOB"
+#define DBF_LINKS "created UNSIGNED INT, left BLOB, right BLOB"
 
 #define DBF_EXPORT_RECORD "SELECT views, rating, likes, tags, notes, sha256, length FROM stats WHERE "
 

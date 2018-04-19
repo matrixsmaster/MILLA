@@ -466,13 +466,14 @@ bool DBHelper::updateFileNotes(QString const &fn, QString &notes)
 bool DBHelper::createLinkBetweenImages(QByteArray const &left, QByteArray const &right)
 {
     QSqlQuery q;
-    q.prepare("SELECT * FROM links WHERE left = :sl AND right = :sr");
+    q.prepare("SELECT created FROM links WHERE left = :sl AND right = :sr");
     q.bindValue(":sl",left);
     q.bindValue(":sr",right);
     if (q.exec() && q.next()) return false;
 
     q.clear();
-    q.prepare("INSERT INTO links (left, right) VALUES (:sl, :sr)");
+    q.prepare("INSERT INTO links (created, left, right) VALUES (:tm, :sl, :sr)");
+    q.bindValue(":tm",(uint)time(NULL));
     q.bindValue(":sl",left);
     q.bindValue(":sr",right);
     bool ok = q.exec();
@@ -730,7 +731,7 @@ void DBHelper::sanitizeLinks(ProgressCB progress_cb)
     QSet<QByteArray> known_shas;
     QList<std::pair<QByteArray,QByteArray>> to_remove;
 
-    if (!q.exec("SELECT COUNT(left) FROM links") || !qa.exec("SELECT left, right FROM links")) {
+    if (!q.exec("SELECT COUNT(created) FROM links") || !qa.exec("SELECT left, right FROM links")) {
         qDebug() << "[db] Unable to load links table";
         return;
     }
