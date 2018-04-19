@@ -47,6 +47,19 @@ void MImageOps::add(MMacroRecord &rec)
     pos = history.end();
 }
 
+QPixmap MImageOps::append(MImageListRecord const &in)
+{
+    if (!in.valid) return QPixmap();
+
+    MMacroRecord rec;
+    rec.action = MMacroRecord::None;
+    rec.left = in;
+    rec.result = in.picture;
+
+    add(rec);
+    return rec.result;
+}
+
 QPixmap MImageOps::rotate(MImageListRecord const &in, bool cw)
 {
     if (!in.valid) return QPixmap();
@@ -102,6 +115,19 @@ QPixmap MImageOps::concatenate(MImageListRecord const &a, MImageListRecord const
     return rec.result;
 }
 
+QPixmap MImageOps::crop(MImageListRecord const &in, QRect const &rct)
+{
+    if (!in.valid) return QPixmap();
+
+    MMacroRecord rec;
+    rec.action = MMacroRecord::Crop;
+    rec.left = in;
+    rec.result = QPixmap::fromImage(in.picture.toImage().copy(rct));
+
+    add(rec);
+    return rec.result;
+}
+
 QPixmap MImageOps::first()
 {
     if (history.empty()) return QPixmap();
@@ -140,9 +166,9 @@ bool MImageOps::moveCurrent(bool backward)
 
     for (auto &i : history) {
         if (i.link_l == ip) i.link_l = ib;
-        if (i.link_l == ib) i.link_l = ip;
+        else if (i.link_l == ib) i.link_l = ip;
         if (i.link_r == ip) i.link_r = ib;
-        if (i.link_r == ib) i.link_r = ip;
+        else if (i.link_r == ib) i.link_r = ip;
     }
     swap<MMacroRecord>(*pos,*b);
 
@@ -174,6 +200,8 @@ QString MImageOps::serialize()
         ss << i.link_l << ";";
         ss << "\"" << i.right.filename << "\";";
         ss << i.link_r << ";";
+        ss << i.roi.x() << ";" << i.roi.y() << ";";
+        ss << i.roi.width() << ";" << i.roi.height() << ";";
         ss << "\"" << i.comment << "\";";
     }
     return res;
@@ -212,11 +240,23 @@ bool MImageOps::deserialize(QString const &in)
             r.link_r = acc.toInt();
             break;
         case 5:
+            r.roi.setX(acc.toInt());
+            break;
+        case 6:
+            r.roi.setY(acc.toInt());
+            break;
+        case 7:
+            r.roi.setWidth(acc.toInt());
+            break;
+        case 8:
+            r.roi.setHeight(acc.toInt());
+            break;
+        case 9:
             r.comment = acc;
             break;
         }
 
-        if (++fsm == 6) {
+        if (++fsm == 10) {
             fsm = 0;
             history.push_back(r);
             r = MMacroRecord();
@@ -255,12 +295,13 @@ bool MImageOps::deserialize(QString const &in)
             i.right.valid = !i.right.picture.isNull();
 
             switch (i.action) {
+            case MMacroRecord::None: i.result = append(i.left); break;
             case MMacroRecord::FlipVertical: i.result = flip(i.left,true); break;
             case MMacroRecord::FlipHorizontal: i.result = flip(i.left,false); break;
             case MMacroRecord::RotateCW: i.result = rotate(i.left,true); break;
             case MMacroRecord::RotateCCW: i.result = rotate(i.left,false); break;
             case MMacroRecord::Concatenate: i.result = concatenate(i.left,i.right); break;
-            case MMacroRecord::Crop: /*TODO*/ break;
+            case MMacroRecord::Crop: i.result = crop(i.left,i.roi); break;
             }
 
             if (i.result.isNull()) done = false;

@@ -12,6 +12,7 @@
 
 struct MMacroRecord {
     enum ActionType {
+        None,
         FlipVertical,
         FlipHorizontal,
         RotateCW,
@@ -21,6 +22,7 @@ struct MMacroRecord {
     } action;
     MImageListRecord left, right;
     int link_l = -1, link_r = -1;
+    QRect roi;
     QPixmap result;
     QString comment;
 };
@@ -38,6 +40,8 @@ public:
     int size()      { return history.size(); }
 
     int position()  { return pos - history.begin(); }
+
+    QPixmap append(MImageListRecord const &in);
 
     QPixmap rotate(MImageListRecord const &in, bool cw);
 

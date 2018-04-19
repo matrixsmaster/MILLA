@@ -83,6 +83,8 @@ MViewer::MViewer(QWidget *parent) :
         incViews(false);
     });
 
+    ui->scrollArea->installEventFilter(this);
+
     cleanUp();
     updateTags();
     db.readRecentDirs(ui->menuRecent_dirs,MILLA_MAX_RECENT_DIRS,[this] (auto s) { this->loadRecentEntry(s); });
@@ -366,6 +368,8 @@ void MViewer::scaleImage(const MImageListRecord &rec, QScrollArea* scrl, QLabel*
         } else
             lbl->setPixmap(rec.picture.scaled(nsz,Qt::KeepAspectRatio,Qt::SmoothTransformation));
     }
+
+    selection_fsm = 0; //invalidate selection
 }
 
 unsigned MViewer::incViews(bool left)
@@ -933,6 +937,8 @@ void MViewer::selectIEFileDialog(bool import)
     ThumbnailModel* ptm = s.loaded_only? dynamic_cast<ThumbnailModel*>(ui->listView->model()) : nullptr;
 
     updateTags(); //re-create tags cache without any checked items
+    ui->frame_6->setEnabled(false); //and disable all tag-related stuff temporarily to prevent data loss caused by user's actions
+    ui->pushButton->setEnabled(false);
 
     //create importer
     MImpExpModule mod(&tags_cache,(ptm? &(ptm->GetAllImages()) : nullptr));
@@ -951,6 +957,8 @@ void MViewer::selectIEFileDialog(bool import)
     //restore tags view
     if (current_l.valid) updateTags(current_l.filename);
     else updateTags();
+    ui->frame_6->setEnabled(true);
+    ui->pushButton->setEnabled(true);
 
     //fold up
     prepareLongProcessing(true);
@@ -1477,4 +1485,76 @@ void MViewer::on_actionPick_a_story_triggered()
         ui->statusBar->showMessage("Story loaded.");
     } else
         ui->statusBar->showMessage("Unable to load story selected!");
+}
+
+void MViewer::on_actionAdd_to_story_triggered()
+{
+    updateStory(a_story.append(current_l));
+}
+
+void MViewer::on_actionCrop_triggered()
+{
+    //TODO
+}
+
+bool MViewer::eventFilter(QObject *obj, QEvent *event)
+{
+    QMouseEvent* mev;
+    switch (event->type()) {
+    case QEvent::MouseButtonPress:
+    case QEvent::MouseButtonRelease:
+    case QEvent::MouseMove:
+        mev = static_cast<QMouseEvent*>(event);
+        break;
+
+    default:
+        return QObject::eventFilter(obj,event);
+    }
+
+    QRect aligned = QStyle::alignedRect(QApplication::layoutDirection(),QFlag(ui->label->alignment()),ui->label->pixmap()->size(),ui->label->rect());
+    QRect inter = aligned.intersected(ui->label->rect());
+    //qDebug() << inter.x() << inter.y();
+
+    switch (selection_fsm) {
+    case 0:
+        selection_bak = *(ui->label->pixmap());
+        //fall through
+    case 2:
+        if (event->type() == QEvent::MouseButtonPress) {
+            selection.setTopLeft(QPoint(mev->x()-inter.x(),mev->y()-inter.y()));
+            selection_fsm = 1;
+        }
+        break;
+    case 1:
+        if (event->type() == QEvent::MouseMove) {
+            selection.setBottomRight(QPoint(mev->x()-inter.x(),mev->y()-inter.y()));
+
+        } else if (event->type() == QEvent::MouseButtonRelease) {
+            selection.setBottomRight(QPoint(mev->x()-inter.x(),mev->y()-inter.y()));
+            selection_fsm++;
+        }
+        break;
+    default:
+        selection_fsm = 0;
+        break;
+    }
+    //qDebug() << "Mode:" << selection_fsm << "; Start:" << selection.topLeft() << "; Size:" << selection.size();
+
+    if (current_l.valid && selection_fsm) {
+        QImage tmp = selection_bak.toImage();
+        QPainter painter(&tmp);
+        QPen paintpen(Qt::black);
+        paintpen.setWidth(1);
+        paintpen.setStyle(Qt::DashLine);
+        painter.setPen(paintpen);
+        /*float scale = (tmp.size().width() > tmp.size().height())?
+                    (tmp.size().width() / ui->scrollArea->size().width()) :
+                    (tmp.size().height() / ui->scrollArea->size().height());
+        qDebug() << "scale = " << scale;
+        painter.drawRect(QRect(selection.topLeft()/scale, selection.size()/scale));*/
+        painter.drawRect(selection);
+        ui->label->setPixmap(QPixmap::fromImage(tmp));
+    }
+
+    return true;
 }

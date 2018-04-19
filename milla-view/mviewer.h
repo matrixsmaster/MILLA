@@ -30,7 +30,7 @@
 #include "mimageops.h"
 #include "storyselector.h"
 
-#define MILLA_VERSION "ver. 0.4 RC 1"
+#define MILLA_VERSION "ver. 0.4 RC 2"
 #define MILLA_SITE "http://github.com/matrixsmaster/MILLA"
 #define MILLA_EXTRA_CACHE_SIZE 1500
 #define MILLA_SUPPRTED_FORMATS { "png", "jpg", "jpeg", "bmp" }
@@ -194,6 +194,10 @@ private slots:
 
     void on_actionPick_a_story_triggered();
 
+    void on_actionAdd_to_story_triggered();
+
+    void on_actionCrop_triggered();
+
 private:
     Ui::MViewer *ui;
     DBHelper db;
@@ -211,6 +215,9 @@ private:
     bool flag_stop_load_everything = false;
     double scaleFactor = 1;
     MImageListRecord current_l, current_r;
+    QRect selection;
+    int selection_fsm = 0;
+    QPixmap selection_bak;
 
     std::map<QString,MImageExtras> extra_cache;
     MTagCache tags_cache;
@@ -279,6 +286,8 @@ private:
     void copyTagsetTo(QString const &fn);
 
     void updateStory(QPixmap const &result);
+
+    bool eventFilter(QObject *obj, QEvent *event);
 };
 
 #endif // MVIEWER_H

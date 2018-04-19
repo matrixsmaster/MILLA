@@ -2700,6 +2700,7 @@
     <addaction name="actionKudos_to_right_image"/>
     <addaction name="actionSwap_images"/>
     <addaction name="separator"/>
+    <addaction name="actionAdd_to_story"/>
     <addaction name="actionRotate_90_CW"/>
     <addaction name="actionRotate_90_CCW"/>
     <addaction name="actionFlip_vertical"/>
@@ -2708,6 +2709,7 @@
     <addaction name="actionZoom_out"/>
     <addaction name="actionReset_zoom"/>
     <addaction name="actionConcatenate"/>
+    <addaction name="actionCrop"/>
     <addaction name="separator"/>
     <addaction name="menuPreferences"/>
    </widget>
@@ -3247,6 +3249,16 @@
   <action name="actionPick_a_story">
    <property name="text">
     <string>Pick a story</string>
+   </property>
+  </action>
+  <action name="actionCrop">
+   <property name="text">
+    <string>Crop</string>
+   </property>
+  </action>
+  <action name="actionAdd_to_story">
+   <property name="text">
+    <string>Add to story</string>
    </property>
   </action>
  </widget>
