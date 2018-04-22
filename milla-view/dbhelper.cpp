@@ -242,7 +242,7 @@ time_t DBHelper::getLastViewTime(QString const &fn)
     QSqlQuery q;
     q.prepare("SELECT lastview FROM stats WHERE file = :fn");
     q.bindValue(":fn",fn);
-    if (q.exec() || q.next()) return q.value(0).toUInt();
+    if (q.exec() && q.next()) return q.value(0).toUInt();
     return time(NULL);
 }
 

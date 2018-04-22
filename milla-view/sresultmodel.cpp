@@ -19,6 +19,7 @@ SResultModel::~SResultModel()
 void SResultModel::Loader()
 {
     timer.stop();
+    beginInsertRows(QModelIndex(),images.size(),images.size());
 
     for (int i = 0; i < MAXRESULTSBULK && curitem != images.end(); ++curitem,i++) {
         *curitem = loader->loadFull(curitem->filename);
@@ -29,8 +30,6 @@ void SResultModel::Loader()
         }
     }
 
-    beginInsertRows(QModelIndex(),images.size(),images.size());
     endInsertRows();
-
     if (curitem != images.end()) timer.start(RESULTUPDATETIMEOUT);
 }

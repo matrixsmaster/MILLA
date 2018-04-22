@@ -175,12 +175,12 @@ MImageListRecord MImageLoader::loadFull(QString const &filename, bool fast)
     if (!fast) r.picture = load(filename);
     r.loaded = !r.picture.isNull();
     r.touched = DBHelper::getLastViewTime(filename);
-    thumb(r,false,fast);
 
     QFileInfo fi(filename);
     r.fnshort = fi.fileName();
     r.filechanged = fi.lastModified().toTime_t();
 
+    thumb(r,false,fast);
     r.valid = true;
 
     return r;

@@ -30,7 +30,6 @@ public:
     void clearList()            { accum.clear(); }
 
     QPixmap load(QString const &filename);
-    void thumb(MImageListRecord &rec, bool force = false, bool fast = false);
     MImageListRecord loadFull(QString const &filename, bool fast = false);
 
 private:
@@ -44,6 +43,7 @@ private:
     QStringList openDirByList(QString const &fileName);
 
     QStringList _open(QString const &filename, bool strict);
+    void thumb(MImageListRecord &rec, bool force = false, bool fast = false);
 };
 
 #endif // MIMAGELOADER_H
