@@ -1,6 +1,7 @@
 #ifndef MIMAGEOPS_H
 #define MIMAGEOPS_H
 
+#include <QObject>
 #include <QDebug>
 #include <QList>
 #include <QString>
@@ -9,6 +10,7 @@
 #include <algorithm>
 #include <utility>
 #include "shared.h"
+#include "mimageloader.h"
 
 struct MMacroRecord {
     enum ActionType {
@@ -27,10 +29,12 @@ struct MMacroRecord {
     QString comment;
 };
 
-class MImageOps
+class MImageOps : public QObject
 {
+    Q_OBJECT
+
 public:
-    MImageOps();
+    explicit MImageOps(MImageLoader* imgLoader, QObject *parent = 0);
     virtual ~MImageOps() {}
 
     void clear();
@@ -70,6 +74,7 @@ public:
     bool deserialize(QString const &in);
 
 private:
+    MImageLoader* loader;
     QList<MMacroRecord> history;
     QList<MMacroRecord>::iterator pos;
     bool loading = false;

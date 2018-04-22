@@ -17,6 +17,10 @@ MViewer::MViewer(QWidget *parent) :
         return;
     }
 
+    loader = new MImageLoader(&plugins,this);
+    loadingMovie = new QMovie(":/loading_icon.gif",QByteArray(),this);
+    a_story = new MImageOps(loader,this);
+
     progressBar = new QProgressBar(this);
     progressBar->setTextVisible(false);
     ui->statusBar->addPermanentWidget(progressBar);
@@ -40,7 +44,7 @@ MViewer::MViewer(QWidget *parent) :
             ui->lcdNumber->display((double)incViews());
         }
     });
-    connect(stopButton,&QPushButton::clicked,this,[this] { flag_stop_load_everything = true; });
+    connect(stopButton,&QPushButton::clicked,this,[this] { stop_flag = true; });
 
     connect(ui->star_1,&StarLabel::clicked,this,[this] { changedStars(1); });
     connect(ui->star_2,&StarLabel::clicked,this,[this] { changedStars(2); });
@@ -48,18 +52,16 @@ MViewer::MViewer(QWidget *parent) :
     connect(ui->star_4,&StarLabel::clicked,this,[this] { changedStars(4); });
     connect(ui->star_5,&StarLabel::clicked,this,[this] { changedStars(5); });
 
-    loadingMovie = new QMovie(":/loading_icon.gif");
     enableMouseMoveEvents(children());
 
     plugins.setViewerContext(MillaPluginContext({ &current_l,ui->scrollArea_2,ui->label_2,this }));
     plugins.addPluginsToMenu(*(ui->menuPlugins), [this] (double p) {
         progressBar->setValue(floor(p));
         QCoreApplication::processEvents();
-        return !flag_stop_load_everything;
+        return !stop_flag;
     });
-    plugins.updateSupportedFileFormats(supported);
 
-    MMemoryModel* mmm = new MMemoryModel(ui->listView_4);
+    MMemoryModel* mmm = new MMemoryModel(loader,ui->listView_4);
     ui->listView_4->setModel(mmm);
     ui->listView_4->setViewMode(QListView::ListMode);
     ui->listView_4->setFlow(QListView::LeftToRight);
@@ -77,8 +79,7 @@ MViewer::MViewer(QWidget *parent) :
         });
     }
     connect(ui->listView_4->selectionModel(),&QItemSelectionModel::selectionChanged,[this] {
-        MImageListRecord _r = ui->listView_4->selectionModel()->selectedIndexes().first().data(MImageListModel::FullDataRole).value<MImageListRecord>();
-        current_r = _r;
+        current_r = ui->listView_4->selectionModel()->selectedIndexes().first().data(MImageListModel::FullDataRole).value<MImageListRecord>();
         scaleImage(current_r,ui->scrollArea_2,ui->label_2,ui->label_4,1);
         incViews(false);
     });
@@ -87,7 +88,7 @@ MViewer::MViewer(QWidget *parent) :
 
     cleanUp();
     updateTags();
-    db.readRecentDirs(ui->menuRecent_dirs,MILLA_MAX_RECENT_DIRS,[this] (auto s) { this->loadRecentEntry(s); });
+    updateRecents();
 
     restoreGeometry(db.getWindowGeometryOrState(true));
     restoreState(db.getWindowGeometryOrState(false));
@@ -98,8 +99,6 @@ MViewer::~MViewer()
 {
     db.updateWindowGeometryAndState(saveGeometry(),saveState());
     db.updateViewerState(children());
-
-    if (loadingMovie) delete loadingMovie;
     delete ui;
 }
 
@@ -182,7 +181,7 @@ void MViewer::prepareLongProcessing(bool finish)
 {
     progressBar->setValue(finish? 100 : 0);
     stopButton->setEnabled(!finish);
-    flag_stop_load_everything = false;
+    stop_flag = false;
 
     if (finish) {
         //QApplication::restoreOverrideCursor();
@@ -287,7 +286,7 @@ void MViewer::showImageList(QStringList const &lst)
     cleanUp();
 
     bool purelist = !(ui->actionThumbnails_cloud->isChecked());
-    ThumbnailModel* ptr = new ThumbnailModel(lst,thumbload_pbar,ui->listView);
+    ThumbnailModel* ptr = new ThumbnailModel(lst,thumbload_pbar,loader,ui->listView);
 
     ptr->setShortenFilenames(!purelist);
     ui->listView->setModel(ptr);
@@ -305,6 +304,9 @@ void MViewer::showImageList(QStringList const &lst)
     });
 
     ui->statusBar->showMessage(QString::asprintf("%d images",lst.size()));
+    updateRecents();
+    on_actionDescending_triggered();
+    on_pushButton_9_clicked();
 }
 
 void MViewer::showSelectedImage()
@@ -394,7 +396,6 @@ unsigned MViewer::incViews(bool left)
         if (add) {
             history.files.push_back(current_l.filename);
             history.cur = history.files.end();
-            //qDebug() << "history size now" << history.files.size() << "; we just pushed " << current_l.filename;
         }
     }
 
@@ -421,115 +422,23 @@ void MViewer::leftImageMetaUpdate()
     ui->statusBar->showMessage("");
 }
 
-bool MViewer::isLoadableFile(QString const &path, QString *canonicalPath)
-{
-    QFileInfo cfn(path);
-    QString ext(cfn.suffix().toLower());
-    if (supported.contains(ext)) {
-        if (canonicalPath) *canonicalPath = cfn.canonicalFilePath();
-        return true;
-    }
-    return false;
-}
-
-void MViewer::scanDirectory(QString const &dir, QStringList &addto, bool recursive)
-{
-    QDirIterator::IteratorFlags flags = QDirIterator::FollowSymlinks;
-    if (recursive) flags |= QDirIterator::Subdirectories;
-    QDirIterator it(dir, QDir::Files | QDir::NoDotAndDotDot, flags);
-    QString cpath;
-    while (it.hasNext()) {
-        if (isLoadableFile(it.next(),&cpath)) addto.push_back(cpath);
-    }
-}
-
-void MViewer::openDirByFile(QString const &fileName, bool recursive)
-{
-    if (fileName.isEmpty()) return;
-
-    QFileInfo bpf(fileName);
-    QString bpath;
-    if (bpf.isDir()) {
-        QDir dr(fileName);
-        bpath = dr.canonicalPath();
-    } else
-        bpath = bpf.canonicalPath();
-    if (bpath.isEmpty()) return;
-
-    QStringList lst;
-    scanDirectory(bpath,lst,recursive);
-    showImageList(lst);
-    postOpen(fileName,true);
-}
-
-void MViewer::openDirByList(QString const &fileName)
-{
-    if (fileName.isEmpty()) return;
-
-    QFile ilist(fileName);
-    if (!ilist.open(QIODevice::ReadOnly | QIODevice::Text)) {
-        qDebug() << "ALERT: unable to read file " << fileName;
-        return;
-    }
-    QString dat = ilist.readAll();
-    ilist.close();
-
-    QStringList ldat = dat.split('\n',QString::SkipEmptyParts);
-    dat.clear();
-    if (ldat.empty()) return;
-
-    QStringList lst;
-    QString cpath;
-    for (auto &i : ldat) {
-        if (i.isEmpty()) continue;
-        if (i.at(i.size()-1) == '/') scanDirectory(i,lst,false);
-        else if (i.right(2) == "/*") scanDirectory(i.left(i.size()-1),lst,true);
-        else if (isLoadableFile(i,&cpath)) lst.push_back(cpath);
-    }
-
-    showImageList(lst);
-    postOpen(fileName,false);
-}
-
-void MViewer::postOpen(QString const &fileName, bool isDir)
-{
-    db.addRecentDir(fileName,isDir);
-    db.readRecentDirs(ui->menuRecent_dirs,MILLA_MAX_RECENT_DIRS,[this] (auto s) { this->loadRecentEntry(s); });
-    on_actionDescending_triggered();
-    on_pushButton_9_clicked();
-}
-
 void MViewer::processArguments()
 {
     QStringList args = QApplication::arguments();
     if (args.size() < 2) {
-        loadRecentEntry(db.getMostRecentDir());
+        showImageList(loader->open(db.getMostRecentDir()));
         return;
     }
     args.erase(args.begin());
 
-    if (args.size() == 1) {
-        if (isLoadableFile(args.front(),nullptr)) openDirByFile(args.front());
-        else {
-            QFileInfo cfn(args.front());
-            QString ext(cfn.suffix().toLower());
-            if (ext == "txt" || ext == "lst")
-                openDirByList(args.front());
-        }
-
-    } else {
-        QStringList lst;
-        QString cpath;
-        for (auto &i : args) {
-            if (isLoadableFile(i,&cpath)) lst.push_back(cpath);
-        }
-        showImageList(lst);
-    }
+    loader->clearList();
+    for (auto &i : args) loader->append(i,(args.size() > 1));
+    showImageList(loader->getList());
 
     ThumbnailModel* ptm = dynamic_cast<ThumbnailModel*>(ui->listView->model());
     if (ptm) {
         QString canon;
-        if (isLoadableFile(args.front(),&canon))
+        if (loader->isLoadableFile(args.front(),&canon))
             ui->listView->setCurrentIndex(ptm->getRecordIndex(canon));
         else
             ui->listView->setCurrentIndex(ptm->getRecordIndex(0));
@@ -539,23 +448,24 @@ void MViewer::processArguments()
 void MViewer::on_actionOpen_triggered()
 {
     QString flt(MILLA_OPEN_FILE);
-    flt += " (*." + supported.join(" *.") + ")";
+    flt += " (*." + loader->getSupported().join(" *.") + ")";
 
-    QString fn = QFileDialog::getOpenFileName(this, tr("Open image and directory"), "", flt);
+    QString fn = QFileDialog::getOpenFileName(this,tr("Open image and directory"),"",flt);
     if (fn.isEmpty()) return;
-
-    bool rec = QMessageBox::question(this, tr("Type of scan"), tr("Do recursive scan?"), QMessageBox::Yes | QMessageBox::No) == QMessageBox::Yes;
-    openDirByFile(fn,rec);
+    showImageList(loader->open(fn));
 
     QString canon;
     ThumbnailModel* ptm = dynamic_cast<ThumbnailModel*>(ui->listView->model());
-    if (ptm && isLoadableFile(fn,&canon)) ui->listView->setCurrentIndex(ptm->getRecordIndex(canon));
+    if (ptm && loader->isLoadableFile(fn,&canon)) ui->listView->setCurrentIndex(ptm->getRecordIndex(canon));
 }
 
 void MViewer::on_actionOpen_list_triggered()
 {
-    QString fn = QFileDialog::getOpenFileName(this, tr("Open list of images"), "", tr(MILLA_OPEN_LIST));
-    openDirByList(fn);
+    QString flt(MILLA_OPEN_LIST);
+    QStringList _l = MILLA_LIST_FORMATS;
+    flt += " (*." + _l.join(" *.") + ")";
+
+    showImageList(loader->open(QFileDialog::getOpenFileName(this,tr("Open list of images"),"",flt)));
 }
 
 void MViewer::on_actionFit_triggered()
@@ -585,7 +495,7 @@ void MViewer::on_actionMatch_triggered()
         lst = match.GlobalMatcher([this] (double p) {
             progressBar->setValue(floor(p));
             QCoreApplication::processEvents();
-            return !flag_stop_load_everything;
+            return !stop_flag;
         });
         prepareLongProcessing(true);
 
@@ -614,7 +524,7 @@ void MViewer::on_actionLoad_everything_slow_triggered()
 
     for (auto &i : ptm->GetAllImages()) {
         QCoreApplication::processEvents();
-        if (flag_stop_load_everything) break;
+        if (stop_flag) break;
         if (!createStatRecord(i.filename)) continue;
 
         prg += dp;
@@ -634,7 +544,7 @@ void MViewer::on_actionLoad_everything_slow_triggered()
                                                  all,
                                                  DBHelper::timePrinter(passed).toStdString().c_str(),
                                                  spd,
-                                                 (flag_stop_load_everything?"Cancelled by user":"Finished")));
+                                                 (stop_flag?"Cancelled by user":"Finished")));
     prepareLongProcessing(true);
 }
 
@@ -725,7 +635,7 @@ void MViewer::resultsPresentation(QStringList lst, QListView* view, int tabIndex
         }
     }
 
-    view->setModel(new SResultModel(out,view));
+    view->setModel(new SResultModel(out,loader,view));
     view->setViewMode(QListView::ListMode);
     view->setFlow(QListView::LeftToRight);
     view->setWrapping(false);
@@ -945,7 +855,7 @@ void MViewer::selectIEFileDialog(bool import)
     mod.setProgressBar([this] (double v) {
         this->progressBar->setValue(floor(v));
         QCoreApplication::processEvents();
-        return !flag_stop_load_everything;
+        return !stop_flag;
     });
 
     //and start the process
@@ -987,7 +897,7 @@ void MViewer::on_actionUpdate_thumbnails_triggered()
     prepareLongProcessing();
 
     int m = ptm->GetAllImages().size();
-    for (int i = 0; i < m && !flag_stop_load_everything; i++) {
+    for (int i = 0; i < m && !stop_flag; i++) {
         progressBar->setValue(floor((double)i / (double)m * 100.f));
         ptm->LoadUp(i,true);
         QCoreApplication::processEvents();
@@ -1073,7 +983,7 @@ void MViewer::on_actionReload_metadata_triggered()
         prg += dp;
         progressBar->setValue(floor(prg));
         QCoreApplication::processEvents();
-        if (flag_stop_load_everything) break;
+        if (stop_flag) break;
 
         MImageExtras ex = db.getExtrasFromDB(i.filename);
         if (!ex.valid) continue; //we haven't scanned this file yet
@@ -1104,7 +1014,7 @@ void MViewer::on_actionSanitize_DB_triggered()
     ProgressCB cb = ([this] (double p) {
         progressBar->setValue(floor(p));
         QCoreApplication::processEvents();
-        return !flag_stop_load_everything;
+        return !stop_flag;
     });
 
     //step 0. remove unreachable files
@@ -1177,12 +1087,8 @@ void MViewer::historyShowCurrent()
         if (idx.isValid()) ui->listView->setCurrentIndex(idx);
 
     } else {
-        //load arbitary file using ThumbnailModel instance
-        QStringList ls = { (*history.cur) };
-        ptm = new ThumbnailModel(ls,0);
-        ptm->LoadUp(0);
-        current_l = ptm->data(ptm->getRecordIndex(0),MImageListModel::FullDataRole).value<MImageListRecord>();
-        delete ptm;
+        //load file
+        current_l = loader->loadFull(*history.cur);
         scaleImage(current_l,ui->scrollArea,ui->label,ui->label_3,1);
         leftImageMetaUpdate();
     }
@@ -1193,7 +1099,6 @@ void MViewer::on_actionRandom_image_triggered()
     ThumbnailModel* ptm = dynamic_cast<ThumbnailModel*>(ui->listView->model());
     if (!ptm || ptm->GetAllImages().empty()) return;
     double idx = (double)random() / (double)RAND_MAX * (double)(ptm->GetAllImages().size());
-    //qDebug() << "Randomly selecting item " << idx;
     ui->listView->setCurrentIndex(ptm->getRecordIndex(floor(idx)));
 }
 
@@ -1210,10 +1115,10 @@ void MViewer::on_actionFind_duplicates_triggered()
     QString report = db.detectExactCopies([this] (double p) {
         progressBar->setValue(floor(p));
         QCoreApplication::processEvents();
-        return !flag_stop_load_everything;
+        return !stop_flag;
     });
 
-    bool abrt = flag_stop_load_everything;
+    bool abrt = stop_flag;
     prepareLongProcessing(true);
     ui->statusBar->showMessage(abrt? "Aborted":"Done");
     if (abrt || report.isEmpty()) return;
@@ -1296,40 +1201,37 @@ void MViewer::on_actionClear_triggered()
     db.clearRecentDirs(true);
 }
 
-void MViewer::loadRecentEntry(QString const &entry)
+void MViewer::updateRecents()
 {
-    QFileInfo fi(entry);
-    if (!fi.exists()) return;
-    if (fi.isDir()) openDirByFile(entry);
-    else openDirByList(entry);
+    db.readRecentDirs(ui->menuRecent_dirs,MILLA_MAX_RECENT_DIRS,[this] (auto s) { this->showImageList(loader->open(s)); });
 }
 
 void MViewer::updateStory(QPixmap const &result)
 {
     showGeneratedPicture(result);
-    ui->label_6->setText(QString::asprintf("Step %d/%d",a_story.position(),a_story.size()));
-    ui->plainTextEdit_2->setPlainText(a_story.getComment());
+    ui->label_6->setText(QString::asprintf("Step %d/%d",a_story->position(),a_story->size()));
+    ui->plainTextEdit_2->setPlainText(a_story->getComment());
     ui->plainTextEdit_2->setEnabled(!result.isNull());
 }
 
 void MViewer::on_actionRotate_90_CW_triggered()
 {
-    updateStory(a_story.rotate(current_l,true));
+    updateStory(a_story->rotate(current_l,true));
 }
 
 void MViewer::on_actionRotate_90_CCW_triggered()
 {
-    updateStory(a_story.rotate(current_l,false));
+    updateStory(a_story->rotate(current_l,false));
 }
 
 void MViewer::on_actionFlip_vertical_triggered()
 {
-    updateStory(a_story.flip(current_l,true));
+    updateStory(a_story->flip(current_l,true));
 }
 
 void MViewer::on_actionFlip_horizontal_triggered()
 {
-    updateStory(a_story.flip(current_l,false));
+    updateStory(a_story->flip(current_l,false));
 }
 
 void MViewer::on_actionZoom_in_triggered()
@@ -1408,7 +1310,7 @@ void MViewer::on_actionApply_tagset_triggered()
         prg += dp;
         progressBar->setValue(floor(prg));
         QCoreApplication::processEvents();
-        if (flag_stop_load_everything) break;
+        if (stop_flag) break;
     }
     prepareLongProcessing(true);
     ui->statusBar->showMessage("Finished setting tags");
@@ -1425,12 +1327,12 @@ void MViewer::on_actionApply_tagset_from_left_to_right_triggered()
 
 void MViewer::on_actionConcatenate_triggered()
 {
-    updateStory(a_story.concatenate(current_l,current_r));
+    updateStory(a_story->concatenate(current_l,current_r));
 }
 
 void MViewer::on_pushButton_9_clicked()
 {
-    a_story.clear();
+    a_story->clear();
     ui->label_6->setText("Step 0/0");
     ui->lineEdit_3->clear();
     ui->plainTextEdit_2->clear();
@@ -1438,38 +1340,38 @@ void MViewer::on_pushButton_9_clicked()
 
 void MViewer::on_pushButton_4_clicked()
 {
-    if (!a_story.isActive()) return;
-    a_story.addComment(ui->plainTextEdit_2->toPlainText());
-    updateStory(a_story.previous(ui->actionSkip_empty_story_steps->isChecked()));
+    if (!a_story->isActive()) return;
+    a_story->addComment(ui->plainTextEdit_2->toPlainText());
+    updateStory(a_story->previous(ui->actionSkip_empty_story_steps->isChecked()));
 }
 
 void MViewer::on_pushButton_6_clicked()
 {
-    if (!a_story.isActive()) return;
-    a_story.addComment(ui->plainTextEdit_2->toPlainText());
-    updateStory(a_story.next(ui->actionSkip_empty_story_steps->isChecked()));
+    if (!a_story->isActive()) return;
+    a_story->addComment(ui->plainTextEdit_2->toPlainText());
+    updateStory(a_story->next(ui->actionSkip_empty_story_steps->isChecked()));
 }
 
 void MViewer::on_pushButton_8_clicked()
 {
-    if (!a_story.isActive()) return;
-    a_story.addComment(ui->plainTextEdit_2->toPlainText());
-    if (db.updateStory(ui->lineEdit_3->text().replace('\"','\''),&a_story))
+    if (!a_story->isActive()) return;
+    a_story->addComment(ui->plainTextEdit_2->toPlainText());
+    if (db.updateStory(ui->lineEdit_3->text().replace('\"','\''),a_story))
         ui->statusBar->showMessage("Story saved");
 }
 
 void MViewer::on_pushButton_5_clicked()
 {
-    if (!a_story.isActive()) return;
-    a_story.addComment(ui->plainTextEdit_2->toPlainText());
-    if (a_story.moveCurrent(true)) updateStory(a_story.current());
+    if (!a_story->isActive()) return;
+    a_story->addComment(ui->plainTextEdit_2->toPlainText());
+    if (a_story->moveCurrent(true)) updateStory(a_story->current());
 }
 
 void MViewer::on_pushButton_7_clicked()
 {
-    if (!a_story.isActive()) return;
-    a_story.addComment(ui->plainTextEdit_2->toPlainText());
-    if (a_story.moveCurrent(false)) updateStory(a_story.current());
+    if (!a_story->isActive()) return;
+    a_story->addComment(ui->plainTextEdit_2->toPlainText());
+    if (a_story->moveCurrent(false)) updateStory(a_story->current());
 }
 
 void MViewer::on_actionPick_a_story_triggered()
@@ -1482,8 +1384,8 @@ void MViewer::on_actionPick_a_story_triggered()
     StorySelector dlg;
     if (!dlg.exec() || dlg.getStoryTitle().isEmpty()) return;
 
-    if (db.loadStory(dlg.getStoryTitle(),&a_story)) {
-        updateStory(a_story.first());
+    if (db.loadStory(dlg.getStoryTitle(),a_story)) {
+        updateStory(a_story->first());
         ui->lineEdit_3->setText(dlg.getStoryTitle());
         ui->tabWidget->setCurrentIndex(4);
         ui->statusBar->showMessage("Story loaded.");
@@ -1493,7 +1395,7 @@ void MViewer::on_actionPick_a_story_triggered()
 
 void MViewer::on_actionAdd_to_story_triggered()
 {
-    updateStory(a_story.append(current_l));
+    updateStory(a_story->append(current_l));
 }
 
 void MViewer::on_actionCrop_triggered()
@@ -1503,7 +1405,7 @@ void MViewer::on_actionCrop_triggered()
                 (double(current_l.picture.size().width()) / double(ui->scrollArea->size().width())) :
                 (double(current_l.picture.size().height()) / double(ui->scrollArea->size().height()));
     QRect ns(selection.topLeft()*scale,selection.size()*scale);
-    updateStory(a_story.crop(current_l,ns & current_l.picture.rect()));
+    updateStory(a_story->crop(current_l,ns & current_l.picture.rect()));
 }
 
 bool MViewer::eventFilter(QObject *obj, QEvent *event)

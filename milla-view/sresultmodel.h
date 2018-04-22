@@ -13,7 +13,7 @@ class SResultModel : public MImageListModel
     Q_OBJECT
 
 public:
-    explicit SResultModel(QList<MImageListRecord> items, QObject *parent = 0);
+    explicit SResultModel(QList<MImageListRecord> items, MImageLoader* imgLoader, QObject *parent = 0);
     virtual ~SResultModel();
 
 private:

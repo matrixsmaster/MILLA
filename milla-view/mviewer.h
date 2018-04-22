@@ -6,8 +6,6 @@
 #include <QMessageBox>
 #include <QFileDialog>
 #include <QScrollBar>
-#include <QDirIterator>
-#include <QFileInfo>
 #include <QScrollArea>
 #include <QListWidget>
 #include <QProgressBar>
@@ -22,6 +20,7 @@
 #include "shared.h"
 #include "pluginloader.h"
 #include "dbhelper.h"
+#include "mimageloader.h"
 #include "thumbnailmodel.h"
 #include "sresultmodel.h"
 #include "mmemorymodel.h"
@@ -31,15 +30,6 @@
 #include "mimageops.h"
 #include "storyselector.h"
 
-#define MILLA_EXTRA_CACHE_SIZE 1500
-#define MILLA_SUPPRTED_FORMATS { "png", "jpg", "jpeg", "bmp" }
-#define MILLA_OPEN_FILE "Supported files"
-#define MILLA_OPEN_LIST "Text Files [txt,lst] (*.txt *.lst)"
-#define MILLA_MAXMATCH_RESULTS 10
-#define MILLA_MAXTAG_RESULTS 300
-#define MILLA_MAX_RECENT_DIRS 10
-#define MILLA_SCALE_UP 1.1
-#define MILLA_SCALE_DOWN 0.9
 
 struct MHistory {
     QStringList files;
@@ -202,7 +192,7 @@ private:
     DBHelper db;
     CVHelper mCV;
     MillaPluginLoader plugins;
-    QStringList supported = MILLA_SUPPRTED_FORMATS;
+    MImageLoader* loader = nullptr;
 
     QTimer view_timer;
     QProgressBar* progressBar;
@@ -211,7 +201,7 @@ private:
     QLabel* loadingLabel = nullptr;
     ProgressCB thumbload_pbar;
 
-    bool flag_stop_load_everything = false;
+    bool stop_flag = false;
     double scaleFactor = 1;
     MImageListRecord current_l, current_r;
     QRect selection;
@@ -222,7 +212,7 @@ private:
     MTagCache tags_cache;
     MHistory history;
     std::map<QAction*,QKeySequence> hotkeys;
-    MImageOps a_story;
+    MImageOps* a_story = nullptr;
 
     void cleanUp();
 
@@ -252,16 +242,6 @@ private:
 
     void leftImageMetaUpdate();
 
-    bool isLoadableFile(QString const &path, QString* canonicalPath);
-
-    void scanDirectory(QString const &dir, QStringList &addto, bool recursive);
-
-    void openDirByFile(QString const &fileName, bool recursive = false);
-
-    void openDirByList(QString const &fileName);
-
-    void postOpen(QString const &fileName, bool isDir);
-
     void resultsPresentation(QStringList lst, QListView *view, int tabIndex);
 
     void searchResults(QStringList lst);
@@ -280,7 +260,7 @@ private:
 
     void enableMouseMoveEvents(QObjectList const &lst);
 
-    void loadRecentEntry(QString const &entry);
+    void updateRecents();
 
     void copyTagsetTo(QString const &fn);
 

@@ -1,25 +1,11 @@
 #include "mmemorymodel.h"
 #include "dbhelper.h"
 
-MMemoryModel::MMemoryModel(QObject *parent) :
-    MImageListModel(parent)
+MMemoryModel::MMemoryModel(MImageLoader *imgLoader, QObject *parent) :
+    MImageListModel(imgLoader,parent)
 {
     do_shorten = true;
-
-    for (int i = 0; i < MAXMEMORYSLOTS; i++) {
-        MImageListRecord rec;
-        rec.filename = DBHelper::getMemorySlot(i);
-        loadSingleFile(rec);
-
-        if (!rec.valid) {
-            rec.thumb = QPixmap(THUMBNAILSIZE,THUMBNAILSIZE);
-            rec.thumb.fill(Qt::black);
-            rec.valid = true;
-        }
-
-        rec.fnshort = QString::asprintf("Slot %d",i+1);
-        images.push_back(rec);
-    }
+    clear();
 }
 
 void MMemoryModel::setSlot(int n, MImageListRecord const &rec)
@@ -37,11 +23,9 @@ void MMemoryModel::clear()
     beginInsertRows(QModelIndex(),images.size(),images.size());
     images.clear();
     for (int i = 0; i < MAXMEMORYSLOTS; i++) {
-        MImageListRecord rec;
-        rec.thumb = QPixmap(THUMBNAILSIZE,THUMBNAILSIZE);
-        rec.thumb.fill(Qt::black);
+        MImageListRecord rec = loader->loadFull(DBHelper::getMemorySlot(i));
+        rec.valid = true; //make it valid anyway
         rec.fnshort = QString::asprintf("Slot %d",i+1);
-        rec.valid = true;
         images.push_back(rec);
     }
     endInsertRows();

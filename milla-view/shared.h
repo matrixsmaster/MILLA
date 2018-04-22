@@ -9,10 +9,26 @@
 #include <map>
 #include <functional>
 
-#define MILLA_VERSION "ver. 0.4.1"
+#define MILLA_VERSION "ver. 0.4.2 next-gen"
 #define MILLA_CLI_BANNER "MILLA:  Qt5-based, AI-enhanced image viewer"
 #define MILLA_CONFIG_PATH "/.milla/"
 #define MILLA_SITE "http://github.com/matrixsmaster/MILLA"
+
+#define MILLA_EXTRA_CACHE_SIZE 900
+#define MILLA_MAXMATCH_RESULTS 10
+#define MILLA_MAXTAG_RESULTS 300
+#define MILLA_MAX_RECENT_DIRS 10
+#define MILLA_SCALE_UP 1.1
+#define MILLA_SCALE_DOWN 0.9
+
+#define MILLA_THUMBNAIL_SIZE 100
+#define MILLA_MAXSHORTLENGTH 24
+#define MILLA_MAXPICSBYTES 1024*1024*1024
+
+#define MILLA_DEFAULT_FORMATS { "png", "jpg", "jpeg", "bmp" }
+#define MILLA_LIST_FORMATS { "txt", "lst" }
+#define MILLA_OPEN_FILE "All supported files"
+#define MILLA_OPEN_LIST "Text list files"
 
 typedef std::map<QString,std::pair<unsigned,Qt::CheckState>> MTagCache;
 
@@ -26,7 +42,7 @@ struct MImageListRecord {
     QPixmap thumb, picture;
     time_t touched = 0, filechanged = 0;
     bool loaded = false;
-    bool modified = true;
+    bool thumbOK = false;
     bool generated = false;
     bool valid = false;
 };

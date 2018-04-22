@@ -10,7 +10,7 @@ class MMemoryModel : public MImageListModel
     Q_OBJECT
 
 public:
-    MMemoryModel(QObject *parent = 0);
+    explicit MMemoryModel(MImageLoader* imgLoader, QObject *parent = 0);
     virtual ~MMemoryModel() {}
 
     void setSlot(int n, MImageListRecord const &rec);

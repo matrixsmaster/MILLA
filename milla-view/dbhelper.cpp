@@ -125,8 +125,8 @@ bool DBHelper::getThumbnail(MImageListRecord &rec)
     if (q.exec() && q.next() && q.value(0).canConvert(QVariant::ByteArray) && q.value(1).canConvert(QVariant::UInt)) {
         qDebug() << "[db] Loaded thumbnail for " << rec.filename;
         rec.thumb.loadFromData(q.value(0).toByteArray());
+        rec.thumbOK = true;
         rec.filechanged = q.value(1).toUInt();
-        rec.modified = false;
         return true;
     }
     return false;
@@ -153,9 +153,6 @@ bool DBHelper::updateThumbnail(MImageListRecord &rec, QByteArray const &png)
     bool ok = q.exec();
 
     qDebug() << "[db] " << act << " record for " << rec.fnshort << ": " << ok;
-    if (ok) rec.modified = false;
-    else qDebug() << q.lastError();
-
     return ok;
 }
 

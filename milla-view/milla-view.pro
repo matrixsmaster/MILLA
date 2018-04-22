@@ -28,7 +28,8 @@ SOURCES += main.cpp\
     mmatcher.cpp \
     mmemorymodel.cpp \
     mimageops.cpp \
-    storyselector.cpp
+    storyselector.cpp \
+    mimageloader.cpp
 
 HEADERS  += mviewer.h \
     thumbnailmodel.h \
@@ -48,7 +49,8 @@ HEADERS  += mviewer.h \
     shared.h \
     mmemorymodel.h \
     mimageops.h \
-    storyselector.h
+    storyselector.h \
+    mimageloader.h
 
 FORMS    += mviewer.ui \
     searchform.ui \

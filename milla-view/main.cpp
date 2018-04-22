@@ -14,7 +14,7 @@ int main(int argc, char *argv[])
     srandom(time(NULL));
 
 #ifdef QT_DEBUG
-    qDebug() << "DEBUG BUILD RUNNING";
+    qDebug() << "============== DEBUG BUILD RUNNING ==============";
 #endif
 
     QDir cfg_path(QDir::homePath() + MILLA_CONFIG_PATH);

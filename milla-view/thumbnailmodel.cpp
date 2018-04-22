@@ -1,28 +1,15 @@
 #include "thumbnailmodel.h"
 #include "dbhelper.h"
 
-ThumbnailModel::ThumbnailModel(QStringList files, ProgressCB loading_cb, QObject *parent)
-    : MImageListModel(parent)
+ThumbnailModel::ThumbnailModel(QStringList files, ProgressCB loading_cb, MImageLoader *imgLoader, QObject *parent)
+    : MImageListModel(imgLoader,parent)
 {
     double prg = 0, dp = 100.f / (double)(files.size());
 
     for (auto &i : files) {
         if (i.isEmpty()) continue;
 
-        MImageListRecord rec;
-        rec.filename = i;
-        rec.valid = true;
-        DBHelper::getThumbnail(rec);
-
-        if (rec.modified) {
-            rec.thumb = QPixmap(THUMBNAILSIZE,THUMBNAILSIZE);
-            rec.thumb.fill(Qt::black);
-        }
-
-        QFileInfo fi(i);
-        rec.fnshort = fi.fileName();
-
-        images.append(rec);
+        images.append(loader->loadFull(i,true));
 
         prg += dp;
         if (loading_cb) loading_cb(prg);
@@ -39,28 +26,17 @@ void ThumbnailModel::LoadUp(int idx, bool force_reload)
     if (idx < 0 || idx >= images.size()) return;
     if (!force_reload && images.at(idx).loaded) return;
 
-    images[idx].picture = QPixmap(images[idx].filename);
-    if (images.at(idx).picture.isNull()) return;
-    images[idx].loaded = true;
+    images[idx] = loader->loadFull(images.at(idx).filename);
+    if (!images.at(idx).loaded) return;
 
     ram_footprint += ItemSizeInBytes(idx);
     GC(idx);
-
-    QFileInfo fi(images.at(idx).filename);
-    if (fi.lastModified().toTime_t() == images.at(idx).filechanged) return;
-
-    images[idx].thumb = images[idx].picture.scaled(THUMBNAILSIZE,THUMBNAILSIZE,Qt::KeepAspectRatio,Qt::SmoothTransformation);
-    images[idx].modified = true;
-    images[idx].touched = DBHelper::getLastViewTime(images[idx].filename);
-    images[idx].filechanged = fi.lastModified().toTime_t();
-
-    SaveThumbnail(images[idx]);
 }
 
 void ThumbnailModel::GC(int skip)
 {
     qDebug() << "[GC] Current RAM footprint: " << (ram_footprint/1024/1024) << " MiB";
-    if (ram_footprint < MAXPICSBYTES) return;
+    if (ram_footprint < MILLA_MAXPICSBYTES) return;
 
     std::map<time_t,int> allocated;
     for (int i = 0; i < images.size(); i++) {
@@ -77,7 +53,7 @@ void ThumbnailModel::GC(int skip)
         images[it->second].loaded = false;
         ram_footprint -= csz;
 
-        if (ram_footprint < MAXPICSBYTES) {
+        if (ram_footprint < MILLA_MAXPICSBYTES) {
             qDebug() << "[GC] Goal reached, ram footprint now is " << ram_footprint;
             break;
         }

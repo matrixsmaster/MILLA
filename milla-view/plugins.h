@@ -17,6 +17,7 @@ public:
     virtual bool isFilter() = 0;
     virtual bool isContinous() = 0;
     virtual bool isFileFormat() = 0;
+    virtual bool isContainer() = 0;
 
     virtual bool init() = 0;
     virtual bool finalize() = 0;

@@ -15,10 +15,7 @@
 #include <QImageWriter>
 #include <QDateTime>
 #include "shared.h"
-
-#define THUMBNAILSIZE 100
-#define MAXSHORTLENGTH 24
-#define MAXPICSBYTES 1024*1024*1024
+#include "mimageloader.h"
 
 class MImageListModel : public QAbstractListModel
 {
@@ -32,7 +29,7 @@ public:
         FullDataRole
     };
 
-    explicit MImageListModel(QObject *parent = 0);
+    explicit MImageListModel(MImageLoader* imgLoader, QObject *parent = 0);
     virtual ~MImageListModel();
 
     int columnCount(const QModelIndex &) const { return 1; }
@@ -49,18 +46,15 @@ public:
 
     virtual QModelIndex getRecordIndex(const QString &fn, bool allowPartialMatch = false);
 
-    virtual void loadSingleFile(MImageListRecord &rec);
-
 protected:
     QList<MImageListRecord> images;
     size_t ram_footprint = 0;
     bool do_shorten = false;
+    MImageLoader* loader;
 
     virtual size_t ItemSizeInBytes(int idx);
 
     virtual size_t ItemSizeInBytes(MImageListRecord const &r);
-
-    virtual void SaveThumbnail(MImageListRecord &rec) const;
 };
 
 #endif // MIMAGELISTMODEL_H

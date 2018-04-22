@@ -1,8 +1,8 @@
 #include "sresultmodel.h"
 #include "dbhelper.h"
 
-SResultModel::SResultModel(QList<MImageListRecord> items, QObject *parent)
-    : MImageListModel(parent)
+SResultModel::SResultModel(QList<MImageListRecord> items, MImageLoader *imgLoader, QObject *parent)
+    : MImageListModel(imgLoader,parent)
 {
     do_shorten = true;
     images = items;
@@ -21,8 +21,9 @@ void SResultModel::Loader()
     timer.stop();
 
     for (int i = 0; i < MAXRESULTSBULK && curitem != images.end(); ++curitem,i++) {
-        loadSingleFile(*curitem);
-        if (ram_footprint > MAXPICSBYTES) {
+        *curitem = loader->loadFull(curitem->filename);
+        ram_footprint += ItemSizeInBytes(*curitem);
+        if (ram_footprint > MILLA_MAXPICSBYTES) {
             curitem = images.end();
             break;
         }

@@ -24,6 +24,7 @@ public:
     bool isFilter()         { return false; }
     bool isContinous()      { return true; }
     bool isFileFormat()     { return false; }
+    bool isContainer()      { return false; }
 
     bool init();
     bool finalize();

@@ -3,7 +3,9 @@
 
 using namespace std;
 
-MImageOps::MImageOps()
+MImageOps::MImageOps(MImageLoader* imgLoader, QObject *parent) :
+    QObject(parent),
+    loader(imgLoader)
 {
 }
 
@@ -274,19 +276,10 @@ bool MImageOps::deserialize(QString const &in)
         acc.clear();
     }
 
-    //first pass - load files using ThumbnailModel instance
+    //first pass - load files
     for (auto &i : history) {
-        QStringList ls = { i.left.filename, i.right.filename };
-        ThumbnailModel* ptm = new ThumbnailModel(ls,0);
-        ptm->LoadUp(0);
-        ptm->LoadUp(1);
-
-        if (!i.left.filename.isEmpty())
-            i.left = ptm->data(ptm->getRecordIndex(i.left.filename),MImageListModel::FullDataRole).value<MImageListRecord>();
-        if (!i.right.filename.isEmpty())
-            i.right = ptm->data(ptm->getRecordIndex(i.right.filename),MImageListModel::FullDataRole).value<MImageListRecord>();
-
-        delete ptm;
+        if (!i.left.filename.isEmpty()) i.left = loader->loadFull(i.left.filename);
+        if (!i.right.filename.isEmpty()) i.right = loader->loadFull(i.right.filename);
     }
 
     //second pass(es) - resolve links and create images
