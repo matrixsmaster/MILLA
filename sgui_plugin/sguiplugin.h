@@ -19,11 +19,11 @@ public:
     virtual ~SGUIPlugin();
 
     QString getPluginName() { return "SGUI"; }
-    QString getPluginDesc() { return "A scriptable GUI add-on."; }
+    QString getPluginDesc() { return "A scriptable GUI add-on + VFS driver."; }
 
     bool isFilter()         { return false; }
     bool isContinous()      { return true; }
-    bool isFileFormat()     { return false; }
+    bool isFileFormat()     { return true; }
     bool isContainer()      { return true; }
 
     bool init();

@@ -9,7 +9,7 @@
 #include <map>
 #include <functional>
 
-#define MILLA_VERSION "ver. 0.4.2 next-gen"
+#define MILLA_VERSION "ver. 0.4.3 next-gen"
 #define MILLA_CLI_BANNER "MILLA:  Qt5-based, AI-enhanced image viewer"
 #define MILLA_CONFIG_PATH "/.milla/"
 #define MILLA_SITE "http://github.com/matrixsmaster/MILLA"
@@ -20,6 +20,7 @@
 #define MILLA_MAX_RECENT_DIRS 10
 #define MILLA_SCALE_UP 1.1
 #define MILLA_SCALE_DOWN 0.9
+#define MILLA_VIEW_TIMER 15
 
 #define MILLA_THUMBNAIL_SIZE 100
 #define MILLA_MAXSHORTLENGTH 24

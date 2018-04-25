@@ -94,6 +94,8 @@ QVariant SGUIPlugin::getParam(QString key)
     } else if (key == "use_config_cb") {
         return true;
 
+    } else if (key == "supported_formats") {
+        return QStringList({"vfs"});
     }
     return QVariant();
 }
@@ -102,6 +104,10 @@ bool SGUIPlugin::setParam(QString key, QVariant val)
 {
     if (key == "process_started" && val.value<bool>()) {
         fireUp();
+        return true;
+
+    } else if (key == "filename") {
+        //clipfile = QFileInfo(val.toString());
         return true;
     }
     return false;

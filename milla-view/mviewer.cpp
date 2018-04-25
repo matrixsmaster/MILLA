@@ -325,9 +325,9 @@ void MViewer::showSelectedImage()
     checkExtraCache();
     ui->lineEdit_2->clear();
 
-    qDebug() << "Opening as special file format: " << plugins.openFileFormat(current_l.filename);
+    qDebug() << "Opening file as a special file format: " << plugins.openFileFormat(current_l.filename);
 
-    view_timer.start(20);
+    view_timer.start(MILLA_VIEW_TIMER);
 }
 
 void MViewer::scaleImage(const MImageListRecord &rec, QScrollArea* scrl, QLabel* lbl, QLabel* inflbl, double factor)

@@ -1,7 +1,9 @@
 #include <QDebug>
 #include "movplugin.h"
 
-MovPlugin::MovPlugin(QObject *parent) : QObject(parent)
+MovPlugin::MovPlugin(QObject *parent) :
+    QObject(parent),
+    MillaGenericPlugin()
 {
 }
 
