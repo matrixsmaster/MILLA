@@ -129,8 +129,6 @@ QPixmap MImageLoader::load(QString const &filename)
 
 void MImageLoader::thumb(MImageListRecord &rec, bool force, bool fast)
 {
-    if (rec.filename.isEmpty()) return;
-
     DBHelper::getThumbnail(rec);
     QFileInfo fi(rec.filename);
     if (!force && fi.lastModified().toTime_t() == rec.filechanged && rec.thumbOK) return;
@@ -142,17 +140,15 @@ void MImageLoader::thumb(MImageListRecord &rec, bool force, bool fast)
         if (force || !rec.loaded) {
             rec.picture = load(rec.filename);
         }
-        if (rec.picture.isNull()) {
-            qDebug() << "[ImgLoader] Unable to load pixmap for " << rec.filename;
-            return;
-        }
-        rec.loaded = true;
+        rec.loaded = !rec.picture.isNull();
     }
 
     if (rec.loaded) {
         rec.thumb = rec.picture.scaled(MILLA_THUMBNAIL_SIZE,MILLA_THUMBNAIL_SIZE,Qt::KeepAspectRatio,Qt::SmoothTransformation);
         rec.thumbOK = !rec.thumb.isNull();
-    }
+
+    } else
+        qDebug() << "[ImgLoader] Unable to load pixmap for " << rec.filename;
 
     if (!rec.thumbOK) {
         rec.thumb = QPixmap(MILLA_THUMBNAIL_SIZE,MILLA_THUMBNAIL_SIZE);
@@ -169,7 +165,6 @@ void MImageLoader::thumb(MImageListRecord &rec, bool force, bool fast)
 MImageListRecord MImageLoader::loadFull(QString const &filename, bool fast)
 {
     MImageListRecord r;
-    if (filename.isEmpty()) return r;
 
     r.filename = filename;
     if (!fast) r.picture = load(filename);
@@ -180,7 +175,7 @@ MImageListRecord MImageLoader::loadFull(QString const &filename, bool fast)
     r.fnshort = fi.fileName();
     r.filechanged = fi.lastModified().toTime_t();
 
-    thumb(r,false,fast);
+    thumb(r,filename.isEmpty(),fast);
     r.valid = true;
 
     return r;

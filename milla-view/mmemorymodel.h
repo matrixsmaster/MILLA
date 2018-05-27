@@ -15,7 +15,7 @@ public:
 
     void setSlot(int n, MImageListRecord const &rec);
 
-    void clear();
+    void clear(bool full = false);
 };
 
 #endif // MMEMORYMODEL_H

@@ -325,7 +325,8 @@ void MViewer::showSelectedImage()
     checkExtraCache();
     ui->lineEdit_2->clear();
 
-    qDebug() << "Opening file as a special file format: " << plugins.openFileFormat(current_l.filename);
+    if (ui->actionAutoplay_special_files->isChecked())
+        qDebug() << "Opening file as a special file format: " << plugins.openFileFormat(current_l.filename);
 
     view_timer.start(MILLA_VIEW_TIMER);
 }
@@ -1260,7 +1261,7 @@ void MViewer::on_actionReset_zoom_triggered()
 void MViewer::on_actionClear_all_triggered()
 {
     MMemoryModel* mmm = dynamic_cast<MMemoryModel*>(ui->listView_4->model());
-    if (mmm) mmm->clear();
+    if (mmm) mmm->clear(true);
 }
 
 void MViewer::on_lineEdit_2_textChanged(const QString &arg1)

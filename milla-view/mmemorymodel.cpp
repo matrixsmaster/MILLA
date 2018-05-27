@@ -11,14 +11,14 @@ MMemoryModel::MMemoryModel(MImageLoader *imgLoader, QObject *parent) :
 void MMemoryModel::setSlot(int n, MImageListRecord const &rec)
 {
     if (n < 0 || n >= MAXMEMORYSLOTS) return;
+    beginInsertRows(QModelIndex(),images.size(),images.size());
     images[n] = rec;
     images[n].fnshort = QString::asprintf("Slot %d",n+1);
-    beginInsertRows(QModelIndex(),images.size(),images.size());
     endInsertRows();
     DBHelper::updateMemorySlot(n,rec.filename);
 }
 
-void MMemoryModel::clear()
+void MMemoryModel::clear(bool full)
 {
     beginInsertRows(QModelIndex(),images.size(),images.size());
     images.clear();
@@ -29,5 +29,6 @@ void MMemoryModel::clear()
         images.push_back(rec);
     }
     endInsertRows();
-    DBHelper::eraseMemory();
+
+    if (full) DBHelper::eraseMemory();
 }

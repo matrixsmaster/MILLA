@@ -2693,6 +2693,7 @@
       <string>Preferences</string>
      </property>
      <addaction name="actionHotkeys_enabled"/>
+     <addaction name="actionAutoplay_special_files"/>
     </widget>
     <addaction name="actionLink_left_to_right"/>
     <addaction name="actionLink_bidirectional"/>
@@ -3268,6 +3269,17 @@
    </property>
    <property name="text">
     <string>Skip empty story steps</string>
+   </property>
+  </action>
+  <action name="actionAutoplay_special_files">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Autoplay special files</string>
    </property>
   </action>
  </widget>
