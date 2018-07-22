@@ -36,7 +36,7 @@ public:
     QVariant getParam(QString key);
     bool setParam(QString key, QVariant val);
 
-    QVariant action(QVariant);
+    QVariant action(QVariant in);
 
     void getProperty(AIOPropertyType tp, int* ival, char** sval);
     bool setProperty(AIOPropertyType tp, int ival, const char* sval);
@@ -52,7 +52,7 @@ private:
     QImage frame;
     bool autorepeat = true;
     AIOColorOrdering colorder = AIOCO_MEMBGRA;
-    int screen_w, screen_h;
+    int screen_w, screen_h, avail_w, avail_h;
     PlugConfCB config_cb = 0;
     SGUIEventSink sink;
     VMouse mouse;

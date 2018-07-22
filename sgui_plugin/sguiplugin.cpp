@@ -113,9 +113,16 @@ bool SGUIPlugin::setParam(QString key, QVariant val)
     return false;
 }
 
-QVariant SGUIPlugin::action(QVariant)
+QVariant SGUIPlugin::action(QVariant in)
 {
     if (!sgui || !vfs) return QVariant();
+    if (!in.canConvert<QSize>()) {
+        qDebug() << "[SGUIPlugin] Action(): invalid QVariant";
+        return QVariant();
+    }
+    QSize sz = in.value<QSize>();
+    avail_w = sz.width();
+    avail_h = sz.height();
 
     bool quit;
     sgui->UpdateIO(quit);
@@ -138,6 +145,14 @@ void SGUIPlugin::getProperty(AIOPropertyType tp, int* ival, char** sval)
 
     case AIOP_SWIDTH:
         *ival = screen_w;
+        break;
+
+    case AIOP_MWIDTH:
+        *ival = avail_w;
+        break;
+
+    case AIOP_MHEIGHT:
+        *ival = avail_h;
         break;
 
     case AIOP_AUTOREPEAT:
