@@ -83,7 +83,7 @@ void SGUIPlugin::fireUp()
         config_cb("set_event_filter",i);
     }
 
-    qDebug() << "[SGUIPlugin] SGUI started";
+    qDebug() << "[SGUIPlugin] SGUI started. Version " << sgui->getVersion();
 }
 
 QVariant SGUIPlugin::getParam(QString key)
