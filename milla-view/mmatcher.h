@@ -19,6 +19,8 @@ public:
 
     QStringList GlobalMatcher(ProgressCB cb);
 
+    static double OneTimeMatcher(cv::Mat const &a, cv::Mat const &b);
+
 private:
     MImageExtras const &original;
     QString filename;

@@ -67,6 +67,11 @@ QStringList MMatcher::GlobalMatcher(ProgressCB cb)
     return CreateList();
 }
 
+double MMatcher::OneTimeMatcher(cv::Mat const &a, cv::Mat const &b)
+{
+    return compareHist(a,b,CV_COMP_CORREL) * 100.f;
+}
+
 QStringList MMatcher::CreateList()
 {
     QStringList lst;

@@ -31,212 +31,278 @@
        <string>General</string>
       </attribute>
       <layout class="QGridLayout" name="gridLayout">
-       <item row="0" column="0" rowspan="2">
-        <widget class="QGroupBox" name="groupBox">
-         <property name="title">
-          <string>Color mode</string>
-         </property>
-         <layout class="QVBoxLayout" name="verticalLayout">
-          <item>
-           <widget class="QRadioButton" name="radioButton">
-            <property name="text">
-             <string>Color</string>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QRadioButton" name="radioButton_2">
-            <property name="text">
-             <string>Grayscale</string>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QRadioButton" name="radioButton_9">
-            <property name="text">
-             <string>Insignificant</string>
-            </property>
-            <property name="checked">
-             <bool>true</bool>
-            </property>
-           </widget>
-          </item>
-         </layout>
-        </widget>
+       <item row="0" column="0" colspan="2">
+        <layout class="QHBoxLayout" name="horizontalLayout_4">
+         <item>
+          <layout class="QVBoxLayout" name="verticalLayout_6">
+           <item>
+            <widget class="QGroupBox" name="groupBox">
+             <property name="title">
+              <string>Color mode</string>
+             </property>
+             <layout class="QVBoxLayout" name="verticalLayout">
+              <item>
+               <widget class="QRadioButton" name="radioButton">
+                <property name="text">
+                 <string>Color</string>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QRadioButton" name="radioButton_2">
+                <property name="text">
+                 <string>Grayscale</string>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QRadioButton" name="radioButton_9">
+                <property name="text">
+                 <string>Insignificant</string>
+                </property>
+                <property name="checked">
+                 <bool>true</bool>
+                </property>
+               </widget>
+              </item>
+             </layout>
+            </widget>
+           </item>
+           <item>
+            <widget class="QDoubleSpinBox" name="doubleSpinBox_2">
+             <property name="prefix">
+              <string>Visually similar to current by </string>
+             </property>
+             <property name="suffix">
+              <string>%</string>
+             </property>
+             <property name="singleStep">
+              <double>0.500000000000000</double>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </item>
+         <item>
+          <layout class="QVBoxLayout" name="verticalLayout_4">
+           <item>
+            <widget class="QGroupBox" name="groupBox_3">
+             <property name="title">
+              <string>Orientation</string>
+             </property>
+             <layout class="QHBoxLayout" name="horizontalLayout_5">
+              <item>
+               <widget class="QRadioButton" name="radioButton_11">
+                <property name="text">
+                 <string>Portrait</string>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QRadioButton" name="radioButton_12">
+                <property name="text">
+                 <string>Landscape</string>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QRadioButton" name="radioButton_13">
+                <property name="text">
+                 <string>Insignificant</string>
+                </property>
+                <property name="checked">
+                 <bool>true</bool>
+                </property>
+               </widget>
+              </item>
+             </layout>
+            </widget>
+           </item>
+           <item>
+            <layout class="QHBoxLayout" name="horizontalLayout_2">
+             <item>
+              <widget class="QLabel" name="label_3">
+               <property name="text">
+                <string>Minimum image size</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QComboBox" name="comboBox">
+               <item>
+                <property name="text">
+                 <string>Insignificant</string>
+                </property>
+               </item>
+               <item>
+                <property name="text">
+                 <string>0.3 Mp (640x480)</string>
+                </property>
+               </item>
+               <item>
+                <property name="text">
+                 <string>0.7 Mp (1024x768)</string>
+                </property>
+               </item>
+               <item>
+                <property name="text">
+                 <string>1.0 Mp (1152x864)</string>
+                </property>
+               </item>
+               <item>
+                <property name="text">
+                 <string>1.2 Mp (1280x960)</string>
+                </property>
+               </item>
+               <item>
+                <property name="text">
+                 <string>1.9 Mp (1600x1200)</string>
+                </property>
+               </item>
+               <item>
+                <property name="text">
+                 <string>2.0 Mp (1920x1080)</string>
+                </property>
+               </item>
+               <item>
+                <property name="text">
+                 <string>2.2 Mp (1720x1280)</string>
+                </property>
+               </item>
+               <item>
+                <property name="text">
+                 <string>3.1 Mp (2048x1536)</string>
+                </property>
+               </item>
+               <item>
+                <property name="text">
+                 <string>4.5 Mp (2592x1728)</string>
+                </property>
+               </item>
+               <item>
+                <property name="text">
+                 <string>4.9 Mp (2560x1920)</string>
+                </property>
+               </item>
+               <item>
+                <property name="text">
+                 <string>6.0 Mp (3008x2008)</string>
+                </property>
+               </item>
+               <item>
+                <property name="text">
+                 <string>8.0 Mp (3264x2448)</string>
+                </property>
+               </item>
+               <item>
+                <property name="text">
+                 <string>11.5 Mp (4520x2540)</string>
+                </property>
+               </item>
+               <item>
+                <property name="text">
+                 <string>12.0 Mp (4048x3040)</string>
+                </property>
+               </item>
+              </widget>
+             </item>
+            </layout>
+           </item>
+           <item>
+            <layout class="QHBoxLayout" name="horizontalLayout_3">
+             <item>
+              <widget class="QLabel" name="label_4">
+               <property name="text">
+                <string>Maximum image size</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QComboBox" name="comboBox_2">
+               <item>
+                <property name="text">
+                 <string>Insignificant</string>
+                </property>
+               </item>
+               <item>
+                <property name="text">
+                 <string>0.3 Mp (640x480)</string>
+                </property>
+               </item>
+               <item>
+                <property name="text">
+                 <string>0.7 Mp (1024x768)</string>
+                </property>
+               </item>
+               <item>
+                <property name="text">
+                 <string>1.0 Mp (1152x864)</string>
+                </property>
+               </item>
+               <item>
+                <property name="text">
+                 <string>1.2 Mp (1280x960)</string>
+                </property>
+               </item>
+               <item>
+                <property name="text">
+                 <string>1.9 Mp (1600x1200)</string>
+                </property>
+               </item>
+               <item>
+                <property name="text">
+                 <string>2.0 Mp (1920x1080)</string>
+                </property>
+               </item>
+               <item>
+                <property name="text">
+                 <string>2.2 Mp (1720x1280)</string>
+                </property>
+               </item>
+               <item>
+                <property name="text">
+                 <string>3.1 Mp (2048x1536)</string>
+                </property>
+               </item>
+               <item>
+                <property name="text">
+                 <string>4.5 Mp (2592x1728)</string>
+                </property>
+               </item>
+               <item>
+                <property name="text">
+                 <string>4.9 Mp (2560x1920)</string>
+                </property>
+               </item>
+               <item>
+                <property name="text">
+                 <string>6.0 Mp (3008x2008)</string>
+                </property>
+               </item>
+               <item>
+                <property name="text">
+                 <string>8.0 Mp (3264x2448)</string>
+                </property>
+               </item>
+               <item>
+                <property name="text">
+                 <string>11.5 Mp (4520x2540)</string>
+                </property>
+               </item>
+               <item>
+                <property name="text">
+                 <string>12.0 Mp (4048x3040)</string>
+                </property>
+               </item>
+              </widget>
+             </item>
+            </layout>
+           </item>
+          </layout>
+         </item>
+        </layout>
        </item>
-       <item row="0" column="1">
-        <widget class="QLabel" name="label_3">
-         <property name="text">
-          <string>Minimum image size</string>
-         </property>
-        </widget>
-       </item>
-       <item row="0" column="2">
-        <widget class="QComboBox" name="comboBox">
-         <item>
-          <property name="text">
-           <string>Insignificant</string>
-          </property>
-         </item>
-         <item>
-          <property name="text">
-           <string>0.3 Mp (640x480)</string>
-          </property>
-         </item>
-         <item>
-          <property name="text">
-           <string>0.7 Mp (1024x768)</string>
-          </property>
-         </item>
-         <item>
-          <property name="text">
-           <string>1.0 Mp (1152x864)</string>
-          </property>
-         </item>
-         <item>
-          <property name="text">
-           <string>1.2 Mp (1280x960)</string>
-          </property>
-         </item>
-         <item>
-          <property name="text">
-           <string>1.9 Mp (1600x1200)</string>
-          </property>
-         </item>
-         <item>
-          <property name="text">
-           <string>2.0 Mp (1920x1080)</string>
-          </property>
-         </item>
-         <item>
-          <property name="text">
-           <string>2.2 Mp (1720x1280)</string>
-          </property>
-         </item>
-         <item>
-          <property name="text">
-           <string>3.1 Mp (2048x1536)</string>
-          </property>
-         </item>
-         <item>
-          <property name="text">
-           <string>4.5 Mp (2592x1728)</string>
-          </property>
-         </item>
-         <item>
-          <property name="text">
-           <string>4.9 Mp (2560x1920)</string>
-          </property>
-         </item>
-         <item>
-          <property name="text">
-           <string>6.0 Mp (3008x2008)</string>
-          </property>
-         </item>
-         <item>
-          <property name="text">
-           <string>8.0 Mp (3264x2448)</string>
-          </property>
-         </item>
-         <item>
-          <property name="text">
-           <string>11.5 Mp (4520x2540)</string>
-          </property>
-         </item>
-         <item>
-          <property name="text">
-           <string>12.0 Mp (4048x3040)</string>
-          </property>
-         </item>
-        </widget>
-       </item>
-       <item row="1" column="1">
-        <widget class="QLabel" name="label_4">
-         <property name="text">
-          <string>Maximum image size</string>
-         </property>
-        </widget>
-       </item>
-       <item row="1" column="2">
-        <widget class="QComboBox" name="comboBox_2">
-         <item>
-          <property name="text">
-           <string>Insignificant</string>
-          </property>
-         </item>
-         <item>
-          <property name="text">
-           <string>0.3 Mp (640x480)</string>
-          </property>
-         </item>
-         <item>
-          <property name="text">
-           <string>0.7 Mp (1024x768)</string>
-          </property>
-         </item>
-         <item>
-          <property name="text">
-           <string>1.0 Mp (1152x864)</string>
-          </property>
-         </item>
-         <item>
-          <property name="text">
-           <string>1.2 Mp (1280x960)</string>
-          </property>
-         </item>
-         <item>
-          <property name="text">
-           <string>1.9 Mp (1600x1200)</string>
-          </property>
-         </item>
-         <item>
-          <property name="text">
-           <string>2.0 Mp (1920x1080)</string>
-          </property>
-         </item>
-         <item>
-          <property name="text">
-           <string>2.2 Mp (1720x1280)</string>
-          </property>
-         </item>
-         <item>
-          <property name="text">
-           <string>3.1 Mp (2048x1536)</string>
-          </property>
-         </item>
-         <item>
-          <property name="text">
-           <string>4.5 Mp (2592x1728)</string>
-          </property>
-         </item>
-         <item>
-          <property name="text">
-           <string>4.9 Mp (2560x1920)</string>
-          </property>
-         </item>
-         <item>
-          <property name="text">
-           <string>6.0 Mp (3008x2008)</string>
-          </property>
-         </item>
-         <item>
-          <property name="text">
-           <string>8.0 Mp (3264x2448)</string>
-          </property>
-         </item>
-         <item>
-          <property name="text">
-           <string>11.5 Mp (4520x2540)</string>
-          </property>
-         </item>
-         <item>
-          <property name="text">
-           <string>12.0 Mp (4048x3040)</string>
-          </property>
-         </item>
-        </widget>
-       </item>
-       <item row="2" column="0">
+       <item row="1" column="0">
         <widget class="QSpinBox" name="spinBox">
          <property name="prefix">
           <string>Rating &gt;= </string>
@@ -252,7 +318,7 @@
          </property>
         </widget>
        </item>
-       <item row="2" column="1" colspan="2">
+       <item row="1" column="1">
         <widget class="QSpinBox" name="spinBox_5">
          <property name="prefix">
           <string>Kudos &gt;= </string>
@@ -262,7 +328,7 @@
          </property>
         </widget>
        </item>
-       <item row="3" column="0">
+       <item row="2" column="0">
         <widget class="QSpinBox" name="spinBox_2">
          <property name="prefix">
           <string>Views &gt;= </string>
@@ -272,7 +338,7 @@
          </property>
         </widget>
        </item>
-       <item row="3" column="1" colspan="2">
+       <item row="2" column="1">
         <widget class="QSpinBox" name="spinBox_6">
          <property name="prefix">
           <string>Views &lt; </string>
@@ -288,21 +354,14 @@
          </property>
         </widget>
        </item>
-       <item row="4" column="0">
+       <item row="3" column="0">
         <widget class="QSpinBox" name="spinBox_3">
          <property name="prefix">
           <string>Faces &gt;= </string>
          </property>
         </widget>
        </item>
-       <item row="5" column="0" colspan="3">
-        <widget class="QCheckBox" name="checkBox_2">
-         <property name="text">
-          <string>Search only in images linked to current left</string>
-         </property>
-        </widget>
-       </item>
-       <item row="4" column="1" colspan="2">
+       <item row="3" column="1">
         <widget class="QSpinBox" name="spinBox_4">
          <property name="prefix">
           <string>Faces &lt; </string>
@@ -315,6 +374,67 @@
          </property>
          <property name="value">
           <number>99</number>
+         </property>
+        </widget>
+       </item>
+       <item row="4" column="0">
+        <widget class="QSpinBox" name="spinBox_8">
+         <property name="prefix">
+          <string>Tags &gt;= </string>
+         </property>
+        </widget>
+       </item>
+       <item row="4" column="1">
+        <widget class="QDoubleSpinBox" name="doubleSpinBox">
+         <property name="prefix">
+          <string>Liked by </string>
+         </property>
+         <property name="suffix">
+          <string>% or more</string>
+         </property>
+         <property name="maximum">
+          <double>100.000000000000000</double>
+         </property>
+         <property name="singleStep">
+          <double>0.100000000000000</double>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </widget>
+     <widget class="QWidget" name="tab_6">
+      <attribute name="title">
+       <string>Scope</string>
+      </attribute>
+      <layout class="QVBoxLayout" name="verticalLayout_5">
+       <item>
+        <widget class="QRadioButton" name="radioButton_14">
+         <property name="text">
+          <string>New search</string>
+         </property>
+         <property name="checked">
+          <bool>true</bool>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QRadioButton" name="radioButton_15">
+         <property name="text">
+          <string>In found</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QRadioButton" name="radioButton_16">
+         <property name="text">
+          <string>In links</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QRadioButton" name="radioButton_17">
+         <property name="text">
+          <string>Continue</string>
          </property>
         </widget>
        </item>

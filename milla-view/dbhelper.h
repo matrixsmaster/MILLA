@@ -74,7 +74,7 @@ public:
 
     static QStringList tagSearch(MTagCache const &cache, QList<MImageListRecord>* within = nullptr, int maxitems = 0);
 
-    static QStringList parametricSearch(SearchFormData flt, QList<MImageListRecord> const &from);
+    static QStringList parametricSearch(SearchFormData flt, QList<MImageListRecord> const &from, const QSet<QString> &exclude);
 
     static QStringList getAllFiles();
 

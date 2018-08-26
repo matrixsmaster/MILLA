@@ -678,15 +678,49 @@ void MViewer::on_actionJump_to_triggered()
 void MViewer::on_actionRefine_search_triggered()
 {
     SearchForm frm;
+    if (search_cnt) frm.set_data(last_search);
     if (!frm.exec()) return;
-    SearchFormData flt = frm.getSearchData();
 
-    MImageListModel* ptm;
-    if (flt.linked_only)
+    SearchFormData flt = frm.getSearchData();
+    if (current_l.valid) {
+        if (flt.similar > 0) {
+            MImageExtras ex = getExtraCacheLine(current_l.filename);
+            if (ex.valid) flt.similar_to = ex.hist;
+            else flt.similar = 0;
+        }
+    } else
+        flt.similar = 0;
+
+    last_search = flt;
+    search_cnt++;
+
+    bool glob = false;
+    MImageListModel* ptm = NULL;
+    switch (flt.scope) {
+    case SRSCP_NEW:
+        ptm = dynamic_cast<MImageListModel*>(ui->listView->model());
+        glob = ui->actionGlobal_search->isChecked();
+        search_exclusions.clear();
+        break;
+    case SRSCP_FOUND:
+        ptm = dynamic_cast<MImageListModel*>(ui->listView_2->model());
+        break;
+    case SRSCP_LINKS:
         ptm = dynamic_cast<MImageListModel*>(ui->listView_3->model());
-    else
-        ptm = dynamic_cast<MImageListModel*>(ui->listView_2->model()? ui->listView_2->model() : ui->listView->model());
-    if (!ptm || ui->actionGlobal_search->isChecked()) {
+        break;
+    case SRSCP_CONTINUE:
+        ptm = dynamic_cast<MImageListModel*>(ui->listView_2->model());
+        if (ptm) {
+            for (auto &i : ptm->GetAllImages())
+                search_exclusions.insert(i.filename);
+        }
+        ptm = dynamic_cast<MImageListModel*>(ui->listView->model());
+        glob = ui->actionGlobal_search->isChecked();
+        qDebug() << search_exclusions;
+        break;
+    }
+
+    if (!ptm || glob) {
         QList<MImageListRecord> lst;
         QStringList fls =  db.getAllFiles();
         for (auto &i : fls) {
@@ -696,9 +730,9 @@ void MViewer::on_actionRefine_search_triggered()
             r.filechanged = fi.lastModified().toTime_t();
             lst.push_back(r);
         }
-        searchResults(db.parametricSearch(flt,lst));
+        searchResults(db.parametricSearch(flt,lst,search_exclusions));
     } else
-        searchResults(db.parametricSearch(flt,ptm->GetAllImages()));
+        searchResults(db.parametricSearch(flt,ptm->GetAllImages(),search_exclusions));
 }
 
 void MViewer::on_actionSwap_images_triggered()
@@ -714,6 +748,8 @@ void MViewer::on_actionSwap_images_triggered()
 void MViewer::on_actionClear_results_triggered()
 {
     if (ui->listView_2->model()) ui->listView_2->model()->deleteLater();
+    search_exclusions.clear();
+    search_cnt = 0;
 }
 
 void MViewer::on_actionQuit_triggered()

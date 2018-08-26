@@ -207,6 +207,9 @@ private:
     QRect selection;
     int selection_fsm = 0;
     QPixmap selection_bak;
+    SearchFormData last_search;
+    QSet<QString> search_exclusions;
+    int search_cnt = 0;
 
     std::map<QString,MImageExtras> extra_cache;
     MTagCache tags_cache;
