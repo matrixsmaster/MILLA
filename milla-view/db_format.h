@@ -12,7 +12,7 @@
 #define DB_FILEPATH MILLA_CONFIG_PATH "storage.db"
 #endif
 
-#define DB_VERSION 3
+#define DB_VERSION 4
 
 #define DB_CONTENTS {   {"stats",   DBF_STATS}, \
                         {"tags",    DBF_TAGS}, \
@@ -21,6 +21,7 @@
                         {"memory",  DBF_MEMORY}, \
                         {"stories", DBF_STORIES}, \
                         {"recent",  DBF_RECENT}, \
+                        {"extras",  DBF_EXTRAS}, \
                         {"window",  DBF_WINDOW} }
 
 #define DBF_TABLE_CHECK "SELECT name FROM sqlite_master WHERE type='table' AND name="
@@ -61,6 +62,8 @@
 #define DBF_STORIES "updated UNSIGNED INT, title TEXT, actions TEXT"
 
 #define DBF_RECENT "lastaccess UNSIGNED INT, path TEXT"
+
+#define DBF_EXTRAS "key TEXT, val TEXT, bin BLOB"
 
 #define DBF_WINDOW "name TEXT, geometry BLOB, state BLOB"
 

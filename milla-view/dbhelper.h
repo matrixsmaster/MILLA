@@ -74,7 +74,7 @@ public:
 
     static QStringList tagSearch(MTagCache const &cache, QList<MImageListRecord>* within = nullptr, int maxitems = 0);
 
-    static QStringList parametricSearch(SearchFormData flt, QList<MImageListRecord> const &from, const QSet<QString> &exclude);
+    static QStringList parametricSearch(SearchFormData flt, QList<MImageListRecord> const &from, const QSet<QString> &exclude, ProgressCB pcb);
 
     static QStringList getAllFiles();
 
@@ -115,6 +115,10 @@ public:
     static bool updateStory(QString const &title, MImageOps* macro);
 
     static bool loadStory(QString const &title, MImageOps* macro);
+
+    static QString getExtraStringVal(QString const &key);
+
+    static bool setExtraStringVal(QString const &key, QString const &val);
 
 private:
     std::map<time_t,QAction*> recents;

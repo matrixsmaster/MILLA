@@ -187,6 +187,10 @@ private slots:
 
     void on_actionCrop_triggered();
 
+    void on_actionInfo_triggered();
+
+    void on_actionOpen_with_triggered();
+
 private:
     Ui::MViewer *ui;
     DBHelper db;
@@ -270,6 +274,8 @@ private:
     void updateStory(QPixmap const &result);
 
     bool eventFilter(QObject *obj, QEvent *event);
+
+    void printInfo(QString title, MImageListRecord const &targ);
 };
 
 #endif // MVIEWER_H

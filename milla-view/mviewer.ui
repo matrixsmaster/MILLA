@@ -665,8 +665,8 @@
                        <rect>
                         <x>0</x>
                         <y>0</y>
-                        <width>322</width>
-                        <height>334</height>
+                        <width>327</width>
+                        <height>325</height>
                        </rect>
                       </property>
                       <layout class="QHBoxLayout" name="horizontalLayout_12">
@@ -1196,8 +1196,8 @@
                        <rect>
                         <x>0</x>
                         <y>0</y>
-                        <width>327</width>
-                        <height>334</height>
+                        <width>326</width>
+                        <height>325</height>
                        </rect>
                       </property>
                       <layout class="QHBoxLayout" name="horizontalLayout_11">
@@ -2654,7 +2654,7 @@
      <x>0</x>
      <y>0</y>
      <width>1000</width>
-     <height>22</height>
+     <height>23</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">
@@ -2747,6 +2747,8 @@
     <addaction name="actionShow_reverse_links"/>
     <addaction name="actionThumbnails_cloud"/>
     <addaction name="actionSkip_empty_story_steps"/>
+    <addaction name="separator"/>
+    <addaction name="actionInfo"/>
    </widget>
    <widget class="QMenu" name="menuTools">
     <property name="title">
@@ -2767,6 +2769,8 @@
     <addaction name="actionFind_duplicates"/>
     <addaction name="actionApply_tagset"/>
     <addaction name="actionApply_tagset_from_left_to_right"/>
+    <addaction name="separator"/>
+    <addaction name="actionOpen_with"/>
    </widget>
    <widget class="QMenu" name="menuHelp">
     <property name="title">
@@ -3280,6 +3284,19 @@
    </property>
    <property name="text">
     <string>Autoplay special files</string>
+   </property>
+  </action>
+  <action name="actionInfo">
+   <property name="text">
+    <string>Info</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+I</string>
+   </property>
+  </action>
+  <action name="actionOpen_with">
+   <property name="text">
+    <string>Open with...</string>
    </property>
   </action>
  </widget>

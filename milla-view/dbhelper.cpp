@@ -576,15 +576,18 @@ QStringList DBHelper::tagSearch(MTagCache const &cache, QList<MImageListRecord>*
     return found;
 }
 
-QStringList DBHelper::parametricSearch(SearchFormData flt, QList<MImageListRecord> const &from, const QSet<QString> &exclude)
+QStringList DBHelper::parametricSearch(SearchFormData flt, QList<MImageListRecord> const &from, const QSet<QString> &exclude, ProgressCB pcb)
 {
     QSqlQuery q;
     size_t area;
     double liked;
     std::multimap<uint,QString> tmap;
     std::set<QString> tlst;
+    double prg = 0, dp = 100.f / static_cast<double>(from.size());
 
     for (auto &i : from) {
+        prg += dp;
+        if (pcb && !pcb(prg)) break;
         if (!exclude.empty() && exclude.contains(i.filename)) continue;
 
         q.clear();
@@ -1179,4 +1182,32 @@ bool DBHelper::loadStory(QString const &title, MImageOps* macro)
     if (!q.exec() || !q.next()) return false;
 
     return macro->deserialize(q.value(0).toString());
+}
+
+QString DBHelper::getExtraStringVal(QString const &key)
+{
+    QSqlQuery q;
+    q.prepare("SELECT val FROM extras WHERE key = :k");
+    q.bindValue(":k",key);
+    if (q.exec() && q.next()) return q.value(0).toString();
+    return QString();
+}
+
+bool DBHelper::setExtraStringVal(QString const &key, QString const &val)
+{
+    QSqlQuery q;
+    q.prepare("SELECT COUNT(val) FROM extras WHERE key = :k");
+    q.bindValue(":k",key);
+    if (!q.exec() || !q.next()) return false;
+
+    if (!q.value(0).toInt())
+        q.prepare("INSERT INTO extras (key, val) VALUES (:k, :v)");
+    else
+        q.prepare("UPDATE extras SET val = :v WHERE key = :k");
+    q.bindValue(":k",key);
+    q.bindValue(":v",val);
+    bool ok = q.exec();
+
+    qDebug() << "[db] Updating key/val" << key << "/" << val << ":" << ok;
+    return ok;
 }

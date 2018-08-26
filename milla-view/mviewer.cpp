@@ -647,6 +647,7 @@ void MViewer::resultsPresentation(QStringList lst, QListView* view, int tabIndex
 
 void MViewer::searchResults(QStringList lst)
 {
+    ui->statusBar->showMessage(QString::asprintf("%i images found",lst.count()));
     resultsPresentation(lst,ui->listView_2,1);
 
     connect(ui->listView_2->selectionModel(),&QItemSelectionModel::selectionChanged,[this] {
@@ -720,6 +721,14 @@ void MViewer::on_actionRefine_search_triggered()
         break;
     }
 
+    QStringList res;
+    ProgressCB pcb = ([this] (double p) {
+        progressBar->setValue(floor(p));
+        QCoreApplication::processEvents();
+        return !stop_flag;
+    });
+
+    prepareLongProcessing();
     if (!ptm || glob) {
         QList<MImageListRecord> lst;
         QStringList fls =  db.getAllFiles();
@@ -730,9 +739,13 @@ void MViewer::on_actionRefine_search_triggered()
             r.filechanged = fi.lastModified().toTime_t();
             lst.push_back(r);
         }
-        searchResults(db.parametricSearch(flt,lst,search_exclusions));
+        res = db.parametricSearch(flt,lst,search_exclusions,pcb);
     } else
-        searchResults(db.parametricSearch(flt,ptm->GetAllImages(),search_exclusions));
+        res = db.parametricSearch(flt,ptm->GetAllImages(),search_exclusions,pcb);
+    prepareLongProcessing(true);
+
+    if (res.empty()) QMessageBox::information(this,tr("Search"),tr("Nothing found. Try to relax the search parameters."));
+    else searchResults(res);
 }
 
 void MViewer::on_actionSwap_images_triggered()
@@ -1498,4 +1511,37 @@ bool MViewer::eventFilter(QObject *obj, QEvent *event)
     }
 
     return true;
+}
+
+void MViewer::printInfo(QString title, MImageListRecord const &targ)
+{
+    title += " image:\n";
+    title += targ.fnshort + '\n';
+    title += targ.filename;
+
+    QMessageBox::information(this,tr("Info"),title);
+}
+
+void MViewer::on_actionInfo_triggered()
+{
+    if (current_l.valid) printInfo("Left",current_l);
+    else if (current_r.valid) printInfo("Right",current_r);
+}
+
+void MViewer::on_actionOpen_with_triggered()
+{
+    if (!current_l.valid) return;
+
+    bool ok;
+    QString cmd = DBHelper::getExtraStringVal("external_editor");
+    cmd = QInputDialog::getText(this,tr("Open with external program"),tr("Enter command"),QLineEdit::Normal,cmd,&ok);
+
+    if (ok && !cmd.isEmpty()) {
+        DBHelper::setExtraStringVal("external_editor",cmd);
+        cmd += ' ' + current_l.filename;
+        cmd += " &";
+        qDebug() << "[RUN] " << cmd;
+        //TODO: portable and safer version
+        system(cmd.toStdString().c_str()); //WARNING: potentially insecure, and Linux-only
+    }
 }
