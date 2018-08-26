@@ -45,6 +45,8 @@ QStringList MMatcher::GlobalMatcher(ProgressCB cb)
     targets.clear();
 
     QStringList all = DBHelper::getAllFiles();
+    QSet<QString> blackl = QSet<QString>::fromList(DBHelper::getExtraStringVal(DBF_EXTRA_EXCLUSION_LIST).split(';',QString::SkipEmptyParts));
+
     MImageExtras cur;
     MImageListRecord rec;
     double corr, prg = 0, dp = 100.f / (double)(all.size());
@@ -53,7 +55,15 @@ QStringList MMatcher::GlobalMatcher(ProgressCB cb)
         prg += dp;
         if (cb && !cb(prg)) break;
 
-        if (i == filename) continue;
+        if (i == filename) continue; //don't match itself
+        //check blacklisted directories
+        bool f = false;
+        for (auto &j : blackl)
+            if (i.contains(j,Qt::CaseSensitive)) {
+                f = true;
+                break;
+            }
+        if (f) continue;
 
         cur = DBHelper::getExtrasFromDB(i);
         if (!Comparator(cur,corr)) continue;

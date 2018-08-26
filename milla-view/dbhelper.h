@@ -74,7 +74,9 @@ public:
 
     static QStringList tagSearch(MTagCache const &cache, QList<MImageListRecord>* within = nullptr, int maxitems = 0);
 
-    static QStringList parametricSearch(SearchFormData flt, QList<MImageListRecord> const &from, const QSet<QString> &exclude, ProgressCB pcb);
+    void initParametricSearch(QList<MImageListRecord> const &from);
+
+    QStringList doParametricSearch(SearchFormData flt, ProgressCB pcb);
 
     static QStringList getAllFiles();
 
@@ -122,6 +124,7 @@ public:
 
 private:
     std::map<time_t,QAction*> recents;
+    QList<MImageListRecord> searchlist;
 
     bool checkAndCreate(const char *tname, const char *format);
 };

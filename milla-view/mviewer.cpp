@@ -696,12 +696,12 @@ void MViewer::on_actionRefine_search_triggered()
     search_cnt++;
 
     bool glob = false;
+    bool cont = false;
     MImageListModel* ptm = NULL;
     switch (flt.scope) {
     case SRSCP_NEW:
         ptm = dynamic_cast<MImageListModel*>(ui->listView->model());
         glob = ui->actionGlobal_search->isChecked();
-        search_exclusions.clear();
         break;
     case SRSCP_FOUND:
         ptm = dynamic_cast<MImageListModel*>(ui->listView_2->model());
@@ -710,42 +710,39 @@ void MViewer::on_actionRefine_search_triggered()
         ptm = dynamic_cast<MImageListModel*>(ui->listView_3->model());
         break;
     case SRSCP_CONTINUE:
-        ptm = dynamic_cast<MImageListModel*>(ui->listView_2->model());
-        if (ptm) {
-            for (auto &i : ptm->GetAllImages())
-                search_exclusions.insert(i.filename);
-        }
-        ptm = dynamic_cast<MImageListModel*>(ui->listView->model());
-        glob = ui->actionGlobal_search->isChecked();
-        qDebug() << search_exclusions;
+        cont = true;
         break;
     }
 
+    if (!cont) {
+        if (!ptm || glob) {
+            QList<MImageListRecord> lst;
+            QStringList fls =  db.getAllFiles();
+            for (auto &i : fls) {
+                MImageListRecord r;
+                QFileInfo fi(i);
+                r.filename = i;
+                r.filechanged = fi.lastModified().toTime_t();
+                lst.push_back(r);
+            }
+            db.initParametricSearch(lst);
+        } else if (ptm)
+            db.initParametricSearch(ptm->GetAllImages());
+    }
+
     QStringList res;
-    ProgressCB pcb = ([this] (double p) {
+    prepareLongProcessing();
+    res = db.doParametricSearch(flt,[this] (double p) {
         progressBar->setValue(floor(p));
         QCoreApplication::processEvents();
         return !stop_flag;
     });
-
-    prepareLongProcessing();
-    if (!ptm || glob) {
-        QList<MImageListRecord> lst;
-        QStringList fls =  db.getAllFiles();
-        for (auto &i : fls) {
-            MImageListRecord r;
-            QFileInfo fi(i);
-            r.filename = i;
-            r.filechanged = fi.lastModified().toTime_t();
-            lst.push_back(r);
-        }
-        res = db.parametricSearch(flt,lst,search_exclusions,pcb);
-    } else
-        res = db.parametricSearch(flt,ptm->GetAllImages(),search_exclusions,pcb);
     prepareLongProcessing(true);
 
-    if (res.empty()) QMessageBox::information(this,tr("Search"),tr("Nothing found. Try to relax the search parameters."));
-    else searchResults(res);
+    if (res.empty())
+        QMessageBox::information(this,tr("Search"),tr("Nothing found. Try to relax the search parameters."));
+    else
+        searchResults(res);
 }
 
 void MViewer::on_actionSwap_images_triggered()
@@ -761,7 +758,6 @@ void MViewer::on_actionSwap_images_triggered()
 void MViewer::on_actionClear_results_triggered()
 {
     if (ui->listView_2->model()) ui->listView_2->model()->deleteLater();
-    search_exclusions.clear();
     search_cnt = 0;
 }
 
@@ -1533,15 +1529,25 @@ void MViewer::on_actionOpen_with_triggered()
     if (!current_l.valid) return;
 
     bool ok;
-    QString cmd = DBHelper::getExtraStringVal("external_editor");
+    QString cmd = DBHelper::getExtraStringVal(DBF_EXTRA_EXTERNAL_EDITOR);
     cmd = QInputDialog::getText(this,tr("Open with external program"),tr("Enter command"),QLineEdit::Normal,cmd,&ok);
 
     if (ok && !cmd.isEmpty()) {
-        DBHelper::setExtraStringVal("external_editor",cmd);
+        DBHelper::setExtraStringVal(DBF_EXTRA_EXTERNAL_EDITOR,cmd);
         cmd += ' ' + current_l.filename;
         cmd += " &";
         qDebug() << "[RUN] " << cmd;
         //TODO: portable and safer version
         system(cmd.toStdString().c_str()); //WARNING: potentially insecure, and Linux-only
     }
+}
+
+void MViewer::on_actionEdit_exclusion_list_triggered()
+{
+    ListEditor dlg;
+    dlg.setTextLabel("Add or remove text fragments, which will exclude particular paths from search list once they're found in that paths.");
+    dlg.setList(DBHelper::getExtraStringVal(DBF_EXTRA_EXCLUSION_LIST).split(';',QString::SkipEmptyParts));
+
+    if (dlg.exec())
+        DBHelper::setExtraStringVal(DBF_EXTRA_EXCLUSION_LIST,dlg.getList().join(';'));
 }

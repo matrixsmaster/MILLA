@@ -576,32 +576,58 @@ QStringList DBHelper::tagSearch(MTagCache const &cache, QList<MImageListRecord>*
     return found;
 }
 
-QStringList DBHelper::parametricSearch(SearchFormData flt, QList<MImageListRecord> const &from, const QSet<QString> &exclude, ProgressCB pcb)
+void DBHelper::initParametricSearch(QList<MImageListRecord> const &from)
+{
+    searchlist.clear();
+    QSet<QString> blackl = QSet<QString>::fromList(getExtraStringVal(DBF_EXTRA_EXCLUSION_LIST).split(';',QString::SkipEmptyParts));
+
+    MImageListRecord r;
+    for (auto &i : from) {
+        //check blacklisted directories
+        bool f = false;
+        for (auto &j : blackl)
+            if (i.filename.contains(j,Qt::CaseSensitive)) {
+                f = true;
+                break;
+            }
+        if (f) continue;
+
+        //save only fields needed for search
+        r.filename = i.filename;
+        r.filechanged = i.filechanged;
+
+        searchlist.push_back(r);
+    }
+}
+
+QStringList DBHelper::doParametricSearch(SearchFormData flt, ProgressCB pcb)
 {
     QSqlQuery q;
     size_t area;
     double liked;
     std::multimap<uint,QString> tmap;
     std::set<QString> tlst;
-    double prg = 0, dp = 100.f / static_cast<double>(from.size());
+    double prg = 0, dp = 100.f / static_cast<double>(searchlist.size());
 
-    for (auto &i : from) {
+    while (!searchlist.empty()) {
+        MImageListRecord r = searchlist.front();
+        searchlist.pop_front();
+
         prg += dp;
         if (pcb && !pcb(prg)) break;
-        if (!exclude.empty() && exclude.contains(i.filename)) continue;
 
         q.clear();
-        q.prepare("SELECT rating, likes, views, faces, grayscale, sizex, sizey, ntags, notes, lastview, ntags FROM stats WHERE file = :fn");
-        q.bindValue(":fn",i.filename);
+        q.prepare("SELECT rating, likes, views, faces, grayscale, sizex, sizey, ntags, notes, lastview FROM stats WHERE file = :fn");
+        q.bindValue(":fn",r.filename);
         if (q.exec() && q.next()) {
 
             if (flt.rating > q.value(0).toInt()) continue;
             if (flt.kudos > q.value(1).toInt()) continue;
-            if (flt.tags > q.value(10).toInt()) continue;
+            if (flt.tags > q.value(7).toInt()) continue;
             if (q.value(2).toUInt() < flt.minviews || q.value(2).toUInt() >= flt.maxviews) continue;
             if (q.value(3).toInt() < flt.minface || q.value(3).toInt() >= flt.maxface) continue;
             if (flt.colors > -1 && flt.colors != (q.value(4).toInt()>0)) continue;
-            if ((flt.minmtime && flt.maxmtime) && (i.filechanged < flt.minmtime || i.filechanged > flt.maxmtime)) continue;
+            if ((flt.minmtime && flt.maxmtime) && (r.filechanged < flt.minmtime || r.filechanged > flt.maxmtime)) continue;
             if ((flt.minstime && flt.maxstime) && (q.value(9).toUInt() < flt.minstime || q.value(9).toUInt() > flt.maxstime)) continue;
             if (flt.wo_tags && q.value(7).toInt()) continue;
             if (flt.w_notes && q.value(8).toString().isEmpty()) continue;
@@ -621,29 +647,29 @@ QStringList DBHelper::parametricSearch(SearchFormData flt, QList<MImageListRecor
             if (area < flt.minsize || area > flt.maxsize) continue;
 
             if (!flt.text_fn.isEmpty() || !flt.text_path.isEmpty()) {
-                QFileInfo fi(i.filename);
+                QFileInfo fi(r.filename);
                 if (!flt.text_fn.isEmpty() && !fi.baseName().contains(flt.text_fn,Qt::CaseInsensitive)) continue;
                 if (!flt.text_path.isEmpty() && !fi.path().contains(flt.text_path,Qt::CaseInsensitive)) continue;
                 qDebug() << fi.baseName() << fi.filePath();
             }
 
             if (flt.similar > 0) {
-                MImageExtras _ex = getExtrasFromDB(i.filename);
+                MImageExtras _ex = getExtrasFromDB(r.filename);
                 if (_ex.valid && MMatcher::OneTimeMatcher(flt.similar_to,_ex.hist) < flt.similar)
                     continue;
 #ifdef QT_DEBUG
-                 qDebug() << "File " << i.filename << " have " << MMatcher::OneTimeMatcher(flt.similar_to,_ex.hist) << "% similarity";
+                 qDebug() << "File " << r.filename << " have " << MMatcher::OneTimeMatcher(flt.similar_to,_ex.hist) << "% similarity";
 #endif
             }
 
             switch (flt.sort) {
-            case SRFRM_RATING: tmap.insert(std::pair<uint,QString>(q.value(0).toInt(), i.filename)); break;
-            case SRFRM_KUDOS: tmap.insert(std::pair<uint,QString>(q.value(1).toInt(), i.filename)); break;
-            case SRFRM_VIEWS: tmap.insert(std::pair<uint,QString>(q.value(2).toUInt(), i.filename)); break;
-            case SRFRM_DATE: tmap.insert(std::pair<uint,QString>(i.filechanged, i.filename)); break;
-            case SRFRM_FACES: tmap.insert(std::pair<uint,QString>(q.value(3).toInt(), i.filename)); break;
-            case SRFRM_LASTSEEN: tmap.insert(std::pair<uint,QString>(q.value(9).toUInt(), i.filename)); break;
-            default: tlst.insert(i.filename);
+            case SRFRM_RATING: tmap.insert(std::pair<uint,QString>(q.value(0).toInt(), r.filename)); break;
+            case SRFRM_KUDOS: tmap.insert(std::pair<uint,QString>(q.value(1).toInt(), r.filename)); break;
+            case SRFRM_VIEWS: tmap.insert(std::pair<uint,QString>(q.value(2).toUInt(), r.filename)); break;
+            case SRFRM_DATE: tmap.insert(std::pair<uint,QString>(r.filechanged, r.filename)); break;
+            case SRFRM_FACES: tmap.insert(std::pair<uint,QString>(q.value(3).toInt(), r.filename)); break;
+            case SRFRM_LASTSEEN: tmap.insert(std::pair<uint,QString>(q.value(9).toUInt(), r.filename)); break;
+            default: tlst.insert(r.filename);
             }
 
         }

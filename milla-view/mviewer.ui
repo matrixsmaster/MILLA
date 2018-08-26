@@ -2790,6 +2790,7 @@
      <addaction name="actionRight_image"/>
     </widget>
     <addaction name="actionGlobal_search"/>
+    <addaction name="actionEdit_exclusion_list"/>
     <addaction name="menuShow_in"/>
     <addaction name="separator"/>
     <addaction name="actionClear_results"/>
@@ -3297,6 +3298,11 @@
   <action name="actionOpen_with">
    <property name="text">
     <string>Open with...</string>
+   </property>
+  </action>
+  <action name="actionEdit_exclusion_list">
+   <property name="text">
+    <string>Edit exclusion list</string>
    </property>
   </action>
  </widget>

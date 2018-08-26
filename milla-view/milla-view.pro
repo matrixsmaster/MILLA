@@ -29,7 +29,8 @@ SOURCES += main.cpp\
     mmemorymodel.cpp \
     mimageops.cpp \
     storyselector.cpp \
-    mimageloader.cpp
+    mimageloader.cpp \
+    listeditor.cpp
 
 HEADERS  += mviewer.h \
     thumbnailmodel.h \
@@ -50,12 +51,14 @@ HEADERS  += mviewer.h \
     mmemorymodel.h \
     mimageops.h \
     storyselector.h \
-    mimageloader.h
+    mimageloader.h \
+    listeditor.h
 
 FORMS    += mviewer.ui \
     searchform.ui \
     exportform.ui \
-    storyselector.ui
+    storyselector.ui \
+    listeditor.ui
 
 CONFIG   += c++14
 QMAKE_CXXFLAGS  += -Wextra

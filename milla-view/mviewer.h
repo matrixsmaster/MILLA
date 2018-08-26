@@ -29,7 +29,7 @@
 #include "mmatcher.h"
 #include "mimageops.h"
 #include "storyselector.h"
-
+#include "listeditor.h"
 
 struct MHistory {
     QStringList files;
@@ -191,6 +191,8 @@ private slots:
 
     void on_actionOpen_with_triggered();
 
+    void on_actionEdit_exclusion_list_triggered();
+
 private:
     Ui::MViewer *ui;
     DBHelper db;
@@ -212,7 +214,6 @@ private:
     int selection_fsm = 0;
     QPixmap selection_bak;
     SearchFormData last_search;
-    QSet<QString> search_exclusions;
     int search_cnt = 0;
 
     std::map<QString,MImageExtras> extra_cache;

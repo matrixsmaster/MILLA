@@ -77,5 +77,9 @@
 
 #define DBF_IMPORT_UPDATE "UPDATE stats SET file = :fn, views = :v, rating = :r, likes = :l, tags = :t, notes = :n, sha256 = :s, length = :len WHERE "
 
+#define DBF_EXTRA_EXTERNAL_EDITOR "external_editor"
+
+#define DBF_EXTRA_EXCLUSION_LIST "global_exclusion"
+
 #endif // DB_FORMAT_H
 
