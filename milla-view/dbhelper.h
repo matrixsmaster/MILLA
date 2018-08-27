@@ -58,6 +58,8 @@ public:
 
     static MTagsCheckList getFileTags(QString const &fn);
 
+    static QString getFileTagsString(QString const &fn);
+
     static bool updateTags(QString const &tag, bool checked);
 
     static bool updateFileTags(QString const &fn, MTagCache const &cache);

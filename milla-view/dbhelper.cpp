@@ -362,6 +362,18 @@ MTagsCheckList DBHelper::getFileTags(QString const &fn)
     return out;
 }
 
+QString DBHelper::getFileTagsString(QString const &fn)
+{
+    QString s;
+    MTagsCheckList l = getFileTags(fn);
+    for (auto &i : l) {
+        if (std::get<2>(i) == false) continue;
+        s += std::get<0>(i);
+        s += ',';
+    }
+    return s;
+}
+
 bool DBHelper::updateTags(QString const &tag, bool checked)
 {
     if (tag.isEmpty()) return false;
@@ -651,6 +663,17 @@ QStringList DBHelper::doParametricSearch(SearchFormData flt, ProgressCB pcb)
                 if (!flt.text_fn.isEmpty() && !fi.baseName().contains(flt.text_fn,Qt::CaseInsensitive)) continue;
                 if (!flt.text_path.isEmpty() && !fi.path().contains(flt.text_path,Qt::CaseInsensitive)) continue;
                 qDebug() << fi.baseName() << fi.filePath();
+            }
+
+            if (!flt.tags_inc.isEmpty() || !flt.tags_exc.isEmpty()) {
+                QString stags = getFileTagsString(r.filename);
+                qDebug() << stags;
+                if (!flt.tags_inc.isEmpty()) {
+                    if (!stags.contains(flt.tags_inc,Qt::CaseInsensitive)) continue;
+                }
+                if (!flt.tags_exc.isEmpty()) {
+                    if (stags.contains(flt.tags_exc,Qt::CaseInsensitive)) continue;
+                }
             }
 
             if (flt.similar > 0) {

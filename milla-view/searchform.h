@@ -42,6 +42,7 @@ struct SearchFormData {
     size_t minsize, maxsize;
     int minsize_vi, maxsize_vi;
     QString text_notes, text_path, text_fn;
+    QString tags_inc, tags_exc;
     bool wo_tags;
     bool w_notes;
     SearchFormScope scope;

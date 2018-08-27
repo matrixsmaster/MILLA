@@ -10,7 +10,7 @@
     <x>0</x>
     <y>0</y>
     <width>660</width>
-    <height>342</height>
+    <height>358</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -445,6 +445,9 @@
        <string>Text</string>
       </attribute>
       <layout class="QGridLayout" name="gridLayout_2">
+       <item row="3" column="1">
+        <widget class="QLineEdit" name="lineEdit_3"/>
+       </item>
        <item row="0" column="0">
         <widget class="QCheckBox" name="checkBox">
          <property name="text">
@@ -486,8 +489,25 @@
          </property>
         </widget>
        </item>
-       <item row="3" column="1">
-        <widget class="QLineEdit" name="lineEdit_3"/>
+       <item row="4" column="0">
+        <widget class="QLabel" name="label_10">
+         <property name="text">
+          <string>Tags contains</string>
+         </property>
+        </widget>
+       </item>
+       <item row="4" column="1">
+        <widget class="QLineEdit" name="lineEdit_4"/>
+       </item>
+       <item row="5" column="0">
+        <widget class="QLabel" name="label_11">
+         <property name="text">
+          <string>Exclude images tagged</string>
+         </property>
+        </widget>
+       </item>
+       <item row="5" column="1">
+        <widget class="QLineEdit" name="lineEdit_5"/>
        </item>
       </layout>
      </widget>
@@ -567,7 +587,7 @@
      </widget>
      <widget class="QWidget" name="tab_4">
       <attribute name="title">
-       <string>Sorting</string>
+       <string>Sort</string>
       </attribute>
       <layout class="QVBoxLayout" name="verticalLayout_3">
        <item>

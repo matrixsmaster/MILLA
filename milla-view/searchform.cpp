@@ -47,6 +47,8 @@ void SearchForm::on_buttonBox_accepted()
     sdata.text_fn = ui->lineEdit->text();
     sdata.text_path = ui->lineEdit_2->text();
     sdata.text_notes = ui->lineEdit_3->text();
+    sdata.tags_inc = ui->lineEdit_4->text();
+    sdata.tags_exc = ui->lineEdit_5->text();
 
     sdata.wo_tags = ui->checkBox->isChecked();
     sdata.w_notes = ui->checkBox_4->isChecked();
@@ -109,6 +111,8 @@ void SearchForm::set_data(SearchFormData const &ndata)
     ui->lineEdit->setText(ndata.text_fn);
     ui->lineEdit_2->setText(ndata.text_path);
     ui->lineEdit_3->setText(ndata.text_notes);
+    ui->lineEdit_4->setText(ndata.tags_inc);
+    ui->lineEdit_5->setText(ndata.tags_exc);
 
     ui->checkBox->setChecked(ndata.wo_tags);
     ui->checkBox_4->setChecked(ndata.w_notes);
