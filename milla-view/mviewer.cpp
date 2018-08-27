@@ -1428,7 +1428,7 @@ void MViewer::on_actionPick_a_story_triggered()
     }
 
     StorySelector dlg;
-    if (!dlg.exec() || dlg.getStoryTitle().isEmpty()) return;
+    if (!dlg.exec()) return;
 
     if (db.loadStory(dlg.getStoryTitle(),a_story)) {
         updateStory(a_story->first());

@@ -70,7 +70,7 @@ public:
 
     static bool updateFileNotes(QString const &fn, QString &notes);
 
-    static bool createLinkBetweenImages(QByteArray const &left, QByteArray const &right);
+    static bool createLinkBetweenImages(QByteArray const &left, QByteArray const &right, bool force = false, uint stamp = 0);
 
     static QStringList getLinkedImages(QByteArray const &sha, bool reverse);
 
@@ -116,7 +116,9 @@ public:
 
     static QStringList getStoriesList();
 
-    static bool updateStory(QString const &title, MImageOps* macro);
+    static bool updateStory(QString const &title, MImageOps* macro, uint stamp = 0);
+
+    static bool updateStory(QString const &title, QString const &macro, uint stamp = 0);
 
     static bool loadStory(QString const &title, MImageOps* macro);
 

@@ -473,20 +473,34 @@ bool DBHelper::updateFileNotes(QString const &fn, QString &notes)
     return ok;
 }
 
-bool DBHelper::createLinkBetweenImages(QByteArray const &left, QByteArray const &right)
+bool DBHelper::createLinkBetweenImages(QByteArray const &left, QByteArray const &right, bool force, uint stamp)
 {
     QSqlQuery q;
+    bool ok;
+
     q.prepare("SELECT created FROM links WHERE left = :sl AND right = :sr");
     q.bindValue(":sl",left);
     q.bindValue(":sr",right);
-    if (q.exec() && q.next()) return false;
+    if (q.exec() && q.next()) {
+        if (!force) {
+            qDebug() << "[db] Link already exists";
+            return false;
+        }
+
+        q.clear();
+        q.prepare("DELETE FROM links WHERE left = :sl AND right = :sr");
+        q.bindValue(":sl",left);
+        q.bindValue(":sr",right);
+        ok = q.exec();
+        qDebug() << "[db] Removing link: " << ok;
+    }
 
     q.clear();
     q.prepare("INSERT INTO links (created, left, right) VALUES (:tm, :sl, :sr)");
-    q.bindValue(":tm",(uint)time(NULL));
+    q.bindValue(":tm",stamp? stamp : (uint)time(NULL));
     q.bindValue(":sl",left);
     q.bindValue(":sr",right);
-    bool ok = q.exec();
+    ok = q.exec();
 
     qDebug() << "[db] Inserting link: " << ok;
     return ok;
@@ -1199,9 +1213,15 @@ QStringList DBHelper::getStoriesList()
     return res;
 }
 
-bool DBHelper::updateStory(QString const &title, MImageOps* macro)
+bool DBHelper::updateStory(QString const &title, MImageOps* macro, uint stamp)
 {
-    if (title.isEmpty() || !macro) return false;
+    if (!macro) return false;
+    return updateStory(title,macro->serialize(),stamp);
+}
+
+bool DBHelper::updateStory(QString const &title, QString const &macro, uint stamp)
+{
+    if (title.isEmpty()) return false;
 
     QSqlQuery q;
     q.prepare("SELECT COUNT(title) FROM stories WHERE title = :t");
@@ -1212,9 +1232,9 @@ bool DBHelper::updateStory(QString const &title, MImageOps* macro)
         q.prepare("INSERT INTO stories (updated, title, actions) VALUES (:tm, :tit, :act)");
     else
         q.prepare("UPDATE stories SET updated = :tm, actions = :act WHERE title = :tit");
-    q.bindValue(":tm",(uint)time(NULL));
+    q.bindValue(":tm",stamp? stamp : (uint)time(NULL));
     q.bindValue(":tit",title);
-    q.bindValue(":act",macro->serialize());
+    q.bindValue(":act",macro);
     bool ok = q.exec();
 
     qDebug() << "[db] Updating story" << title << ":" << ok;

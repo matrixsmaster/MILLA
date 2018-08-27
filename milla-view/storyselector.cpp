@@ -19,5 +19,8 @@ StorySelector::~StorySelector()
 
 QString StorySelector::getStoryTitle()
 {
-    return ui->listWidget->currentItem()->text();
+    if (ui->listWidget->currentItem())
+        return ui->listWidget->currentItem()->text();
+    else
+        return QString();
 }

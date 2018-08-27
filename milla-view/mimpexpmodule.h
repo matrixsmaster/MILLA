@@ -34,6 +34,13 @@ private:
     int getNumOfLines(QTextStream &f);
     void setProgress(int total);
     bool incProgress();
+
+    void checkBalance(QStringList &l, QChar toBalance);
+
+    bool exportStats(ExportFormData const &s, QTextStream &f);
+    bool exportTags(ExportFormData const &s, QTextStream &f);
+    bool exportStories(ExportFormData const &s, QTextStream &f);
+    bool exportLinks(ExportFormData const &s, QTextStream &f);
 };
 
 #endif // MIMPEXPMODULE_H
