@@ -136,16 +136,15 @@ void MImageLoader::thumb(MImageListRecord &rec, bool force, bool fast)
     rec.thumbOK = false;
     rec.loaded = !rec.picture.isNull();
 
-    if (!fast) {
-        if (force || !rec.loaded) {
-            rec.picture = load(rec.filename);
-        }
+    if ((!fast) && (force || !rec.loaded)) {
+        rec.picture = load(rec.filename);
         rec.loaded = !rec.picture.isNull();
     }
 
     if (rec.loaded) {
         rec.thumb = rec.picture.scaled(MILLA_THUMBNAIL_SIZE,MILLA_THUMBNAIL_SIZE,Qt::KeepAspectRatio,Qt::SmoothTransformation);
         rec.thumbOK = !rec.thumb.isNull();
+        rec.filechanged = fi.lastModified().toTime_t();
 
     } else
         qDebug() << "[ImgLoader] Unable to load pixmap for " << rec.filename;

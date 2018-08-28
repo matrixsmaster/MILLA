@@ -1,0 +1,3 @@
+sudo cp -av ../Desktop-Release/bin /opt/milla/
+sudo cp -av ../Desktop-Release/share /opt/milla/
+
