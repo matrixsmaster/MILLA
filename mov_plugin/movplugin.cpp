@@ -1,3 +1,4 @@
+#include <cmath>
 #include <QDebug>
 #include "movplugin.h"
 

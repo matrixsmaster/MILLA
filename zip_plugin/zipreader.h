@@ -59,6 +59,12 @@
 #include <QtCore/qfile.h>
 #include <QtCore/qstring.h>
 
+#ifndef Q_GUI_EXPORT
+//FIXME: kludge for Qt 5.10 / Creator 4.7
+//compiles fine without this on Qt 5.5 / Creator 3.5
+#define Q_GUI_EXPORT
+#endif
+
 QT_BEGIN_NAMESPACE
 
 class ZipReaderPrivate;

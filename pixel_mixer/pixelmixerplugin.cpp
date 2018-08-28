@@ -3,6 +3,7 @@
 #include <QPainter>
 #include <QPixmap>
 #include <QImage>
+#include <cmath>
 #include "pixelmixerplugin.h"
 #include "dialog.h"
 
