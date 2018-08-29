@@ -526,7 +526,7 @@ void MViewer::on_actionLoad_everything_slow_triggered()
     for (auto &i : ptm->GetAllImages()) {
         QCoreApplication::processEvents();
         if (stop_flag) break;
-        if (!createStatRecord(i.filename)) continue;
+        createStatRecord(i.filename); //ignore result
 
         prg += dp;
         passed = (duration_cast<duration<double>>(steady_clock::now() - start)).count();
@@ -1550,4 +1550,16 @@ void MViewer::on_actionEdit_exclusion_list_triggered()
 
     if (dlg.exec())
         DBHelper::setExtraStringVal(DBF_EXTRA_EXCLUSION_LIST,dlg.getList().join(';'));
+}
+
+void MViewer::on_actionSave_right_image_as_triggered()
+{
+    if (!current_r.valid || current_r.picture.isNull()) return;
+
+    QString flt(MILLA_SAVE_FILE);
+    QString fn = QFileDialog::getSaveFileName(this,tr("Save as"),"",flt);
+    if (fn.isEmpty()) return;
+
+    bool ok = current_r.picture.save(fn);
+    qDebug() << "Saving right image to " << fn << ": " << ok;
 }

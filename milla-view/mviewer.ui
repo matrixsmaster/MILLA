@@ -665,8 +665,8 @@
                        <rect>
                         <x>0</x>
                         <y>0</y>
-                        <width>327</width>
-                        <height>325</height>
+                        <width>322</width>
+                        <height>334</height>
                        </rect>
                       </property>
                       <layout class="QHBoxLayout" name="horizontalLayout_12">
@@ -1196,8 +1196,8 @@
                        <rect>
                         <x>0</x>
                         <y>0</y>
-                        <width>326</width>
-                        <height>325</height>
+                        <width>327</width>
+                        <height>334</height>
                        </rect>
                       </property>
                       <layout class="QHBoxLayout" name="horizontalLayout_11">
@@ -2654,7 +2654,7 @@
      <x>0</x>
      <y>0</y>
      <width>1000</width>
-     <height>23</height>
+     <height>22</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">
@@ -2671,6 +2671,8 @@
     <addaction name="actionOpen_list"/>
     <addaction name="actionClose"/>
     <addaction name="menuRecent_dirs"/>
+    <addaction name="separator"/>
+    <addaction name="actionSave_right_image_as"/>
     <addaction name="separator"/>
     <addaction name="actionJump_to"/>
     <addaction name="actionRandom_image"/>
@@ -3303,6 +3305,11 @@
   <action name="actionEdit_exclusion_list">
    <property name="text">
     <string>Edit exclusion list</string>
+   </property>
+  </action>
+  <action name="actionSave_right_image_as">
+   <property name="text">
+    <string>Save right image as...</string>
    </property>
   </action>
  </widget>

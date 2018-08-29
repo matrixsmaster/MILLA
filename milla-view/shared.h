@@ -9,7 +9,7 @@
 #include <map>
 #include <functional>
 
-#define MILLA_VERSION "ver. 0.4.7.1 next-gen"
+#define MILLA_VERSION "ver. 0.4.7.2 next-gen"
 #define MILLA_CLI_BANNER "MILLA:  Qt5-based, AI-enhanced image viewer"
 #define MILLA_CONFIG_PATH "/.milla/"
 #define MILLA_SITE "http://github.com/matrixsmaster/MILLA"
@@ -30,6 +30,7 @@
 #define MILLA_LIST_FORMATS { "txt", "lst" }
 #define MILLA_OPEN_FILE "All supported files"
 #define MILLA_OPEN_LIST "Text list files"
+#define MILLA_SAVE_FILE "Supported formats (*.png, *.jpg, *.bmp)"
 
 typedef std::map<QString,std::pair<unsigned,Qt::CheckState>> MTagCache;
 

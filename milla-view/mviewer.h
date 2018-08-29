@@ -193,6 +193,8 @@ private slots:
 
     void on_actionEdit_exclusion_list_triggered();
 
+    void on_actionSave_right_image_as_triggered();
+
 private:
     Ui::MViewer *ui;
     DBHelper db;
