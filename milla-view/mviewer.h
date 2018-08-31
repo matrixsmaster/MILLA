@@ -31,6 +31,14 @@
 #include "storyselector.h"
 #include "listeditor.h"
 
+enum MVTabIndices {
+    MVTAB_NOTES,
+    MVTAB_RESULTS,
+    MVTAB_LINKS,
+    MVTAB_MEMORY,
+    MVTAB_STORY
+};
+
 struct MHistory {
     QStringList files;
     QStringList::iterator cur;

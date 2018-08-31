@@ -221,6 +221,17 @@ QVariant MillaPluginLoader::pluginConfigCallback(MillaGenericPlugin* plug, QStri
         qDebug() << "[PLUGINS] Registered event filter for " << plug->getPluginName();
         return true;
 
+    } else if (key == "load_key_value" && val.canConvert<QString>()) {
+        QString res = DBHelper::getExtraStringVal(val.toString());
+        qDebug() << "[PLUGINS] Plugin " << plug->getPluginName() << " requested a value for " << val.toString() << ": " << res;
+        return res;
+
+    } else if (key == "save_key_value" && val.canConvert<QString>()) {
+        QStringList l = val.toString().split("=");
+        if (l.size() != 2) return false;
+
+        qDebug() << "[PLUGINS] Plugin " << plug->getPluginName() << " stores a value for " << l.at(0) << ": " << l.at(1);
+        return DBHelper::setExtraStringVal(l.at(0),l.at(1));
     }
     return QVariant();
 }

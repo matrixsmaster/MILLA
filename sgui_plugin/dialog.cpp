@@ -34,3 +34,13 @@ SGUIPluginGUIRec SGUICfgDialog::getInfo()
     r.valid = true;
     return r;
 }
+
+void SGUICfgDialog::setFilename(QString const &s)
+{
+    ui->lineEdit->setText(s);
+}
+
+void SGUICfgDialog::setScript(QString const &s)
+{
+    ui->lineEdit_2->setText(s);
+}

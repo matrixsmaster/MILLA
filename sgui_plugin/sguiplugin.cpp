@@ -46,14 +46,23 @@ void SGUIPlugin::cleanUp()
 void SGUIPlugin::showUI()
 {
     SGUICfgDialog dlg;
-    if (dlg.exec()) {
-        info = dlg.getInfo();
 
-        info.valid = false; //temporarily invalidate configuration information
-        if (!info.vfs_fn.isEmpty() && !info.startup.isEmpty()) {
-            QFileInfo fi(info.vfs_fn);
-            if (fi.exists()) info.valid = true;
-        }
+    //recall the last successfully loaded VFS filename
+    if (config_cb) {
+        QVariant s = config_cb("load_key_value","sgui_last_vfs");
+        if (s.canConvert<QString>() && !s.toString().isEmpty()) dlg.setFilename(s.toString());
+        s = config_cb("load_key_value","sgui_last_script");
+        if (s.canConvert<QString>() && !s.toString().isEmpty()) dlg.setScript(s.toString());
+    }
+
+    //fire up the config dialog and retreive the information
+    if (!dlg.exec()) return;
+    info = dlg.getInfo();
+
+    info.valid = false; //temporarily invalidate configuration information
+    if (!info.vfs_fn.isEmpty() && !info.startup.isEmpty()) {
+        QFileInfo fi(info.vfs_fn);
+        if (fi.exists()) info.valid = true; //file is OK, now info is valid
     }
 }
 
@@ -80,7 +89,9 @@ void SGUIPlugin::fireUp()
     if (config_cb) {
         QVariant i;
         i.setValue(QObjectPtr(&sink));
-        config_cb("set_event_filter",i);
+        config_cb("set_event_filter",i); //insert event filter into main window
+        config_cb("save_key_value","sgui_last_vfs="+info.vfs_fn); //save the last successfully loaded VFS filename
+        config_cb("save_key_value","sgui_last_script="+info.startup); //save the startup script path
     }
 
     qDebug() << "[SGUIPlugin] SGUI started. Version " << sgui->getVersion();

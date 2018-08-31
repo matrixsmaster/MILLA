@@ -23,6 +23,10 @@ public:
 
     SGUIPluginGUIRec getInfo();
 
+    void setFilename(QString const &s);
+
+    void setScript(QString const &s);
+
 private slots:
     void on_pushButton_clicked();
 

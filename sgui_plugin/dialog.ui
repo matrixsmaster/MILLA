@@ -54,7 +54,7 @@
      <item>
       <widget class="QLineEdit" name="lineEdit_2">
        <property name="text">
-        <string>/scripts/main.lua</string>
+        <string/>
        </property>
       </widget>
      </item>

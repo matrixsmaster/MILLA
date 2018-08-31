@@ -5,8 +5,11 @@
 #include <QFileInfo>
 #include <QMovie>
 #include "plugins.h"
+#include "movcfgdialog.h"
 
-#define MILLA_ANIMATION_FPS 15
+#define MILLAMOV_DEFAULT_FPS 15.f
+#define MILLAMOV_DEFAULT_DELAY (1000.f / MILLAMOV_DEFAULT_FPS)
+#define MILLAMOV_WHEEL_SENSITIVITY 100
 
 class MovPlugin : public QObject, public MillaGenericPlugin
 {
@@ -30,7 +33,7 @@ public:
     bool finalize();
 
     void showUI();
-    void setConfigCB(PlugConfCB)        {}
+    void setConfigCB(PlugConfCB cb)     { config_cb = cb; }
     void setProgressCB(ProgressCB)      {}
 
     QVariant getParam(QString key);
@@ -38,9 +41,16 @@ public:
 
     QVariant action(QVariant in);
 
+protected:
+    bool eventFilter(QObject *obj, QEvent *event);
+
 private:
     QFileInfo clipfile;
     QMovie* clip = nullptr;
+    PlugConfCB config_cb = 0;
+    int delay = MILLAMOV_DEFAULT_DELAY;
+    int percSpeed = 100;
+    int cframe = 0;
 };
 
 #endif // MOVPLUGIN_H

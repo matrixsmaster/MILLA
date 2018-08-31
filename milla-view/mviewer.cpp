@@ -74,7 +74,7 @@ MViewer::MViewer(QWidget *parent) :
         connect(a,&QAction::triggered,this,[i,mmm,this] {
             if (this->current_l.valid && !this->current_l.generated) {
                 mmm->setSlot(i,this->current_l);
-                ui->tabWidget->setCurrentIndex(3);
+                ui->tabWidget->setCurrentIndex(MVTAB_MEMORY);
             }
         });
     }
@@ -648,7 +648,7 @@ void MViewer::resultsPresentation(QStringList lst, QListView* view, int tabIndex
 void MViewer::searchResults(QStringList lst)
 {
     ui->statusBar->showMessage(QString::asprintf("%i images found",lst.count()));
-    resultsPresentation(lst,ui->listView_2,1);
+    resultsPresentation(lst,ui->listView_2,MVTAB_RESULTS);
 
     connect(ui->listView_2->selectionModel(),&QItemSelectionModel::selectionChanged,[this] {
         MImageListRecord _r = ui->listView_2->selectionModel()->selectedIndexes().first().data(MImageListModel::FullDataRole).value<MImageListRecord>();
@@ -795,7 +795,7 @@ void MViewer::displayLinkedImages(QString const &fn)
     if (ui->actionShow_reverse_links->isChecked())
         out += db.getLinkedImages(extr.sha,true);
 
-    resultsPresentation(out,ui->listView_3,2);
+    resultsPresentation(out,ui->listView_3,MVTAB_LINKS);
     connect(ui->listView_3->selectionModel(),&QItemSelectionModel::selectionChanged,[this] {
         current_r = ui->listView_3->selectionModel()->selectedIndexes().first().data(MImageListModel::FullDataRole).value<MImageListRecord>();
         scaleImage(current_r,ui->scrollArea_2,ui->label_2,ui->label_4,1);
@@ -1433,7 +1433,7 @@ void MViewer::on_actionPick_a_story_triggered()
     if (db.loadStory(dlg.getStoryTitle(),a_story)) {
         updateStory(a_story->first());
         ui->lineEdit_3->setText(dlg.getStoryTitle());
-        ui->tabWidget->setCurrentIndex(4);
+        ui->tabWidget->setCurrentIndex(MVTAB_STORY);
         ui->statusBar->showMessage("Story loaded.");
     } else
         ui->statusBar->showMessage("Unable to load story selected!");

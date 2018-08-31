@@ -15,6 +15,10 @@ public:
     explicit MovCfgDialog(QWidget *parent = 0);
     ~MovCfgDialog();
 
+    int getFPS();
+
+    bool isInteractive();
+
 private:
     Ui::MovCfgDialog *ui;
 };

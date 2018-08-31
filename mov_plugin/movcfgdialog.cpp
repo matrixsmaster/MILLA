@@ -12,3 +12,13 @@ MovCfgDialog::~MovCfgDialog()
 {
     delete ui;
 }
+
+int MovCfgDialog::getFPS()
+{
+    return ui->horizontalSlider->value();
+}
+
+bool MovCfgDialog::isInteractive()
+{
+    return ui->checkBox->isChecked();
+}
