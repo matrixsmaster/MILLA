@@ -1280,3 +1280,27 @@ bool DBHelper::setExtraStringVal(QString const &key, QString const &val)
     qDebug() << "[db] Updating key/val" << key << "/" << val << ":" << ok;
     return ok;
 }
+
+QString DBHelper::getDBInfoString()
+{
+    QSqlQuery q;
+    QFileInfo fi(QDir::homePath() + DB_FILEPATH);
+    if (!q.exec(DBF_GET_METAINFO) || !q.next()) return QString();
+
+    qint64 sz = fi.size() / 1024;
+    char prf = 'K';
+    if (sz > 1024) {
+        sz /= 1024;
+        prf = 'M';
+    }
+    if (sz > 1024) {
+        sz /= 1024;
+        prf = 'G';
+    }
+
+    unsigned stat = q.value(0).toUInt();
+    q.next();
+    unsigned links = q.value(0).toUInt();
+
+    return QString::asprintf("DB: %u stat records; %u links; %li %ciB",stat,links,sz,prf);
+}

@@ -231,6 +231,7 @@ private:
     MHistory history;
     std::map<QAction*,QKeySequence> hotkeys;
     MImageOps* a_story = nullptr;
+    QString status_pending;
 
     void cleanUp();
 

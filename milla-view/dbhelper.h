@@ -126,6 +126,8 @@ public:
 
     static bool setExtraStringVal(QString const &key, QString const &val);
 
+    static QString getDBInfoString();
+
 private:
     std::map<time_t,QAction*> recents;
     QList<MImageListRecord> searchlist;

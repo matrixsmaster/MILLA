@@ -81,5 +81,7 @@
 
 #define DBF_EXTRA_EXCLUSION_LIST "global_exclusion"
 
+#define DBF_GET_METAINFO "SELECT COUNT(file) FROM stats UNION ALL SELECT COUNT(created) FROM links"
+
 #endif // DB_FORMAT_H
 

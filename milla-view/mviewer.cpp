@@ -93,6 +93,10 @@ MViewer::MViewer(QWidget *parent) :
     restoreGeometry(db.getWindowGeometryOrState(true));
     restoreState(db.getWindowGeometryOrState(false));
     db.restoreViewerState(children());
+
+    status_pending = "[" + db.getDBInfoString() + "]";
+    ui->statusBar->showMessage(status_pending);
+    status_pending += " Current dir: ";
 }
 
 MViewer::~MViewer()
@@ -287,6 +291,7 @@ void MViewer::showImageList(QStringList const &lst)
 
     bool purelist = !(ui->actionThumbnails_cloud->isChecked());
     ThumbnailModel* ptr = new ThumbnailModel(lst,thumbload_pbar,loader,ui->listView);
+    prepareLongProcessing(true); //reset progress bar after thumbnails loading
 
     ptr->setShortenFilenames(!purelist);
     ui->listView->setModel(ptr);
@@ -303,7 +308,9 @@ void MViewer::showImageList(QStringList const &lst)
         incViews(false);
     });
 
-    ui->statusBar->showMessage(QString::asprintf("%d images",lst.size()));
+    ui->statusBar->showMessage(status_pending+QString::asprintf("%d images",lst.size()));
+    status_pending.clear();
+
     updateRecents();
     on_actionDescending_triggered();
     on_pushButton_9_clicked();
@@ -608,32 +615,10 @@ void MViewer::resultsPresentation(QStringList lst, QListView* view, int tabIndex
     if (lst.isEmpty()) return;
 
     QList<MImageListRecord> out;
-    ThumbnailModel* ptm = dynamic_cast<ThumbnailModel*>(ui->listView->model());
-    bool fnd = false;
-
-    if (ptm) {
-        QList<MImageListRecord> &imgs = ptm->GetAllImages();
-        for (auto &i : lst) {
-            int idx = 0;
-
-            for (auto &j : imgs) {
-                if (j.filename == i) break;
-                idx++;
-            }
-            if (idx >= imgs.size()) break;
-
-            ptm->LoadUp(idx);
-            out.push_back(imgs.at(idx));
-            fnd = true;
-        }
-    }
-
-    if (!fnd) {
-        for (auto &i : lst) {
-            MImageListRecord r;
-            r.filename = i;
-            out.push_back(r);
-        }
+    for (auto &i : lst) {
+        MImageListRecord r;
+        r.filename = i;
+        out.push_back(r);
     }
 
     view->setModel(new SResultModel(out,loader,view));
