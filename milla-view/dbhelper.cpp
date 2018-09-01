@@ -486,13 +486,7 @@ bool DBHelper::createLinkBetweenImages(QByteArray const &left, QByteArray const 
             qDebug() << "[db] Link already exists";
             return false;
         }
-
-        q.clear();
-        q.prepare("DELETE FROM links WHERE left = :sl AND right = :sr");
-        q.bindValue(":sl",left);
-        q.bindValue(":sr",right);
-        ok = q.exec();
-        qDebug() << "[db] Removing link: " << ok;
+        removeLinkBetweenImages(left,right,true);
     }
 
     q.clear();
@@ -503,6 +497,31 @@ bool DBHelper::createLinkBetweenImages(QByteArray const &left, QByteArray const 
     ok = q.exec();
 
     qDebug() << "[db] Inserting link: " << ok;
+    return ok;
+}
+
+bool DBHelper::removeLinkBetweenImages(QByteArray const &left, QByteArray const &right, bool force)
+{
+    QSqlQuery q;
+    bool ok;
+
+    if (!force) {
+        q.prepare("SELECT created FROM links WHERE left = :sl AND right = :sr");
+        q.bindValue(":sl",left);
+        q.bindValue(":sr",right);
+        if (!q.exec() || !q.next()) {
+            qDebug() << "[db] No link";
+            return false;
+        }
+    }
+
+    q.clear();
+    q.prepare("DELETE FROM links WHERE left = :sl AND right = :sr");
+    q.bindValue(":sl",left);
+    q.bindValue(":sr",right);
+    ok = q.exec();
+
+    qDebug() << "[db] Removing link: " << ok;
     return ok;
 }
 

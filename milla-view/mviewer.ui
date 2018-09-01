@@ -2666,6 +2666,7 @@
       <string>Recent dirs</string>
      </property>
      <addaction name="actionClear"/>
+     <addaction name="separator"/>
     </widget>
     <addaction name="actionOpen"/>
     <addaction name="actionOpen_list"/>
@@ -2675,6 +2676,7 @@
     <addaction name="actionSave_right_image_as"/>
     <addaction name="separator"/>
     <addaction name="actionJump_to"/>
+    <addaction name="actionJump_next"/>
     <addaction name="actionRandom_image"/>
     <addaction name="separator"/>
     <addaction name="actionLoad_everything_slow"/>
@@ -2699,6 +2701,7 @@
     </widget>
     <addaction name="actionLink_left_to_right"/>
     <addaction name="actionLink_bidirectional"/>
+    <addaction name="actionUnlink_images"/>
     <addaction name="actionKudos_to_left_image"/>
     <addaction name="actionKudos_to_right_image"/>
     <addaction name="actionSwap_images"/>
@@ -2773,6 +2776,7 @@
     <addaction name="actionApply_tagset_from_left_to_right"/>
     <addaction name="separator"/>
     <addaction name="actionOpen_with"/>
+    <addaction name="actionLoad_right_image_dir"/>
    </widget>
    <widget class="QMenu" name="menuHelp">
     <property name="title">
@@ -3310,6 +3314,32 @@
   <action name="actionSave_right_image_as">
    <property name="text">
     <string>Save right image as...</string>
+   </property>
+  </action>
+  <action name="actionUnlink_images">
+   <property name="text">
+    <string>Unlink images</string>
+   </property>
+   <property name="shortcut">
+    <string>Alt+L</string>
+   </property>
+  </action>
+  <action name="actionJump_next">
+   <property name="text">
+    <string>Jump next</string>
+   </property>
+   <property name="shortcut">
+    <string>Shift+J</string>
+   </property>
+  </action>
+  <action name="actionOpen_right_image_dir">
+   <property name="text">
+    <string>Open right image dir</string>
+   </property>
+  </action>
+  <action name="actionLoad_right_image_dir">
+   <property name="text">
+    <string>Load right image dir</string>
    </property>
   </action>
  </widget>

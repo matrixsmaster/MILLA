@@ -115,6 +115,8 @@ void MViewer::cleanUp()
 
     history.files.clear();
     history.cur = history.files.begin();
+    jump_buf.clear();
+    jump_idx = 0;
 
     if (ui->listView->model()) ui->listView->model()->deleteLater();
     if (ui->listView_2->model()) ui->listView_2->model()->deleteLater();
@@ -658,7 +660,11 @@ void MViewer::on_actionJump_to_triggered()
     bool ok;
     QString fn = QInputDialog::getText(this,tr("Jump to file"),tr("File name or full path"),QLineEdit::Normal,QString(),&ok);
 
-    if (ok) ui->listView->setCurrentIndex(ptm->getRecordIndex(fn,true));
+    if (ok) {
+        jump_buf = fn;
+        jump_idx = 0;
+        ui->listView->setCurrentIndex(ptm->getRecordIndex(fn,true,&jump_idx));
+    }
 }
 
 void MViewer::on_actionRefine_search_triggered()
@@ -753,14 +759,7 @@ void MViewer::on_actionQuit_triggered()
 
 void MViewer::on_actionLink_left_to_right_triggered()
 {
-    if (!current_l.valid || !current_r.valid || current_l.generated || current_r.generated) return;
-
-    MImageExtras extl = getExtraCacheLine(current_l.filename);
-    MImageExtras extr = getExtraCacheLine(current_r.filename);
-    if (!extl.valid || !extr.valid || extl.sha.isEmpty() || extr.sha.isEmpty()) return;
-
-    if (db.createLinkBetweenImages(extl.sha,extr.sha)) ui->statusBar->showMessage("Linked");
-    else ui->statusBar->showMessage("Unable to link images");
+    linkageAction(true);
 }
 
 void MViewer::on_actionLink_bidirectional_triggered()
@@ -1547,4 +1546,40 @@ void MViewer::on_actionSave_right_image_as_triggered()
 
     bool ok = current_r.picture.save(fn);
     qDebug() << "Saving right image to " << fn << ": " << ok;
+}
+
+void MViewer::linkageAction(bool link)
+{
+    if (!current_l.valid || !current_r.valid || current_l.generated || current_r.generated) return;
+
+    MImageExtras extl = getExtraCacheLine(current_l.filename);
+    MImageExtras extr = getExtraCacheLine(current_r.filename);
+    if (!extl.valid || !extr.valid || extl.sha.isEmpty() || extr.sha.isEmpty()) return;
+
+    if (link) {
+        if (db.createLinkBetweenImages(extl.sha,extr.sha)) ui->statusBar->showMessage("Linked");
+        else ui->statusBar->showMessage("Unable to link images");
+    } else {
+        if (db.removeLinkBetweenImages(extl.sha,extr.sha)) ui->statusBar->showMessage("Unlinked");
+        else ui->statusBar->showMessage("Unable to unlink images");
+    }
+}
+
+void MViewer::on_actionUnlink_images_triggered()
+{
+    linkageAction(false);
+}
+
+void MViewer::on_actionJump_next_triggered()
+{
+    if (jump_buf.isEmpty()) return;
+    ThumbnailModel* ptm = dynamic_cast<ThumbnailModel*>(ui->listView->model());
+    if (ptm)
+        ui->listView->setCurrentIndex(ptm->getRecordIndex(jump_buf,true,&jump_idx));
+}
+
+void MViewer::on_actionLoad_right_image_dir_triggered()
+{
+    if (!current_r.valid || current_r.generated || current_r.filename.isEmpty()) return;
+    showImageList(loader->open(current_r.filename));
 }

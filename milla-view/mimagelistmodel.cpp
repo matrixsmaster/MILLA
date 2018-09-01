@@ -54,7 +54,7 @@ size_t MImageListModel::ItemSizeInBytes(MImageListRecord const &r)
     return (r.picture.depth() / 8) * r.picture.size().width() * r.picture.size().height();
 }
 
-QModelIndex MImageListModel::getRecordIndex(const QString &fn, bool allowPartialMatch)
+QModelIndex MImageListModel::getRecordIndex(const QString &fn, bool allowPartialMatch, size_t *pStartIdx)
 {
     QString canon;
     bool path = fn.contains('/');
@@ -63,6 +63,10 @@ QModelIndex MImageListModel::getRecordIndex(const QString &fn, bool allowPartial
     size_t idx = 0;
     bool ok = false;
     for (auto &i : images) {
+        if (pStartIdx && idx < *pStartIdx) {
+            idx++;
+            continue;
+        }
         if (allowPartialMatch) {
             if ((path && (i.filename.contains(fn,Qt::CaseInsensitive) || i.filename.contains(canon,Qt::CaseInsensitive)))
                     || (!path && i.fnshort.contains(fn,Qt::CaseInsensitive))) ok = true;
@@ -74,5 +78,6 @@ QModelIndex MImageListModel::getRecordIndex(const QString &fn, bool allowPartial
         idx++;
     }
 
+    if (pStartIdx) *pStartIdx = ok? idx+1:idx;
     return ok? createIndex(idx,0) : QModelIndex();
 }

@@ -72,6 +72,8 @@ public:
 
     static bool createLinkBetweenImages(QByteArray const &left, QByteArray const &right, bool force = false, uint stamp = 0);
 
+    static bool removeLinkBetweenImages(QByteArray const &left, QByteArray const &right, bool force = false);
+
     static QStringList getLinkedImages(QByteArray const &sha, bool reverse);
 
     static QStringList tagSearch(MTagCache const &cache, QList<MImageListRecord>* within = nullptr, int maxitems = 0);
