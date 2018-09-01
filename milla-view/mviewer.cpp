@@ -329,7 +329,8 @@ void MViewer::showSelectedImage()
     ptm->touch(idx);
 
     current_l = idx.data(MImageListModel::FullDataRole).value<MImageListRecord>();
-    scaleImage(current_l,ui->scrollArea,ui->label,ui->label_3,1);
+    face_idx = -1;
+    scaleImage(current_l,ui->scrollArea,ui->label,ui->label_3,1.f);
     leftImageMetaUpdate();
     checkExtraCache();
     ui->lineEdit_2->clear();
@@ -368,7 +369,7 @@ void MViewer::scaleImage(const MImageListRecord &rec, QScrollArea* scrl, QLabel*
 
         if (ui->actionShow_faces->isChecked() || ui->actionCenter_on_face->isChecked()) {
             QRect vbd;
-            lbl->setPixmap(CVHelper::drawROIs(rec.picture,vbd,extr,!ui->actionShow_faces->isChecked()));
+            lbl->setPixmap(CVHelper::drawROIs(rec.picture,vbd,extr,!ui->actionShow_faces->isChecked(),face_idx));
 
             if (ui->actionCenter_on_face->isChecked()) {
                 //it takes some time to actually show the image, so wait until next GUI cycle
@@ -386,7 +387,9 @@ void MViewer::scaleImage(const MImageListRecord &rec, QScrollArea* scrl, QLabel*
 
 unsigned MViewer::incViews(bool left)
 {
-    if ((left && !current_l.valid) || (!left && !current_r.valid)) return 0;
+    if (    (left && (!current_l.valid || current_l.generated)) ||
+            (!left && (!current_r.valid || current_r.generated))    ) return 0;
+
     QString fn = (left? current_l : current_r).filename;
     if (fn.isEmpty()) return 0;
     qDebug() << "Incrementing views counter for " << fn;
@@ -397,10 +400,16 @@ unsigned MViewer::incViews(bool left)
         //first time watching, let's create a record
         if (!createStatRecord(fn)) return 0;
     }
-    v++;
-    if (!db.updateFileViews(fn,v)) return 0;
+
+    //auto-increment kudos for highly-rated image before incrementing the views counter
+    if (!left && v == (unsigned)db.updateFileKudos(current_r.filename,0) && ui->actionAuto_inc_kudos_for_right_image->isChecked())
+        db.updateFileKudos(current_r.filename,1);
+
+    //increment views counter
+    if (!db.updateFileViews(fn,++v)) return 0;
 
     if (left) {
+        //add to history
         bool add = history.files.empty() || (history.cur == history.files.end());
         if (!add) add = !history.files.contains(current_l.filename);
         if (add) {
@@ -778,6 +787,28 @@ void MViewer::displayLinkedImages(QString const &fn)
     QStringList out = db.getLinkedImages(extr.sha,false);
     if (ui->actionShow_reverse_links->isChecked())
         out += db.getLinkedImages(extr.sha,true);
+
+    if (ui->actionExplore_links_tree->isChecked()) {
+        QSet<QString> inset, outset = out.toSet();
+        int c = 0;
+        do {
+            for (auto &i : outset) {
+                QByteArray _sha = db.getSHAbyFile(i);
+                if (_sha.isEmpty()) continue;
+                QStringList _tmp = db.getLinkedImages(_sha,false);
+                if (ui->actionShow_reverse_links->isChecked())
+                    _tmp += db.getLinkedImages(_sha,true);
+                inset.unite(_tmp.toSet());
+            }
+//            qDebug() << inset;
+            int p = outset.size();
+            outset.unite(inset);
+            inset.clear();
+            c = outset.size() - p;
+            qDebug() << "Link tree: c = " << c;
+        } while (c > 0);
+        out = QStringList::fromSet(outset);
+    }
 
     resultsPresentation(out,ui->listView_3,MVTAB_LINKS);
     connect(ui->listView_3->selectionModel(),&QItemSelectionModel::selectionChanged,[this] {
@@ -1171,6 +1202,15 @@ void MViewer::showGeneratedPicture(QPixmap const &in)
 {
     if (in.isNull()) return; //skip if no input were given
 
+    //get the previous frame offsets
+    int pv = 0, ph = 0;
+    if (current_r.generated && current_r.valid && !ui->actionFit->isChecked()) {
+        QScrollBar* h = ui->scrollArea_2->horizontalScrollBar();
+        if (h) ph = h->value();
+        QScrollBar* v = ui->scrollArea_2->verticalScrollBar();
+        if (v) pv = v->value();
+    }
+
     //set current right image to generated one
     current_r = MImageListRecord();
     current_r.fnshort = "Generated Picture";
@@ -1181,6 +1221,15 @@ void MViewer::showGeneratedPicture(QPixmap const &in)
 
     //and show it
     scaleImage(current_r,ui->scrollArea_2,ui->label_2,ui->label_4,1);
+
+    //restore the previous frame offsets
+    if (ph || pv) {
+        QCoreApplication::processEvents();
+        QScrollBar* h = ui->scrollArea_2->horizontalScrollBar();
+        if (h) h->setValue(ph);
+        QScrollBar* v = ui->scrollArea_2->verticalScrollBar();
+        if (v) v->setValue(pv);
+    }
 }
 
 void MViewer::enableShortcuts(QObjectList const &children, bool en)
@@ -1493,19 +1542,22 @@ bool MViewer::eventFilter(QObject *obj, QEvent *event)
     return true;
 }
 
-void MViewer::printInfo(QString title, MImageListRecord const &targ)
+QString MViewer::printInfo(QString const &title, MImageListRecord const &targ)
 {
-    title += " image:\n";
-    title += targ.fnshort + '\n';
-    title += targ.filename;
+    if (!targ.valid || targ.generated) return QString();
 
-    QMessageBox::information(this,tr("Info"),title);
+    QString res(title);
+    res += " image:\n";
+    res += targ.fnshort + '\n';
+    res += targ.filename + '\n';
+    return res;
 }
 
 void MViewer::on_actionInfo_triggered()
 {
-    if (current_l.valid) printInfo("Left",current_l);
-    else if (current_r.valid) printInfo("Right",current_r);
+    QString inf = printInfo("Left",current_l);
+    inf += printInfo("Right",current_r);
+    if (!inf.isEmpty()) QMessageBox::information(this,tr("Info"),inf);
 }
 
 void MViewer::on_actionOpen_with_triggered()
@@ -1554,6 +1606,7 @@ void MViewer::linkageAction(bool link)
 
     MImageExtras extl = getExtraCacheLine(current_l.filename);
     MImageExtras extr = getExtraCacheLine(current_r.filename);
+    checkExtraCache();
     if (!extl.valid || !extr.valid || extl.sha.isEmpty() || extr.sha.isEmpty()) return;
 
     if (link) {
@@ -1582,4 +1635,35 @@ void MViewer::on_actionLoad_right_image_dir_triggered()
 {
     if (!current_r.valid || current_r.generated || current_r.filename.isEmpty()) return;
     showImageList(loader->open(current_r.filename));
+}
+
+void MViewer::showFaceAction()
+{
+    if (!current_l.valid || current_l.generated) return;
+
+    MImageExtras extl = getExtraCacheLine(current_l.filename);
+    if (!extl.valid || extl.rois.empty()) return;
+
+    int mx = extl.rois.size();
+    if (face_idx >= mx) face_idx = mx - 1;
+    if (face_idx < 0) face_idx = 0;
+    qDebug() << "Showing face #" << face_idx;
+
+    ui->actionFit->setChecked(false);
+    ui->actionShow_faces->setChecked(true);
+    ui->actionCenter_on_face->setChecked(true);
+    scaleFactor = 1.f;
+    scaleImage(current_l,ui->scrollArea,ui->label,ui->label_3,1.f);
+}
+
+void MViewer::on_actionNext_face_triggered()
+{
+    face_idx++;
+    showFaceAction();
+}
+
+void MViewer::on_actionPrevious_face_triggered()
+{
+    face_idx--;
+    showFaceAction();
 }

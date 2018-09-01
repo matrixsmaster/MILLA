@@ -84,6 +84,10 @@ public:
 
     static QStringList getAllFiles();
 
+    static QString getFileBySHA(QByteArray const &sha);
+
+    static QByteArray getSHAbyFile(QString const &fn);
+
     static bool removeFile(QString const &fn);
 
     static void sanitizeFiles(ProgressCB progress_cb);

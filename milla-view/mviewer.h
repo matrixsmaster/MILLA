@@ -209,6 +209,10 @@ private slots:
 
     void on_actionLoad_right_image_dir_triggered();
 
+    void on_actionNext_face_triggered();
+
+    void on_actionPrevious_face_triggered();
+
 private:
     Ui::MViewer *ui;
     DBHelper db;
@@ -233,6 +237,7 @@ private:
     int search_cnt = 0;
     QString jump_buf;
     size_t jump_idx = 0;
+    int face_idx = -1;
 
     std::map<QString,MImageExtras> extra_cache;
     MTagCache tags_cache;
@@ -295,9 +300,11 @@ private:
 
     bool eventFilter(QObject *obj, QEvent *event);
 
-    void printInfo(QString title, MImageListRecord const &targ);
+    QString printInfo(const QString &title, MImageListRecord const &targ);
 
     void linkageAction(bool link);
+
+    void showFaceAction();
 };
 
 #endif // MVIEWER_H

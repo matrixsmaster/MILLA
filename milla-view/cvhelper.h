@@ -50,7 +50,7 @@ public:
 
     MImageExtras collectImageExtraData(QString const &fn, QPixmap const &org);
 
-    static QPixmap drawROIs(QPixmap const &on, QRect &visBound, MImageExtras const &ext, bool calc_only);
+    static QPixmap drawROIs(QPixmap const &on, QRect &visBound, MImageExtras const &ext, bool calc_only, int index = -1);
 
 private:
     FaceDetector facedetector;

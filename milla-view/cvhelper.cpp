@@ -179,7 +179,7 @@ MImageExtras CVHelper::collectImageExtraData(QString const &fn, QPixmap const &o
     return res;
 }
 
-QPixmap CVHelper::drawROIs(QPixmap const &on, QRect &visBound, MImageExtras const &ext, bool calc_only)
+QPixmap CVHelper::drawROIs(QPixmap const &on, QRect &visBound, MImageExtras const &ext, bool calc_only, int index)
 {
     if (!ext.valid || ext.rois.empty()) return on;
 
@@ -190,18 +190,26 @@ QPixmap CVHelper::drawROIs(QPixmap const &on, QRect &visBound, MImageExtras cons
     painter.setPen(paintpen);
 
     int maxarea = 0;
+    int cidx = 0;
     MROI winner;
     for (auto &i : ext.rois) {
         if (!calc_only && i.kind == MROI_FACE_FRONTAL)
             painter.drawRect(QRect(i.x,i.y,i.w,i.h));
 
-        if (i.w * i.h > maxarea) {
+        if (index < 0 && i.w * i.h > maxarea) {
             maxarea = i.w * i.h;
             winner = i;
+
+        } else if (index >= 0) {
+            if (cidx == index) {
+                winner = i;
+                break;
+            } else
+                cidx++;
         }
     }
 
-    if (maxarea > 0)
+    if (maxarea > 0 || cidx == index)
         visBound = QRect(winner.x+winner.w/2, winner.y+winner.h/2, winner.w/2, winner.h/2);
 
     return calc_only? on : QPixmap::fromImage(inq);

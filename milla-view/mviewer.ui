@@ -2698,6 +2698,7 @@
      </property>
      <addaction name="actionHotkeys_enabled"/>
      <addaction name="actionAutoplay_special_files"/>
+     <addaction name="actionAuto_inc_kudos_for_right_image"/>
     </widget>
     <addaction name="actionLink_left_to_right"/>
     <addaction name="actionLink_bidirectional"/>
@@ -2744,15 +2745,19 @@
     <addaction name="actionPrevious"/>
     <addaction name="menuHistory"/>
     <addaction name="separator"/>
-    <addaction name="menuSort_thumbnails"/>
+    <addaction name="actionNext_face"/>
+    <addaction name="actionPrevious_face"/>
+    <addaction name="separator"/>
     <addaction name="actionFit"/>
     <addaction name="actionShow_faces"/>
     <addaction name="actionCenter_on_face"/>
     <addaction name="actionShow_linked_image"/>
+    <addaction name="actionExplore_links_tree"/>
     <addaction name="actionShow_reverse_links"/>
     <addaction name="actionThumbnails_cloud"/>
     <addaction name="actionSkip_empty_story_steps"/>
     <addaction name="separator"/>
+    <addaction name="menuSort_thumbnails"/>
     <addaction name="actionInfo"/>
    </widget>
    <widget class="QMenu" name="menuTools">
@@ -3340,6 +3345,38 @@
   <action name="actionLoad_right_image_dir">
    <property name="text">
     <string>Load right image dir</string>
+   </property>
+  </action>
+  <action name="actionExplore_links_tree">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Explore links tree</string>
+   </property>
+  </action>
+  <action name="actionNext_face">
+   <property name="text">
+    <string>Next face</string>
+   </property>
+   <property name="shortcut">
+    <string>Alt+X</string>
+   </property>
+  </action>
+  <action name="actionPrevious_face">
+   <property name="text">
+    <string>Previous face</string>
+   </property>
+   <property name="shortcut">
+    <string>Alt+Z</string>
+   </property>
+  </action>
+  <action name="actionAuto_inc_kudos_for_right_image">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Auto-inc kudos for right image</string>
    </property>
   </action>
  </widget>

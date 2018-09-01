@@ -763,6 +763,27 @@ QStringList DBHelper::getAllFiles()
     return out;
 }
 
+QString DBHelper::getFileBySHA(QByteArray const &sha)
+{
+    QSqlQuery q;
+    q.prepare("SELECT file FROM stats WHERE sha256 = :sha");
+    q.bindValue(":sha",sha);
+    if (!q.exec() || !q.next()) return QString();
+
+    qDebug() << "[db] File found by SHA-256: " << q.value(0).toString();
+    return q.value(0).toString();
+}
+
+QByteArray DBHelper::getSHAbyFile(QString const &fn)
+{
+    QSqlQuery q;
+    q.prepare("SELECT sha256 FROM stats WHERE file = :fn");
+    q.bindValue(":fn",fn);
+    if (!q.exec() || !q.next() || !q.value(0).canConvert<QByteArray>()) return QByteArray();
+
+    return q.value(0).toByteArray();
+}
+
 bool DBHelper::removeFile(QString const &fn)
 {
     QSqlQuery q;
@@ -1321,5 +1342,5 @@ QString DBHelper::getDBInfoString()
     q.next();
     unsigned links = q.value(0).toUInt();
 
-    return QString::asprintf("DB: %u stat records; %u links; %li %ciB",stat,links,sz,prf);
+    return QString::asprintf("DB: %u stat records; %u links; %lli %ciB",stat,links,sz,prf);
 }
