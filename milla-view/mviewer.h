@@ -213,6 +213,8 @@ private slots:
 
     void on_actionPrevious_face_triggered();
 
+    void on_actionExport_found_triggered();
+
 private:
     Ui::MViewer *ui;
     DBHelper db;

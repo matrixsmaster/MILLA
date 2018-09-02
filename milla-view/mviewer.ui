@@ -2802,6 +2802,7 @@
     </widget>
     <addaction name="actionGlobal_search"/>
     <addaction name="actionEdit_exclusion_list"/>
+    <addaction name="actionExport_found"/>
     <addaction name="menuShow_in"/>
     <addaction name="separator"/>
     <addaction name="actionClear_results"/>
@@ -3377,6 +3378,11 @@
    </property>
    <property name="text">
     <string>Auto-inc kudos for right image</string>
+   </property>
+  </action>
+  <action name="actionExport_found">
+   <property name="text">
+    <string>Export found images</string>
    </property>
   </action>
  </widget>

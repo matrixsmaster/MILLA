@@ -402,7 +402,7 @@ unsigned MViewer::incViews(bool left)
     }
 
     //auto-increment kudos for highly-rated image before incrementing the views counter
-    if (!left && v == (unsigned)db.updateFileKudos(current_r.filename,0) && ui->actionAuto_inc_kudos_for_right_image->isChecked())
+    if (!left && v && v == (unsigned)db.updateFileKudos(current_r.filename,0) && ui->actionAuto_inc_kudos_for_right_image->isChecked())
         db.updateFileKudos(current_r.filename,1);
 
     //increment views counter
@@ -1666,4 +1666,30 @@ void MViewer::on_actionPrevious_face_triggered()
 {
     face_idx--;
     showFaceAction();
+}
+
+void MViewer::on_actionExport_found_triggered()
+{
+    SResultModel* ptm = dynamic_cast<SResultModel*>(ui->listView_2->model());
+    if (!ptm) return;
+
+    QString fn = QFileDialog::getSaveFileName(this,tr("Save as"),"","Text files (*.txt, *.lst)");
+    if (fn.isEmpty()) return;
+
+    if (fn.right(4).toUpper() != ".LST" && fn.right(4).toUpper() != ".TXT")
+        fn += ".lst"; //auto-complete file extension
+
+    QFile olst(fn);
+    if (!olst.open(QIODevice::WriteOnly | QIODevice::Text)) {
+        qDebug() << "ALERT: unable to write file " << fn;
+        return;
+    }
+
+    QString s;
+    for (auto &i : ptm->GetAllImages()) {
+        s = i.filename + '\n';
+        olst.write(s.toStdString().c_str());
+    }
+    olst.close();
+    ui->statusBar->showMessage("Finished");
 }
