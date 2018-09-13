@@ -18,7 +18,7 @@ enum ExportFormTable {
 struct ExportFormData {
     ExportFormTable table;
     bool loaded_only, header;
-    bool filename, views, rating, likes, tags, notes, sha, length;
+    bool filename, views, rating, likes, tags, tagids, notes, sha, length;
     bool tagname, tagrate;
     bool story_update, story_title, story_actions;
     bool link_created, link_left, link_right;

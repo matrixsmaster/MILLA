@@ -70,6 +70,7 @@ bool MImpExpModule::exportStats(ExportFormData const &s, QTextStream &f)
         if (s.rating) f << "Rating" << s.separator;
         if (s.likes) f << "Kudos" << s.separator;
         if (s.tags) f << "Tags" << s.separator;
+        if (s.tagids) f << "Tag IDs" << s.separator;
         if (s.notes) f << "Notes" << s.separator;
         if (s.sha) f << "SHA-256" << s.separator;
         if (s.length) f << "File size" << s.separator;
@@ -89,6 +90,7 @@ bool MImpExpModule::exportStats(ExportFormData const &s, QTextStream &f)
             if (s.rating) f << q.value(1).toInt() << s.separator;
             if (s.likes) f << q.value(2).toInt() << s.separator;
             if (s.tags) f << "\"" << tagsLineConvert(q.value(3).toString(),false) << "\"" << s.separator;
+            if (s.tagids) f << "\"" << q.value(3).toString() << "\"" << s.separator;
             if (s.notes) f << "\"" << q.value(4).toString() << "\"" << s.separator;
             if (s.sha) f << q.value(5).toByteArray().toHex() << s.separator;
             if (s.length) f << q.value(6).toUInt() << s.separator;
@@ -182,7 +184,7 @@ bool MImpExpModule::dataImport(ExportFormData const &d, QTextStream &f, InitRecC
     //calculate number of fileds we expect in the input file
     int m = 0;
     switch (d.table) {
-    case IMPEXP_STATS:      m = d.filename+d.views+d.rating+d.likes+d.tags+d.notes+d.sha+d.length; break;
+    case IMPEXP_STATS:      m = d.filename+d.views+d.rating+d.likes+d.tags+d.tagids+d.notes+d.sha+d.length; break;
     case IMPEXP_TAGS:       m = d.tagname+d.tagrate; break;
     case IMPEXP_STORIES:    m = d.story_update+d.story_title+d.story_actions; break;
     case IMPEXP_LINKS:      m = d.link_created+d.link_left+d.link_right; break;
@@ -196,13 +198,14 @@ bool MImpExpModule::dataImport(ExportFormData const &d, QTextStream &f, InitRecC
     tmap["rating"] = d.filename+d.views;
     tmap["likes"] =  d.filename+d.views+d.rating;
     tmap["tags"] =   d.filename+d.views+d.rating+d.likes;
-    tmap["notes"] =  d.filename+d.views+d.rating+d.likes+d.tags;
-    tmap["sha"] =    d.filename+d.views+d.rating+d.likes+d.tags+d.notes;
-    tmap["length"] = d.filename+d.views+d.rating+d.likes+d.tags+d.notes+d.sha;
+    tmap["tagids"] = d.filename+d.views+d.rating+d.likes+d.tags;
+    tmap["notes"] =  d.filename+d.views+d.rating+d.likes+d.tags+d.tagids;
+    tmap["sha"] =    d.filename+d.views+d.rating+d.likes+d.tags+d.tagids+d.notes;
+    tmap["length"] = d.filename+d.views+d.rating+d.likes+d.tags+d.tagids+d.notes+d.sha;
 
     //prepare data if we're going to load tags
     QStringList otgs;
-    std::map<QString,int> nwtgs;
+    std::vector<std::pair<QString,int>> nwtgs;
     if (d.table == IMPEXP_TAGS) {
         //collect all known tags first
         if (q.exec("SELECT tag, rating FROM tags")) {
@@ -279,6 +282,7 @@ bool MImpExpModule::dataImport(ExportFormData const &d, QTextStream &f, InitRecC
             if ((!d.imp_noover || tgs["rating"] < 1) && d.rating)                     tgs["rating"]= sl.at(tmap["rating"]).toInt();
             if ((!d.imp_noover || tgs["likes"] < 1) && d.likes)                       tgs["likes"] = sl.at(tmap["likes"]).toInt();
             if ((!d.imp_noover || tgs["tags"].toString().isEmpty()) && d.tags)        tgs["tags"] =  tagsLineConvert(removeQuotes(sl.at(tmap["tags"])),true);
+            if ((!d.imp_noover || tgs["tags"].toString().isEmpty()) && d.tagids)      tgs["tags"] =  removeQuotes(sl.at(tmap["tagids"]));
             if ((!d.imp_noover || tgs["notes"].toString().isEmpty()) && d.notes)      tgs["notes"] = removeQuotes(sl.at(tmap["notes"]));
             if ((!d.imp_noover || tgs["sha"].toByteArray().isEmpty()) && d.sha)       tgs["sha"] =   QByteArray::fromHex(sl.at(tmap["sha"]).toLatin1());
             if ((!d.imp_noover || tgs["length"] < 1) && d.length)                     tgs["length"]= sl.at(tmap["length"]).toUInt();
@@ -312,7 +316,7 @@ bool MImpExpModule::dataImport(ExportFormData const &d, QTextStream &f, InitRecC
         } else if (d.table == IMPEXP_TAGS) { //importing into tags table
             if (!d.tagname) continue; //nothing to import
             if (otgs.contains(sl.front(),Qt::CaseInsensitive)) continue; //tag already known
-            nwtgs[sl.front()] = d.tagrate? sl.at(1).toInt() : 0;
+            nwtgs.push_back(std::pair<QString,int>(sl.front(),(d.tagrate? sl.at(1).toInt():0)));
 
             qDebug() << "[db] Import tag data: OK";
 

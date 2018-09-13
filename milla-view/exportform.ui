@@ -9,8 +9,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>542</width>
-    <height>326</height>
+    <width>546</width>
+    <height>332</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -97,10 +97,17 @@
       <item>
        <widget class="QCheckBox" name="checkBox_5">
         <property name="text">
-         <string>Tags</string>
+         <string>Tags (string)</string>
         </property>
         <property name="checked">
          <bool>true</bool>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QCheckBox" name="checkBox_20">
+        <property name="text">
+         <string>Tags (IDs)</string>
         </property>
        </widget>
       </item>

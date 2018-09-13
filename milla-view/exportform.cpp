@@ -83,6 +83,7 @@ void ExportForm::on_buttonBox_accepted()
     edata.rating = ui->checkBox_3->isChecked();
     edata.likes = ui->checkBox_4->isChecked();
     edata.tags = ui->checkBox_5->isChecked();
+    edata.tagids = ui->checkBox_20->isChecked();
     edata.notes = ui->checkBox_6->isChecked();
     edata.sha = ui->checkBox_7->isChecked();
     edata.length = ui->checkBox_8->isChecked();
