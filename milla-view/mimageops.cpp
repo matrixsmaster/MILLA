@@ -1,5 +1,6 @@
 #include "mimageops.h"
 #include "thumbnailmodel.h"
+#include "dbhelper.h"
 
 using namespace std;
 
@@ -202,15 +203,89 @@ QString MImageOps::getComment()
     return pos->comment;
 }
 
+QString MImageOps::serializeFileRecord(const MImageListRecord &rec, int link)
+{
+    if (link >= 0) return QString();
+
+    QString s;
+    QTextStream ss(&s);
+
+    if (!rec.generated) {
+        QByteArray sha = DBHelper::getSHAbyFile(rec.filename);
+        if (sha.isEmpty()) {
+            qDebug() << "Unable to get SHA-256 for " << rec.filename;
+            return rec.filename;
+        }
+        ss << sha.toHex();
+
+    } else {
+        QImage img = rec.picture.toImage();
+        if (img.isNull()) {
+            qDebug() << "[ALERT] Unable to get source image for encoding!";
+            return rec.filename;
+        }
+
+        QByteArray enc;
+        QBuffer buf(&enc);
+        buf.open(QIODevice::WriteOnly);
+        if (!img.save(&buf,"PNG")) {
+            qDebug() << "ERROR: Unable to encode image to PNG";
+            return rec.filename;
+        }
+
+        ss << "!";
+        ss << enc.toBase64(QByteArray::Base64Encoding);
+    }
+
+    return s;
+}
+
+bool MImageOps::deserializeFileRecord(MImageListRecord &rec, int link)
+{
+    if (rec.filename.isEmpty()) return (link >= 0);
+
+    switch (rec.filename.at(0).toLatin1()) {
+    case '/': //ordinary path
+        break;
+
+    case '!': //base64-encoded PNG
+    {
+        rec.filename.remove(0,1);
+        rec.generated = true;
+
+        QImage img;
+        QByteArray dec = QByteArray::fromBase64(rec.filename.toLatin1(),QByteArray::Base64Encoding);
+        if (dec.isEmpty()) return false;
+
+        rec.valid = img.loadFromData(dec,"PNG");
+        rec.picture = QPixmap::fromImage(img);
+        rec.filename.clear();
+    }
+        break;
+
+    default: //by SHA-256 sum
+    {
+        QByteArray sha = QByteArray::fromHex(rec.filename.toLatin1());
+        rec.filename = DBHelper::getFileBySHA(sha);
+    }
+        break;
+    }
+
+    if (!rec.filename.isEmpty())
+        rec = loader->loadFull(rec.filename);
+
+    return true;
+}
+
 QString MImageOps::serialize()
 {
     QString res;
     QTextStream ss(&res);
     for (auto &i : history) {
         ss << i.action << ";";
-        ss << "\"" << i.left.filename << "\";";
+        ss << "\"" << serializeFileRecord(i.left,i.link_l) << "\";";
         ss << i.link_l << ";";
-        ss << "\"" << i.right.filename << "\";";
+        ss << "\"" << serializeFileRecord(i.right,i.link_r) << "\";";
         ss << i.link_r << ";";
         ss << i.roi.x() << ";" << i.roi.y() << ";";
         ss << i.roi.width() << ";" << i.roi.height() << ";";
@@ -278,8 +353,8 @@ bool MImageOps::deserialize(QString const &in)
 
     //first pass - load files
     for (auto &i : history) {
-        if (!i.left.filename.isEmpty()) i.left = loader->loadFull(i.left.filename);
-        if (!i.right.filename.isEmpty()) i.right = loader->loadFull(i.right.filename);
+        if ((!deserializeFileRecord(i.left,i.link_l)) || (!deserializeFileRecord(i.right,i.link_r)))
+            qDebug() << "WARNING: One of the source files couldn't be loaded!";
     }
 
     //second pass(es) - resolve links and create images

@@ -69,6 +69,10 @@ public:
 
     QString getComment();
 
+    QString serializeFileRecord(const MImageListRecord &rec, int link);
+
+    bool deserializeFileRecord(MImageListRecord &rec, int link);
+
     QString serialize();
 
     bool deserialize(QString const &in);
