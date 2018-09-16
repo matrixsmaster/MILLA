@@ -3414,20 +3414,32 @@
    <property name="text">
     <string>Restore startup layout</string>
    </property>
+   <property name="shortcut">
+    <string>Ctrl+Alt+0</string>
+   </property>
   </action>
   <action name="actionLayout_1">
    <property name="text">
     <string>Layout 1</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+Alt+1</string>
    </property>
   </action>
   <action name="actionLayout_2">
    <property name="text">
     <string>Layout 2</string>
    </property>
+   <property name="shortcut">
+    <string>Ctrl+Alt+2</string>
+   </property>
   </action>
   <action name="actionLayout_3">
    <property name="text">
     <string>Layout 3</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+Alt+3</string>
    </property>
   </action>
   <action name="actionLayout_4">

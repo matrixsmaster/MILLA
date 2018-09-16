@@ -89,8 +89,7 @@ MViewer::MViewer(QWidget *parent) :
     cleanUp();
     updateTags();
     updateRecents();
-    db.setWinTableName("window");
-    updateWindowLayout();
+    updateWindowLayout("window");
 
     status_pending = "[" + db.getDBInfoString() + "]";
     ui->statusBar->showMessage(status_pending);
@@ -99,13 +98,13 @@ MViewer::MViewer(QWidget *parent) :
 
 MViewer::~MViewer()
 {
-    db.setWinTableName("window");
-    updateWindowLayout(true);
+    updateWindowLayout("window",true);
     delete ui;
 }
 
-void MViewer::updateWindowLayout(bool save)
+void MViewer::updateWindowLayout(const QString &name, bool save)
 {
+    db.setWinTableName(name);
     if (save) {
         db.updateWindowGeometryAndState(saveGeometry(),saveState());
         db.updateViewerState(children());
@@ -839,11 +838,14 @@ void MViewer::displayLinkedImages(QString const &fn)
 
 void MViewer::on_actionAbout_triggered()
 {
-    QMessageBox::about(this, tr("About MILLA"),
-                       tr("<p><b>MILLA</b> image viewer</p>"
-                          "<p><i>" MILLA_VERSION "</i></p>"
-                          "<p><a href=" MILLA_SITE ">GitHub site</a></p>"
-                          "<p>(C) Dmitry 'MatrixS_Master' Soloviov, 2018</p>"));
+    QString msg = tr("<p><b>MILLA</b> image viewer</p>"
+                     "<p><i>" MILLA_VERSION "</i></p>"
+                     "<p><a href=" MILLA_SITE ">GitHub site</a></p>"
+                     "<p>(C) Dmitry 'MatrixS_Master' Soloviov, 2018</p>");
+#ifdef QT_DEBUG
+    msg += tr("<p><p><b>DEBUG BUILD</b></p></p>");
+#endif
+    QMessageBox::about(this, tr("About MILLA"),msg);
 }
 
 void MViewer::on_pushButton_2_clicked()
@@ -1711,4 +1713,46 @@ void MViewer::on_actionExport_found_triggered()
     }
     olst.close();
     ui->statusBar->showMessage("Finished");
+}
+
+void MViewer::on_actionRestore_startup_layout_triggered()
+{
+    updateWindowLayout("window");
+    ui->statusBar->showMessage("Session startup layout restored");
+}
+
+void MViewer::on_actionLayout_1_triggered()
+{
+    updateWindowLayout("layout1");
+    ui->statusBar->showMessage("User layout 1 restored");
+}
+
+void MViewer::on_actionLayout_2_triggered()
+{
+    updateWindowLayout("layout2");
+    ui->statusBar->showMessage("User layout 2 restored");
+}
+
+void MViewer::on_actionLayout_3_triggered()
+{
+    updateWindowLayout("layout3");
+    ui->statusBar->showMessage("User layout 3 restored");
+}
+
+void MViewer::on_actionLayout_4_triggered()
+{
+    updateWindowLayout("layout1",true);
+    ui->statusBar->showMessage("User layout 1 saved");
+}
+
+void MViewer::on_actionLayout_5_triggered()
+{
+    updateWindowLayout("layout2",true);
+    ui->statusBar->showMessage("User layout 2 saved");
+}
+
+void MViewer::on_actionLayout_6_triggered()
+{
+    updateWindowLayout("layout3",true);
+    ui->statusBar->showMessage("User layout 3 saved");
 }

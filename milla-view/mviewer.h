@@ -215,6 +215,20 @@ private slots:
 
     void on_actionExport_found_triggered();
 
+    void on_actionRestore_startup_layout_triggered();
+
+    void on_actionLayout_1_triggered();
+
+    void on_actionLayout_2_triggered();
+
+    void on_actionLayout_3_triggered();
+
+    void on_actionLayout_4_triggered();
+
+    void on_actionLayout_5_triggered();
+
+    void on_actionLayout_6_triggered();
+
 private:
     Ui::MViewer *ui;
     DBHelper db;
@@ -248,7 +262,7 @@ private:
     MImageOps* a_story = nullptr;
     QString status_pending;
 
-    void updateWindowLayout(bool save = false);
+    void updateWindowLayout(QString const &name, bool save = false);
 
     void cleanUp();
 

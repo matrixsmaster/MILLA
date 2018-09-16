@@ -552,21 +552,23 @@ QStringList DBHelper::getLinkedImages(QByteArray const &sha, bool reverse)
 QStringList DBHelper::tagSearch(MTagCache const &cache, QList<MImageListRecord>* within, int maxitems)
 {
     QSqlQuery q;
-    std::map<QString,QList<int>> targ;
+    std::map<QString,std::pair<QList<int>,int>> targ;
     QList<int> goal,exclude;
-    QStringList found;
+    QList<std::pair<QString,int>> found;
+    QStringList r_found;
 
+    //collect
     for (auto &i : cache) {
         if (i.second.second == Qt::Unchecked) continue;
 
         q.clear();
         if (i.second.second == Qt::Checked) {
             goal.push_back(i.second.first);
-            q.prepare("SELECT file,tags FROM stats WHERE tags LIKE :t OR INSTR( tags, :i ) > 0");
+            q.prepare("SELECT file,tags,rating FROM stats WHERE tags LIKE :t OR INSTR( tags, :i ) > 0");
 
         } else {
             exclude.push_back(i.second.first);
-            q.prepare("SELECT file,tags FROM stats WHERE LENGTH( tags ) > 0 AND tags NOT LIKE :t AND INSTR( tags, :i ) <= 0");
+            q.prepare("SELECT file,tags,rating FROM stats WHERE LENGTH( tags ) > 0 AND tags NOT LIKE :t AND INSTR( tags, :i ) <= 0");
         }
 
         q.bindValue(":t",QString::asprintf("%d,%%",i.second.first));
@@ -581,24 +583,25 @@ QStringList DBHelper::tagSearch(MTagCache const &cache, QList<MImageListRecord>*
             QList<int> l;
             QStringList _l = q.value(1).toString().split(",",QString::SkipEmptyParts);
             for (auto &j : _l) l.push_back(j.toInt());
-            targ[q.value(0).toString()] = l;
+            targ[q.value(0).toString()] = std::pair<QList<int>,int> (l,q.value(2).toInt());
         }
     }
 
     qDebug() << "Target list size: " << targ.size();
 
+    //filter
     for (auto &i : targ) {
         bool k = true;
         //inclusions
         for (auto &j : goal)
-            if (!i.second.contains(j)) {
+            if (!i.second.first.contains(j)) {
                 k = false;
                 break;
             }
         if (!k) continue;
         //exclusions
         for (auto &j : exclude)
-            if (i.second.contains(j)) {
+            if (i.second.first.contains(j)) {
                 k = false;
                 break;
             }
@@ -613,12 +616,20 @@ QStringList DBHelper::tagSearch(MTagCache const &cache, QList<MImageListRecord>*
             }
         }
 
-        found.push_back(i.first);
-        if (maxitems > 0 && found.size() >= maxitems) break;
+        found.push_back(std::pair<QString,int>(i.first,i.second.second));
     }
     qDebug() << "Found: " << found.size();
 
-    return found;
+    //sort & convert
+    std::sort(found.begin(),found.end(),[] (const auto &a, const auto &b) {
+        return a.second > b.second;
+    });
+    for (auto &i : found) {
+        r_found.push_back(i.first);
+        if (maxitems > 0 && r_found.size() >= maxitems) break;
+    }
+
+    return r_found;
 }
 
 void DBHelper::initParametricSearch(QList<MImageListRecord> const &from)
