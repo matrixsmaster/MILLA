@@ -1043,11 +1043,21 @@ QString DBHelper::detectExactCopies(ProgressCB progress_cb)
 QByteArray DBHelper::getWindowGeometryOrState(bool geom)
 {
     QSqlQuery q;
-    if (geom)
-        q.exec("SELECT geometry FROM window WHERE name = 'MainWindow'");
+    if (geom) {
+        q.clear();
+        qDebug() << q.prepare("SELECT geometry FROM window WHERE name = 'MainWindow'");
+//        q.addBindValue(QString(""));
+//        q.addBindValue(QString("'window'"));
+    }
     else
         q.exec("SELECT state FROM window WHERE name = 'MainWindow'");
-    if (!q.exec() || !q.next()) return QByteArray();
+    if (!q.exec() || !q.next()) {
+        qDebug() << "Error!";
+        qDebug() << q.lastError();
+        qDebug() << q.lastInsertId();
+        return QByteArray();
+    } else
+        qDebug() << "Success!";
     return q.value(0).toByteArray();
 }
 
