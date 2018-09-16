@@ -116,6 +116,26 @@ Mat CVHelper::loadMat(QByteArray const &arr)
     return res;
 }
 
+Mat CVHelper::getHist(Mat &in)
+{
+    int histSize[] = {64, 64, 64};
+    float rranges[] = {0, 256};
+    const float* ranges[] = {rranges, rranges, rranges};
+    int channels[] = {0, 1, 2};
+    Mat out;
+
+    calcHist(&in,1,channels,Mat(),out,3,histSize,ranges,true,false);
+    return out;
+}
+
+Mat CVHelper::getHist(QPixmap const &img)
+{
+    QImage orgm(img.toImage());
+    if (orgm.isNull()) return Mat();
+    Mat in = CVHelper::slowConvert(orgm);
+    return getHist(in);
+}
+
 MImageExtras CVHelper::collectImageExtraData(QString const &fn, QPixmap const &org)
 {
     MImageExtras res;
@@ -128,14 +148,10 @@ MImageExtras CVHelper::collectImageExtraData(QString const &fn, QPixmap const &o
     res.picsize = org.size();
 
     //image histogram (3D)
-    int histSize[] = {64, 64, 64};
-    float rranges[] = {0, 256};
-    const float* ranges[] = {rranges, rranges, rranges};
-    int channels[] = {0, 1, 2};
-    calcHist(&in,1,channels,Mat(),res.hist,3,histSize,ranges,true,false);
+    res.hist = getHist(in);
 
-    res.color = false;
     //grayscale detection: fast approach
+    res.color = false;
     for (int k = 0; k < res.hist.size[0]; k++) {
         float a = res.hist.at<float>(k,0,0);
         float b = res.hist.at<float>(0,k,0);

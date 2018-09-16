@@ -246,7 +246,7 @@ bool MImpExpModule::dataImport(ExportFormData const &d, QTextStream &f, InitRecC
         QStringList sl = s.split(d.separator,QString::SkipEmptyParts);
         checkBalance(sl,'\"');
         if (sl.length() != m) {
-            qDebug() << "[db] ALERT: Import error: fields count doesn't match!";
+            qDebug() << "[IMPEXP] ALERT: Import error: fields count doesn't match!";
             return false;
         }
 
@@ -255,7 +255,7 @@ bool MImpExpModule::dataImport(ExportFormData const &d, QTextStream &f, InitRecC
 
             //try to look into our current DB to get something we already knew
             q.clear();
-            if (d.filename) { //we can search by filename (easier)
+            if (d.filename) { //we can search by filename
                 q.prepare(DBF_IMPORT_SELECT "file = :key");
                 q.bindValue(":key",sl.front());
 
@@ -265,6 +265,17 @@ bool MImpExpModule::dataImport(ExportFormData const &d, QTextStream &f, InitRecC
             }
 
             ok = q.exec() && q.next(); //are you feeling lucky?
+            qDebug() << "[IMPEXP] File entry first match: " << ok;
+
+            //second take (what if file IS here, but was moved)
+            if (!ok && d.filename && d.sha) {
+                q.clear();
+                q.prepare(DBF_IMPORT_SELECT "sha256 = :key");
+                q.bindValue(":key",QByteArray::fromHex(sl.at(tmap["sha"]).toLatin1()));
+
+                ok = q.exec() && q.next(); //hopefully this way it would be found
+                qDebug() << "[IMPEXP] File entry second match: " << ok;
+            }
 
             //let's update temporary fields either by empty data or by actual data from db
             tgs["file"] =   ok? q.value(0).toString()       : QString();
@@ -289,7 +300,7 @@ bool MImpExpModule::dataImport(ExportFormData const &d, QTextStream &f, InitRecC
 
             //on this stage, we SHOULD know a file's name. If not - we failed.
             if (tgs["file"].toString().isEmpty()) {
-                qDebug() << "[db] ALERT: Import data: file record without a name!";
+                qDebug() << "[IMPEXP] ALERT: Import data: file record without a name!";
                 continue;
             }
 
@@ -311,14 +322,14 @@ bool MImpExpModule::dataImport(ExportFormData const &d, QTextStream &f, InitRecC
             q.bindValue(":len",tgs["length"].toUInt());
             ok = q.exec();
 
-            qDebug() << "[db] Import stat data: " << ok;
+            qDebug() << "[IMPEXP] Import stat data: " << ok;
 
         } else if (d.table == IMPEXP_TAGS) { //importing into tags table
             if (!d.tagname) continue; //nothing to import
             if (otgs.contains(sl.front(),Qt::CaseInsensitive)) continue; //tag already known
             nwtgs.push_back(std::pair<QString,int>(sl.front(),(d.tagrate? sl.at(1).toInt():0)));
 
-            qDebug() << "[db] Import tag data: OK";
+            qDebug() << "[IMPEXP] Import tag data: OK";
 
         } else if (d.table == IMPEXP_STORIES) { //importing into stories table
             int ix = d.story_update? 1:0;
@@ -328,7 +339,7 @@ bool MImpExpModule::dataImport(ExportFormData const &d, QTextStream &f, InitRecC
             QString act = removeQuotes(sl.at(ix));
             ok = DBHelper::updateStory(stit,act,d.story_update? sl.at(0).toUInt():0);
 
-            qDebug() << "[db] Import story data: " << ok;
+            qDebug() << "[IMPEXP] Import story data: " << ok;
 
         } else if (d.table == IMPEXP_LINKS) { //importing into links table
             if (!d.link_left || !d.link_right) continue; //nothing to do
@@ -338,7 +349,7 @@ bool MImpExpModule::dataImport(ExportFormData const &d, QTextStream &f, InitRecC
             QByteArray rgh = QByteArray::fromHex(sl.at(++ix).toLatin1());
             ok = DBHelper::createLinkBetweenImages(lft,rgh,!d.imp_noover,d.link_created? sl.at(0).toUInt():0);
 
-            qDebug() << "[db] Import link data: " << ok;
+            qDebug() << "[IMPEXP] Import link data: " << ok;
         }
     }
 
@@ -350,7 +361,7 @@ bool MImpExpModule::dataImport(ExportFormData const &d, QTextStream &f, InitRecC
         int mxkey = 0;
         q.clear();
         if (q.exec(DB_CORRECT_TAG_KEY_GET) && q.next()) mxkey = q.value(0).toUInt();
-        qDebug() << "[db] Max key known: " << mxkey;
+        qDebug() << "[IMPEXP] Max key known: " << mxkey;
 
         //insert new tags
         for (auto &i : nwtgs) {
@@ -360,7 +371,7 @@ bool MImpExpModule::dataImport(ExportFormData const &d, QTextStream &f, InitRecC
             q.bindValue(":tg",i.first);
             q.bindValue(":rt",i.second);
             if (!q.exec()) break;
-            qDebug() << "[db] Tag " << i.first << "inserted";
+            qDebug() << "[IMPEXP] Tag " << i.first << "inserted";
             if (!incProgress()) break;
         }
     }

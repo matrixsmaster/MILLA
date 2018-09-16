@@ -499,7 +499,12 @@ void MViewer::on_actionMatch_triggered()
     if (!current_l.valid) return;
 
     MImageExtras orig = getExtraCacheLine(current_l.filename);
-    if (!orig.valid) return;
+    if (!orig.valid) {
+        if (current_l.generated)
+            orig = mCV.collectImageExtraData(QString(),current_l.picture);
+        else
+            return;
+    }
 
     //destroy model immediately, to prevent it from loading more images (if background loading is activated)
     SResultModel* mdl = static_cast<SResultModel*>(ui->listView_2->model());
@@ -686,8 +691,12 @@ void MViewer::on_actionRefine_search_triggered()
     if (current_l.valid) {
         if (flt.similar > 0) {
             MImageExtras ex = getExtraCacheLine(current_l.filename);
-            if (ex.valid) flt.similar_to = ex.hist;
-            else flt.similar = 0;
+            if (ex.valid)
+                flt.similar_to = ex.hist;
+            else if (current_l.generated)
+                flt.similar_to = CVHelper::getHist(current_l.picture);
+            else
+                flt.similar = 0;
         }
     } else
         flt.similar = 0;

@@ -48,6 +48,10 @@ public:
 
     static cv::Mat loadMat(QByteArray const &arr);
 
+    static cv::Mat getHist(cv::Mat &in);
+
+    static cv::Mat getHist(QPixmap const &img);
+
     MImageExtras collectImageExtraData(QString const &fn, QPixmap const &org);
 
     static QPixmap drawROIs(QPixmap const &on, QRect &visBound, MImageExtras const &ext, bool calc_only, int index = -1);
