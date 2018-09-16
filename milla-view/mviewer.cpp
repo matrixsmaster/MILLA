@@ -89,10 +89,8 @@ MViewer::MViewer(QWidget *parent) :
     cleanUp();
     updateTags();
     updateRecents();
-
-    restoreGeometry(db.getWindowGeometryOrState(true));
-    restoreState(db.getWindowGeometryOrState(false));
-    db.restoreViewerState(children());
+    db.setWinTableName("window");
+    updateWindowLayout();
 
     status_pending = "[" + db.getDBInfoString() + "]";
     ui->statusBar->showMessage(status_pending);
@@ -101,9 +99,21 @@ MViewer::MViewer(QWidget *parent) :
 
 MViewer::~MViewer()
 {
-    db.updateWindowGeometryAndState(saveGeometry(),saveState());
-    db.updateViewerState(children());
+    db.setWinTableName("window");
+    updateWindowLayout(true);
     delete ui;
+}
+
+void MViewer::updateWindowLayout(bool save)
+{
+    if (save) {
+        db.updateWindowGeometryAndState(saveGeometry(),saveState());
+        db.updateViewerState(children());
+    } else {
+        restoreGeometry(db.getWindowGeometryOrState(true));
+        restoreState(db.getWindowGeometryOrState(false));
+        db.restoreViewerState(children());
+    }
 }
 
 void MViewer::cleanUp()

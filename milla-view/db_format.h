@@ -22,7 +22,10 @@
                         {"stories", DBF_STORIES}, \
                         {"recent",  DBF_RECENT}, \
                         {"extras",  DBF_EXTRAS}, \
-                        {"window",  DBF_WINDOW} }
+                        {"window",  DBF_WINDOW}, \
+                        {"layout1", DBF_WINDOW}, \
+                        {"layout2", DBF_WINDOW}, \
+                        {"layout3", DBF_WINDOW}, }
 
 #define DBF_TABLE_CHECK "SELECT name FROM sqlite_master WHERE type='table' AND name="
 

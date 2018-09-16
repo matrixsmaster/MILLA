@@ -1040,42 +1040,34 @@ QString DBHelper::detectExactCopies(ProgressCB progress_cb)
     return res;
 }
 
+void DBHelper::setWinTableName(QString const &nm)
+{
+    wintable = nm;
+}
+
 QByteArray DBHelper::getWindowGeometryOrState(bool geom)
 {
     QSqlQuery q;
-    if (geom) {
-        q.clear();
-        qDebug() << q.prepare("SELECT geometry FROM window WHERE name = 'MainWindow'");
-//        q.addBindValue(QString(""));
-//        q.addBindValue(QString("'window'"));
-    }
-    else
-        q.exec("SELECT state FROM window WHERE name = 'MainWindow'");
-    if (!q.exec() || !q.next()) {
-        qDebug() << "Error!";
-        qDebug() << q.lastError();
-        qDebug() << q.lastInsertId();
-        return QByteArray();
-    } else
-        qDebug() << "Success!";
+    q.prepare(QString("SELECT %1 FROM %2 WHERE name = 'MainWindow'").arg((geom?"geometry":"state"),wintable));
+    if (!q.exec() || !q.next()) return QByteArray();
     return q.value(0).toByteArray();
 }
 
 bool DBHelper::updateWindowGeometryAndState(QByteArray const &geom, QByteArray const &state)
 {
     QSqlQuery q;
-    q.exec("SELECT COUNT(geometry) FROM window WHERE name = 'MainWindow'");
+    q.prepare(QString("SELECT COUNT(geometry) FROM %1 WHERE name = 'MainWindow'").arg(wintable));
     if (!q.exec() || !q.next()) return false;
 
     if (!q.value(0).toInt())
-        q.prepare("INSERT INTO window (name, geometry, state) VALUES ('MainWindow', :g, :s)");
+        q.prepare(QString("INSERT INTO %1 (name, geometry, state) VALUES ('MainWindow', :g, :s)").arg(wintable));
     else
-        q.prepare("UPDATE window SET geometry = :g, state = :s WHERE name = 'MainWindow'");
+        q.prepare(QString("UPDATE %1 SET geometry = :g, state = :s WHERE name = 'MainWindow'").arg(wintable));
     q.bindValue(":g",geom);
     q.bindValue(":s",state);
 
     bool ok = q.exec();
-    qDebug() << "[db] Saving window geometry and state: " << ok;
+    qDebug() << "[db] Saving window geometry and state to" << wintable << ":" << ok;
     return ok;
 }
 
@@ -1089,7 +1081,7 @@ bool DBHelper::restoreViewerState(QObjectList const &lst)
                 QString(i->metaObject()->className()) != "QAction")     continue;
 
         QSqlQuery q;
-        q.prepare("SELECT state FROM window WHERE name = :n");
+        q.prepare(QString("SELECT state FROM %1 WHERE name = :n").arg(wintable));
         q.bindValue(":n",i->objectName());
         if (!q.exec() || !q.next()) continue;
 
@@ -1127,22 +1119,22 @@ bool DBHelper::updateViewerState(QObjectList const &lst)
         else tmp.append(act->isChecked());
 
         QSqlQuery q;
-        q.prepare("SELECT COUNT(state) FROM window WHERE name = :n");
+        q.prepare(QString("SELECT COUNT(state) FROM %1 WHERE name = :n").arg(wintable));
         q.bindValue(":n",i->objectName());
         if (!q.exec() || !q.next()) {
-            qDebug() << "ALERT: Unable to qeury for state existence of" << i->objectName();
+            qDebug() << "ALERT: Unable to qeury for state existence of" << i->objectName() << "in" << wintable;
             return false;
         }
 
         if (!q.value(0).toInt())
-            q.prepare("INSERT INTO window (name, state) VALUES (:n, :s)");
+            q.prepare(QString("INSERT INTO %1 (name, state) VALUES (:n, :s)").arg(wintable));
         else
-            q.prepare("UPDATE window SET state = :s WHERE name = :n");
+            q.prepare(QString("UPDATE %1 SET state = :s WHERE name = :n").arg(wintable));
         q.bindValue(":n",i->objectName());
         q.bindValue(":s",tmp);
         bool ok = q.exec();
 
-        qDebug() << "[db] Object" << i->objectName() << "saved:" << ok;
+        qDebug() << "[db] Object" << i->objectName() << "saved to" << wintable << ":" << ok;
         if (!ok) return false;
     }
     return true;

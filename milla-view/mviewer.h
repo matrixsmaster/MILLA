@@ -248,6 +248,8 @@ private:
     MImageOps* a_story = nullptr;
     QString status_pending;
 
+    void updateWindowLayout(bool save = false);
+
     void cleanUp();
 
     void addTag(QString const &tg, unsigned key, bool check = false);

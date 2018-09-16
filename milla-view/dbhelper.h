@@ -98,13 +98,15 @@ public:
 
     static QString detectExactCopies(ProgressCB progress_cb);
 
-    static QByteArray getWindowGeometryOrState(bool geom);
+    void setWinTableName(QString const &nm);
 
-    static bool updateWindowGeometryAndState(QByteArray const &geom, QByteArray const &state);
+    QByteArray getWindowGeometryOrState(bool geom);
 
-    static bool restoreViewerState(QObjectList const &lst);
+    bool updateWindowGeometryAndState(QByteArray const &geom, QByteArray const &state);
 
-    static bool updateViewerState(QObjectList const &lst);
+    bool restoreViewerState(QObjectList const &lst);
+
+    bool updateViewerState(QObjectList const &lst);
 
     bool readRecentDirs(QMenu* add_to, int maxcount, LoadFileCB cb);
 
@@ -137,6 +139,7 @@ public:
 private:
     std::map<time_t,QAction*> recents;
     QList<MImageListRecord> searchlist;
+    QString wintable;
 
     bool checkAndCreate(const char *tname, const char *format);
 };
