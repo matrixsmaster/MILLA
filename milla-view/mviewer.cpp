@@ -845,6 +845,7 @@ void MViewer::on_actionAbout_triggered()
 #ifdef QT_DEBUG
     msg += tr("<p><p><b>DEBUG BUILD</b></p></p>");
 #endif
+    msg += tr("<p>Built with OpenCV ver.") + CV_VERSION + "</p>";
     QMessageBox::about(this, tr("About MILLA"),msg);
 }
 
