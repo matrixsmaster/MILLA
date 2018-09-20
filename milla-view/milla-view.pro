@@ -7,6 +7,7 @@
 QT       += core gui sql
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
+include(../cfg/cfg_opencv4.pri)
 
 TARGET = milla-view
 TEMPLATE = app
@@ -30,7 +31,9 @@ SOURCES += main.cpp\
     mimageops.cpp \
     storyselector.cpp \
     mimageloader.cpp \
-    listeditor.cpp
+    listeditor.cpp \
+    mdnnbase.cpp \
+    mcolornet.cpp
 
 HEADERS  += mviewer.h \
     thumbnailmodel.h \
@@ -52,7 +55,9 @@ HEADERS  += mviewer.h \
     mimageops.h \
     storyselector.h \
     mimageloader.h \
-    listeditor.h
+    listeditor.h \
+    mdnnbase.h \
+    mcolornet.h
 
 FORMS    += mviewer.ui \
     searchform.ui \
@@ -63,8 +68,6 @@ FORMS    += mviewer.ui \
 CONFIG   += c++14
 QMAKE_CXXFLAGS  += -Wextra
 
-LIBS     += -lopencv_core -lopencv_imgproc -lopencv_features2d -lopencv_flann -lopencv_objdetect -lopencv_highgui
-
-RESOURCES+= milla-view.qrc
+RESOURCES += milla-view.qrc
 
 DESTDIR = ../bin

@@ -5,11 +5,10 @@
 #include <QFile>
 #include <vector>
 #include <opencv2/opencv.hpp>
-#include <opencv2/features2d/features2d.hpp>
-#include <opencv2/objdetect/objdetect.hpp>
-#include <opencv2/highgui/highgui.hpp>
-
-#define FACE_CASCADE_FILE "/tmp/face_cascade.xml"
+#include <opencv2/features2d.hpp>
+#include <opencv2/objdetect.hpp>
+#include <opencv2/highgui.hpp>
+#include "shared.h"
 
 class FaceDetector
 {
@@ -17,12 +16,13 @@ public:
     FaceDetector();
     virtual ~FaceDetector() {}
 
-    void detectFaces(const cv::Mat &inp, std::vector<cv::Rect>* store);
+    void detectFacesPass1(const cv::Mat &inp, std::vector<cv::Rect>* store);
 
     void Finalize();
 
 private:
     static cv::CascadeClassifier* face_cascade;
+    static int face_inst_cnt;
 };
 
 #endif // FACEDETECTOR_H

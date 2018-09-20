@@ -7,12 +7,13 @@
 QT       += core gui
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
+include(../cfg/cfg_sgui.pri)
 
 TARGET = sgui_plugin
 
 TEMPLATE = lib
 CONFIG += c++14 plugin
-INCLUDEPATH += ../milla-view ../libsgui ../libsgui/include/mlua
+INCLUDEPATH += ../milla-view
 
 DEFINES += SGUI_HEADER_EXTERNAL_INCLUDE
 
@@ -28,8 +29,6 @@ HEADERS  += dialog.h \
     vmouse.h
 
 FORMS    += dialog.ui
-
-LIBS    += -L../share/plugins -lsgui
 
 DESTDIR = ../share/plugins
 

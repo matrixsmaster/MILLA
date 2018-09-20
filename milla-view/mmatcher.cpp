@@ -18,7 +18,7 @@ bool MMatcher::Comparator(MImageExtras const &cur, double &key)
     double cur_area = cur.picsize.width() * cur.picsize.height();
     if (orig_area / cur_area > 2 || cur_area / orig_area > 2) return false; //too big or too small
 
-    key = compareHist(original.hist,cur.hist,CV_COMP_CORREL);
+    key = compareHist(original.hist,cur.hist,HISTCMP_CORREL);
     return (key > 0);
 }
 
@@ -79,7 +79,7 @@ QStringList MMatcher::GlobalMatcher(ProgressCB cb)
 
 double MMatcher::OneTimeMatcher(cv::Mat const &a, cv::Mat const &b)
 {
-    return compareHist(a,b,CV_COMP_CORREL) * 100.f;
+    return compareHist(a,b,HISTCMP_CORREL) * 100.f;
 }
 
 QStringList MMatcher::CreateList()

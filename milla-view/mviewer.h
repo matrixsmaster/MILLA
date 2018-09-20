@@ -229,6 +229,8 @@ private slots:
 
     void on_actionLayout_6_triggered();
 
+    void on_actionFill_rect_triggered();
+
 private:
     Ui::MViewer *ui;
     DBHelper db;
@@ -254,6 +256,7 @@ private:
     QString jump_buf;
     size_t jump_idx = 0;
     int face_idx = -1;
+    int face_idx_roi = -1;
 
     std::map<QString,MImageExtras> extra_cache;
     MTagCache tags_cache;

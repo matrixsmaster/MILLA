@@ -7,6 +7,7 @@
 QT       += core gui sql
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
+include(../cfg/cfg_opencv4.pri)
 
 TEMPLATE = lib
 CONFIG += c++14 plugin
@@ -21,8 +22,6 @@ HEADERS  += dialog.h \
     cameraplugin.h
 
 FORMS    += dialog.ui
-
-LIBS     += -lopencv_core -lopencv_imgproc -lopencv_highgui
 
 DESTDIR = ../share/plugins
 

@@ -8,10 +8,15 @@
 #include <QPainter>
 #include <opencv2/opencv.hpp>
 #include "facedetector.h"
+#include "mcolornet.h"
 
 enum MROIType {
     MROI_GENERIC = 0,
     MROI_FACE_FRONTAL,
+    //TODOs:
+    MROI_FACE_EYES,
+    MROI_FACE_MOUTH,
+    MROI_FACE_NOSE,
     MROI_INVALID // terminator
 };
 
@@ -56,8 +61,13 @@ public:
 
     static QPixmap drawROIs(QPixmap const &on, QRect &visBound, MImageExtras const &ext, bool calc_only, int index = -1);
 
+    static QColor determineMediumColor(QPixmap const &img, QRect const &area);
+
+    QPixmap recolorImage(QPixmap const &img);
+
 private:
     FaceDetector facedetector;
+    MColorNet* color_net;
 };
 
 #endif // CVHELPER_H

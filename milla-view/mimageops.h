@@ -20,7 +20,9 @@ struct MMacroRecord {
         RotateCW,
         RotateCCW,
         Concatenate,
-        Crop
+        Crop,
+        FillRect,
+        Colorize
     } action;
     MImageListRecord left, right;
     int link_l = -1, link_r = -1;
@@ -54,6 +56,10 @@ public:
     QPixmap concatenate(MImageListRecord const &a, MImageListRecord const &b);
 
     QPixmap crop(MImageListRecord const &in, QRect const &rct);
+
+    QPixmap fillrect(MImageListRecord const &in, QRect const &rct);
+
+    QPixmap colorize(MImageListRecord const &in);
 
     QPixmap first();
 

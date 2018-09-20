@@ -132,6 +132,39 @@ QPixmap MImageOps::crop(MImageListRecord const &in, QRect const &rct)
     return rec.result;
 }
 
+QPixmap MImageOps::fillrect(MImageListRecord const &in, QRect const &rct)
+{
+    if (!in.valid) return QPixmap();
+
+    MMacroRecord rec;
+    rec.action = MMacroRecord::FillRect;
+    rec.left = in;
+    rec.roi = rct;
+
+    QImage inq(in.picture.toImage());
+    QPainter painter(&inq);
+    painter.fillRect(rct,CVHelper::determineMediumColor(in.picture,rct));
+    rec.result = QPixmap::fromImage(inq);
+
+    add(rec);
+    return rec.result;
+}
+
+QPixmap MImageOps::colorize(MImageListRecord const &in)
+{
+    if (!in.valid) return QPixmap();
+
+    MMacroRecord rec;
+    rec.action = MMacroRecord::Colorize;
+    rec.left = in;
+
+    CVHelper hlp;
+    rec.result = hlp.recolorImage(in.picture);
+
+    add(rec);
+    return rec.result;
+}
+
 QPixmap MImageOps::first()
 {
     if (history.empty()) return QPixmap();
@@ -380,6 +413,8 @@ bool MImageOps::deserialize(QString const &in)
             case MMacroRecord::RotateCCW: i.result = rotate(i.left,false); break;
             case MMacroRecord::Concatenate: i.result = concatenate(i.left,i.right); break;
             case MMacroRecord::Crop: i.result = crop(i.left,i.roi); break;
+            case MMacroRecord::FillRect: i.result = fillrect(i.left,i.roi); break;
+            case MMacroRecord::Colorize: i.result = colorize(i.left); break;
             }
 
             if (i.result.isNull()) done = false;

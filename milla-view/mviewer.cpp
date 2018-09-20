@@ -338,7 +338,7 @@ void MViewer::showSelectedImage()
     ptm->touch(idx);
 
     current_l = idx.data(MImageListModel::FullDataRole).value<MImageListRecord>();
-    face_idx = -1;
+    face_idx = face_idx_roi = -1;
     scaleImage(current_l,ui->scrollArea,ui->label,ui->label_3,1.f);
     leftImageMetaUpdate();
     checkExtraCache();
@@ -378,7 +378,7 @@ void MViewer::scaleImage(const MImageListRecord &rec, QScrollArea* scrl, QLabel*
 
         if (ui->actionShow_faces->isChecked() || ui->actionCenter_on_face->isChecked()) {
             QRect vbd;
-            lbl->setPixmap(CVHelper::drawROIs(rec.picture,vbd,extr,!ui->actionShow_faces->isChecked(),face_idx));
+            lbl->setPixmap(CVHelper::drawROIs(rec.picture,vbd,extr,!ui->actionShow_faces->isChecked(),face_idx_roi));
 
             if (ui->actionCenter_on_face->isChecked()) {
                 //it takes some time to actually show the image, so wait until next GUI cycle
@@ -838,6 +838,7 @@ void MViewer::displayLinkedImages(QString const &fn)
 
 void MViewer::on_actionAbout_triggered()
 {
+    //TODO: make a separate dialog with everything below, plus
     QString msg = tr("<p><b>MILLA</b> image viewer</p>"
                      "<p><i>" MILLA_VERSION "</i></p>"
                      "<p><a href=" MILLA_SITE ">GitHub site</a></p>"
@@ -1539,6 +1540,9 @@ bool MViewer::eventFilter(QObject *obj, QEvent *event)
     case 1:
         if (event->type() == QEvent::MouseMove) {
             selection.setBottomRight(QPoint(mev->x()-inter.x(),mev->y()-inter.y()));
+            qDebug() << "Aligned:" << aligned;
+            qDebug() << "Inter:" << inter;
+            qDebug() << "Selection:" << selection;
 
         } else if (event->type() == QEvent::MouseButtonRelease) {
             selection.setBottomRight(QPoint(mev->x()-inter.x(),mev->y()-inter.y()));
@@ -1666,7 +1670,14 @@ void MViewer::showFaceAction()
     MImageExtras extl = getExtraCacheLine(current_l.filename);
     if (!extl.valid || extl.rois.empty()) return;
 
-    int mx = extl.rois.size();
+    int mx = 0, tx = 0;
+    for (auto &i : extl.rois) {
+        if (i.kind == MROI_FACE_FRONTAL) {
+            if (mx == face_idx) face_idx_roi = tx;
+            mx++;
+        }
+        tx++;
+    }
     if (face_idx >= mx) face_idx = mx - 1;
     if (face_idx < 0) face_idx = 0;
     qDebug() << "Showing face #" << face_idx;
@@ -1756,4 +1767,15 @@ void MViewer::on_actionLayout_6_triggered()
 {
     updateWindowLayout("layout3",true);
     ui->statusBar->showMessage("User layout 3 saved");
+}
+
+void MViewer::on_actionFill_rect_triggered()
+{
+    if (selection_fsm != 2 || !current_l.valid) return;
+    float scale = (current_l.picture.size().width() > current_l.picture.size().height())?
+                (double(current_l.picture.size().width()) / double(ui->scrollArea->size().width())) :
+                (double(current_l.picture.size().height()) / double(ui->scrollArea->size().height()));
+    QRect ns(selection.topLeft()*scale,selection.size()*scale);
+    qDebug() << "Scale:" << scale;
+    qDebug() << "Fill:" << ns;
 }

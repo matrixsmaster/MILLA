@@ -1,3 +1,4 @@
+#include <QApplication>
 #include "cvhelper.h"
 #include "dbhelper.h"
 
@@ -6,6 +7,7 @@ using namespace cv;
 CVHelper::~CVHelper()
 {
     facedetector.Finalize();
+    if (color_net) delete color_net;
 }
 
 Mat CVHelper::quickConvert(QImage &in) //FIXME: not always working
@@ -26,6 +28,7 @@ Mat CVHelper::slowConvert(QImage const &in)
     } else
         n = in;
 
+    //slowly, but surely
     Mat r(n.size().height(),n.size().width(),CV_8UC3);
     for (int j,i = 0; i < r.rows; i++) {
         uchar* ptr = n.scanLine(i);
@@ -176,7 +179,7 @@ MImageExtras CVHelper::collectImageExtraData(QString const &fn, QPixmap const &o
 
     //face detector
     std::vector<cv::Rect> faces;
-    facedetector.detectFaces(in,&faces);
+    facedetector.detectFacesPass1(in,&faces);
     for (auto &i : faces) {
         MROI roi;
         roi.kind = MROI_FACE_FRONTAL;
@@ -211,6 +214,7 @@ QPixmap CVHelper::drawROIs(QPixmap const &on, QRect &visBound, MImageExtras cons
     for (auto &i : ext.rois) {
         if (!calc_only && i.kind == MROI_FACE_FRONTAL)
             painter.drawRect(QRect(i.x,i.y,i.w,i.h));
+        //TODO: add different colors for different ROIs
 
         if (index < 0 && i.w * i.h > maxarea) {
             maxarea = i.w * i.h;
@@ -219,7 +223,7 @@ QPixmap CVHelper::drawROIs(QPixmap const &on, QRect &visBound, MImageExtras cons
         } else if (index >= 0) {
             if (cidx == index) {
                 winner = i;
-                break;
+//                break;
             } else
                 cidx++;
         }
@@ -229,4 +233,23 @@ QPixmap CVHelper::drawROIs(QPixmap const &on, QRect &visBound, MImageExtras cons
         visBound = QRect(winner.x+winner.w/2, winner.y+winner.h/2, winner.w/2, winner.h/2);
 
     return calc_only? on : QPixmap::fromImage(inq);
+}
+
+QColor CVHelper::determineMediumColor(QPixmap const &img, QRect const &area)
+{
+    //TODO
+    return QColor(Qt::red);
+}
+
+QPixmap CVHelper::recolorImage(QPixmap const &img)
+{
+    if (!color_net) {
+        QString pth = QApplication::applicationDirPath();
+        color_net = new MColorNet(pth+COLORIZATION_NET_FILE,pth+COLORIZATION_NET_WEIGHT);
+    }
+    if (!color_net->isValid()) return QPixmap();
+
+    Mat in = slowConvert(img.toImage());
+    Mat out = color_net->doColor(in);
+    return QPixmap::fromImage(slowConvertBack(out));
 }

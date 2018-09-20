@@ -1,28 +1,29 @@
+#include <QDebug>
+#include <QApplication>
 #include "facedetector.h"
 
 using namespace cv;
 using namespace std;
 
 CascadeClassifier* FaceDetector::face_cascade = nullptr;
+int FaceDetector::face_inst_cnt = 0;
 
 FaceDetector::FaceDetector()
 {
+    face_inst_cnt++;
     if (!face_cascade) {
-        QFile test(FACE_CASCADE_FILE);
-        if (test.exists()) test.remove();
-        if (QFile::copy(":/face_cascade.xml",FACE_CASCADE_FILE)) {
-            face_cascade = new CascadeClassifier();
-            if (!face_cascade->load(FACE_CASCADE_FILE)) {
-                qDebug() << "Unable to load cascade from " << FACE_CASCADE_FILE;
-                delete face_cascade;
-                face_cascade = nullptr;
-            }
-            test.remove();
+        face_cascade = new CascadeClassifier();
+        QString fn = QApplication::applicationDirPath();
+        fn += FACE_CASCADE_FILE;
+        if (!face_cascade->load(fn.toStdString())) {
+            qDebug() << "Unable to load cascade from " << fn;
+            delete face_cascade;
+            face_cascade = nullptr;
         }
     }
 }
 
-void FaceDetector::detectFaces(const Mat &inp, vector<Rect>* store)
+void FaceDetector::detectFacesPass1(const Mat &inp, vector<Rect>* store)
 {
     if (!face_cascade) return;
 
@@ -30,7 +31,7 @@ void FaceDetector::detectFaces(const Mat &inp, vector<Rect>* store)
     Mat work;
 
     try {
-        cvtColor(inp,work,CV_BGR2GRAY);
+        cvtColor(inp,work,COLOR_BGR2GRAY);
         equalizeHist(work,work);
         face_cascade->detectMultiScale(work,items,1.1,3,0,Size(32,32));
     } catch (...) {
@@ -46,6 +47,9 @@ void FaceDetector::detectFaces(const Mat &inp, vector<Rect>* store)
 
 void FaceDetector::Finalize()
 {
-    if (face_cascade) delete face_cascade;
-    face_cascade = nullptr;
+    if (--face_inst_cnt <= 0) {
+        qDebug() << "Destroying face cascade records...";
+        if (face_cascade) delete face_cascade;
+        face_cascade = nullptr;
+    }
 }

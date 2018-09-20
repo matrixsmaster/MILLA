@@ -2700,6 +2700,20 @@
      <addaction name="actionAutoplay_special_files"/>
      <addaction name="actionAuto_inc_kudos_for_right_image"/>
     </widget>
+    <widget class="QMenu" name="menuOperators">
+     <property name="title">
+      <string>Operators</string>
+     </property>
+     <addaction name="actionAdd_to_story"/>
+     <addaction name="actionRotate_90_CW"/>
+     <addaction name="actionRotate_90_CCW"/>
+     <addaction name="actionFlip_vertical"/>
+     <addaction name="actionFlip_horizontal"/>
+     <addaction name="actionCrop"/>
+     <addaction name="actionConcatenate"/>
+     <addaction name="actionFill_rect"/>
+     <addaction name="actionColorize"/>
+    </widget>
     <addaction name="actionLink_left_to_right"/>
     <addaction name="actionLink_bidirectional"/>
     <addaction name="actionUnlink_images"/>
@@ -2707,16 +2721,10 @@
     <addaction name="actionKudos_to_right_image"/>
     <addaction name="actionSwap_images"/>
     <addaction name="separator"/>
-    <addaction name="actionAdd_to_story"/>
-    <addaction name="actionRotate_90_CW"/>
-    <addaction name="actionRotate_90_CCW"/>
-    <addaction name="actionFlip_vertical"/>
-    <addaction name="actionFlip_horizontal"/>
+    <addaction name="menuOperators"/>
     <addaction name="actionZoom_in"/>
     <addaction name="actionZoom_out"/>
     <addaction name="actionReset_zoom"/>
-    <addaction name="actionConcatenate"/>
-    <addaction name="actionCrop"/>
     <addaction name="separator"/>
     <addaction name="menuPreferences"/>
    </widget>
@@ -3289,6 +3297,9 @@
    <property name="text">
     <string>Concatenate</string>
    </property>
+   <property name="shortcut">
+    <string>Shift+A</string>
+   </property>
   </action>
   <action name="actionPick_a_story">
    <property name="text">
@@ -3298,6 +3309,9 @@
   <action name="actionCrop">
    <property name="text">
     <string>Crop</string>
+   </property>
+   <property name="shortcut">
+    <string>Shift+C</string>
    </property>
   </action>
   <action name="actionAdd_to_story">
@@ -3455,6 +3469,29 @@
   <action name="actionLayout_6">
    <property name="text">
     <string>Layout 3</string>
+   </property>
+  </action>
+  <action name="actionNew">
+   <property name="text">
+    <string>New</string>
+   </property>
+  </action>
+  <action name="actionFill_rect">
+   <property name="text">
+    <string>Fill rect</string>
+   </property>
+   <property name="shortcut">
+    <string>Shift+F</string>
+   </property>
+  </action>
+  <action name="actionAuto_colors">
+   <property name="text">
+    <string>Auto-colors</string>
+   </property>
+  </action>
+  <action name="actionColorize">
+   <property name="text">
+    <string>Colorize</string>
    </property>
   </action>
  </widget>
