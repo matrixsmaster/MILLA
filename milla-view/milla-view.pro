@@ -33,7 +33,8 @@ SOURCES += main.cpp\
     mimageloader.cpp \
     listeditor.cpp \
     mdnnbase.cpp \
-    mcolornet.cpp
+    mcolornet.cpp \
+    aboutbox.cpp
 
 HEADERS  += mviewer.h \
     thumbnailmodel.h \
@@ -57,13 +58,15 @@ HEADERS  += mviewer.h \
     mimageloader.h \
     listeditor.h \
     mdnnbase.h \
-    mcolornet.h
+    mcolornet.h \
+    aboutbox.h
 
 FORMS    += mviewer.ui \
     searchform.ui \
     exportform.ui \
     storyselector.ui \
-    listeditor.ui
+    listeditor.ui \
+    aboutbox.ui
 
 CONFIG   += c++14
 QMAKE_CXXFLAGS  += -Wextra

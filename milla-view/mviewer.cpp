@@ -1,6 +1,7 @@
 ﻿#include "mviewer.h"
 #include "ui_mviewer.h"
 #include "searchform.h"
+#include "aboutbox.h"
 
 MViewer::MViewer(QWidget *parent) :
     QMainWindow(parent),
@@ -838,7 +839,9 @@ void MViewer::displayLinkedImages(QString const &fn)
 
 void MViewer::on_actionAbout_triggered()
 {
-    //TODO: make a separate dialog with everything below, plus
+//    AboutBox box;
+//    box.exec();
+
     QString msg = tr("<p><b>MILLA</b> image viewer</p>"
                      "<p><i>" MILLA_VERSION "</i></p>"
                      "<p><a href=" MILLA_SITE ">GitHub site</a></p>"
@@ -1504,8 +1507,8 @@ void MViewer::on_actionCrop_triggered()
 {
     if (selection_fsm != 2 || !current_l.valid) return;
     float scale = (current_l.picture.size().width() > current_l.picture.size().height())?
-                (double(current_l.picture.size().width()) / double(ui->scrollArea->size().width())) :
-                (double(current_l.picture.size().height()) / double(ui->scrollArea->size().height()));
+                (double(current_l.picture.size().width()) / double(ui->scrollArea->widget()->rect().width())) :
+                (double(current_l.picture.size().height()) / double(ui->scrollArea->widget()->rect().height()));
     QRect ns(selection.topLeft()*scale,selection.size()*scale);
     updateStory(a_story->crop(current_l,ns & current_l.picture.rect()));
 }
@@ -1526,6 +1529,9 @@ bool MViewer::eventFilter(QObject *obj, QEvent *event)
 
     QRect aligned = QStyle::alignedRect(QApplication::layoutDirection(),QFlag(ui->label->alignment()),ui->label->pixmap()->size(),ui->label->rect());
     QRect inter = aligned.intersected(ui->label->rect());
+    QPoint scrl_delta(0,0);
+    if (ui->scrollArea->horizontalScrollBar()) scrl_delta.setX(ui->scrollArea->horizontalScrollBar()->value());
+    if (ui->scrollArea->verticalScrollBar()) scrl_delta.setY(ui->scrollArea->verticalScrollBar()->value());
 
     switch (selection_fsm) {
     case 0:
@@ -1533,19 +1539,20 @@ bool MViewer::eventFilter(QObject *obj, QEvent *event)
         //fall through
     case 2:
         if (event->type() == QEvent::MouseButtonPress) {
-            selection.setTopLeft(QPoint(mev->x()-inter.x(),mev->y()-inter.y()));
+            selection.setTopLeft(QPoint(mev->x()-inter.x(),mev->y()-inter.y())+scrl_delta);
             selection_fsm = 1;
         }
         break;
     case 1:
         if (event->type() == QEvent::MouseMove) {
-            selection.setBottomRight(QPoint(mev->x()-inter.x(),mev->y()-inter.y()));
-            qDebug() << "Aligned:" << aligned;
-            qDebug() << "Inter:" << inter;
-            qDebug() << "Selection:" << selection;
+            selection.setBottomRight(QPoint(mev->x()-inter.x(),mev->y()-inter.y())+scrl_delta);
+//            qDebug() << "Aligned:" << aligned;
+//            qDebug() << "Inter:" << inter;
+//            qDebug() << "Selection:" << selection;
+//            qDebug() << "Scroll:" << scrl_delta;
 
         } else if (event->type() == QEvent::MouseButtonRelease) {
-            selection.setBottomRight(QPoint(mev->x()-inter.x(),mev->y()-inter.y()));
+            selection.setBottomRight(QPoint(mev->x()-inter.x(),mev->y()-inter.y())+scrl_delta);
             selection_fsm++;
         }
         break;
@@ -1773,9 +1780,16 @@ void MViewer::on_actionFill_rect_triggered()
 {
     if (selection_fsm != 2 || !current_l.valid) return;
     float scale = (current_l.picture.size().width() > current_l.picture.size().height())?
-                (double(current_l.picture.size().width()) / double(ui->scrollArea->size().width())) :
-                (double(current_l.picture.size().height()) / double(ui->scrollArea->size().height()));
+                (double(current_l.picture.size().width()) / double(ui->scrollArea->widget()->rect().width())) :
+                (double(current_l.picture.size().height()) / double(ui->scrollArea->widget()->rect().height()));
     QRect ns(selection.topLeft()*scale,selection.size()*scale);
+    //FIXME: debug only
+    qDebug() << "Scroll W" << ui->scrollArea->size().width();
+    qDebug() << "Scroll H" << ui->scrollArea->size().height();
+    qDebug() << "Inside:" << ui->scrollArea->widget()->rect();
+    qDebug() << "Pic W" << current_l.picture.size().width();
+    qDebug() << "Pic H" << current_l.picture.size().height();
     qDebug() << "Scale:" << scale;
     qDebug() << "Fill:" << ns;
+    //TODO
 }
