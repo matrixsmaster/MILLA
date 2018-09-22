@@ -7,17 +7,20 @@ MViewer::MViewer(QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::MViewer)
 {
-    ui->setupUi(this);
+    ui->setupUi(this); //create the actual form
 
+    //Load the database
     if (!db.initDatabase()) {
         QMessageBox::critical(this, tr("Fatal error"), tr("Unable to initialize database"));
         qDebug() << "FATAL: Unable to initialize database " DB_FILEPATH;
 
+        //in case of failure, we can't proceed, so we use the view timer as auto-close event generator
         connect(&view_timer,&QTimer::timeout,this,[this] { QApplication::exit(1); });
         view_timer.start(2);
         return;
     }
 
+    //Init globals
     loader = new MImageLoader(&plugins,this);
     loadingMovie = new QMovie(":/loading_icon.gif",QByteArray(),this);
     a_story = new MImageOps(loader,this);
@@ -31,12 +34,7 @@ MViewer::MViewer(QWidget *parent) :
     stopButton->setEnabled(false);
     ui->statusBar->addPermanentWidget(stopButton);
 
-    thumbload_pbar = ([this] (auto v) {
-        this->progressBar->setValue(floor(v));
-        QCoreApplication::processEvents();
-        return true;
-    });
-
+    //Callback function for normal view timer
     connect(&view_timer,&QTimer::timeout,this,[this] {
         if (progressBar->value() < 100)
             progressBar->setValue(progressBar->value()+1);
@@ -45,29 +43,36 @@ MViewer::MViewer(QWidget *parent) :
             ui->lcdNumber->display((double)incViews());
         }
     });
+    //Callback function for long processing interrupt button
     connect(stopButton,&QPushButton::clicked,this,[this] { stop_flag = true; });
 
+    //Connect the Star Labels to rating function
     connect(ui->star_1,&StarLabel::clicked,this,[this] { changedStars(1); });
     connect(ui->star_2,&StarLabel::clicked,this,[this] { changedStars(2); });
     connect(ui->star_3,&StarLabel::clicked,this,[this] { changedStars(3); });
     connect(ui->star_4,&StarLabel::clicked,this,[this] { changedStars(4); });
     connect(ui->star_5,&StarLabel::clicked,this,[this] { changedStars(5); });
 
+    //Enable receiving the MouseMove events for every widget in the main window
     enableMouseMoveEvents(children());
 
+    //Connect plugins subsystem to main window
     plugins.setViewerContext(MillaPluginContext({ &current_l,ui->scrollArea_2,ui->label_2,this }));
+    //List all loaded plugins
     plugins.addPluginsToMenu(*(ui->menuPlugins), [this] (double p) {
         progressBar->setValue(floor(p));
         QCoreApplication::processEvents();
         return !stop_flag;
     });
 
+    //Create the "short-term memory" tab
     MMemoryModel* mmm = new MMemoryModel(loader,ui->listView_4);
     ui->listView_4->setModel(mmm);
     ui->listView_4->setViewMode(QListView::ListMode);
     ui->listView_4->setFlow(QListView::LeftToRight);
     ui->listView_4->setWrapping(false);
     ui->listView_4->setWordWrap(true);
+    //Create the menu actions associated with each of memory slots
     for (int i = 0; i < MAXMEMORYSLOTS; i++) {
         QAction* a = ui->menuShort_term_memory->addAction(QString::asprintf("Slot %d",i+1));
         if (!a) break;
@@ -79,19 +84,23 @@ MViewer::MViewer(QWidget *parent) :
             }
         });
     }
+    //Connect the memory tab selection model to right image pane
     connect(ui->listView_4->selectionModel(),&QItemSelectionModel::selectionChanged,[this] {
         current_r = ui->listView_4->selectionModel()->selectedIndexes().first().data(MImageListModel::FullDataRole).value<MImageListRecord>();
         scaleImage(current_r,ui->scrollArea_2,ui->label_2,ui->label_4,1);
         incViews(false);
     });
 
+    //Enable events receive for left pane (for selection)
     ui->scrollArea->installEventFilter(this);
 
+    //Reset form
     cleanUp();
     updateTags();
     updateRecents();
     updateWindowLayout("window");
 
+    //Update status bar with pending message(s)
     status_pending = "[" + db.getDBInfoString() + "]";
     ui->statusBar->showMessage(status_pending);
     status_pending += " Current dir: ";
@@ -299,12 +308,21 @@ MImageExtras MViewer::getExtraCacheLine(QString const &fn, bool forceload, bool 
 
 void MViewer::showImageList(QStringList const &lst)
 {
-    cleanUp();
-
-    bool purelist = !(ui->actionThumbnails_cloud->isChecked());
-    ThumbnailModel* ptr = new ThumbnailModel(lst,thumbload_pbar,loader,ui->listView);
+    cleanUp(); //remove everything
     prepareLongProcessing(true); //reset progress bar after thumbnails loading
 
+    //prepare new selection model
+    bool purelist = !(ui->actionThumbnails_cloud->isChecked()); //list or cloud
+    ThumbnailModel* ptr = new ThumbnailModel(lst,[this] (auto v) {
+        //progress bar callback
+        this->progressBar->setValue(floor(v));
+        QCoreApplication::processEvents();
+        return true;
+    },
+    loader,
+    ui->listView);
+
+    //fill in settings to correctly display this selection model
     ptr->setShortenFilenames(!purelist);
     ui->listView->setModel(ptr);
     ui->listView->setViewMode(purelist? QListView::ListMode : QListView::IconMode);
@@ -313,6 +331,7 @@ void MViewer::showImageList(QStringList const &lst)
     ui->listView->setSpacing(purelist? 5:10);
     ui->listView->setContextMenuPolicy(Qt::CustomContextMenu);
 
+    //connect events to selection model
     connect(ui->listView->selectionModel(),&QItemSelectionModel::selectionChanged,[this] { showSelectedImage(); });
     connect(ui->listView,&QListView::customContextMenuRequested,this,[this] {
         current_r = ui->listView->selectionModel()->selectedIndexes().first().data(MImageListModel::FullDataRole).value<MImageListRecord>();
@@ -320,35 +339,47 @@ void MViewer::showImageList(QStringList const &lst)
         incViews(false);
     });
 
+    //update status bar
     ui->statusBar->showMessage(status_pending+QString::asprintf("%d images",lst.size()));
     status_pending.clear();
 
+    //update other fields
     updateRecents();
-    on_actionDescending_triggered();
-    on_pushButton_9_clicked();
+    on_actionDescending_triggered(); //renew sorting
+    on_pushButton_9_clicked(); //clear story
 }
 
 void MViewer::showSelectedImage()
 {
+    //check if any image is actually selected in current selection model
     if (ui->listView->selectionModel()->selectedIndexes().isEmpty()) return;
 
+    //retrieve the image index, load it and update timestamp
     QModelIndex idx = ui->listView->selectionModel()->selectedIndexes().first();
     ThumbnailModel* ptm = dynamic_cast<ThumbnailModel*>(ui->listView->model());
     if (ptm) ptm->LoadUp(idx.row());
     else return;
     ptm->touch(idx);
 
+    //update globals
     current_l = idx.data(MImageListModel::FullDataRole).value<MImageListRecord>();
     face_idx = face_idx_roi = -1;
+
+    //update image and associated data fields
     scaleImage(current_l,ui->scrollArea,ui->label,ui->label_3,1.f);
     leftImageMetaUpdate();
-    checkExtraCache();
     ui->lineEdit_2->clear();
 
+    //garbage collection
+    checkExtraCache();
+
+    //play special file
     if (ui->actionAutoplay_special_files->isChecked())
         qDebug() << "Opening file as a special file format: " << plugins.openFileFormat(current_l.filename);
 
-    view_timer.start(MILLA_VIEW_TIMER);
+    //check if some time-consuming process is underway, don't use the view timer
+    if (!stopButton->isEnabled())
+        view_timer.start(MILLA_VIEW_TIMER);
 }
 
 void MViewer::scaleImage(const MImageListRecord &rec, QScrollArea* scrl, QLabel* lbl, QLabel* inflbl, double factor)
@@ -841,16 +872,6 @@ void MViewer::on_actionAbout_triggered()
 {
     AboutBox box;
     box.exec();
-
-    QString msg = tr("<p><b>MILLA</b> image viewer</p>"
-                     "<p><i>" MILLA_VERSION "</i></p>"
-                     "<p><a href=" MILLA_SITE ">GitHub site</a></p>"
-                     "<p>(C) Dmitry 'MatrixS_Master' Soloviov, 2018</p>");
-#ifdef QT_DEBUG
-    msg += tr("<p><p><b>DEBUG BUILD</b></p></p>");
-#endif
-    msg += tr("<p>Built with OpenCV ver.") + CV_VERSION + "</p>";
-    QMessageBox::about(this, tr("About MILLA"),msg);
 }
 
 void MViewer::on_pushButton_2_clicked()
@@ -1777,4 +1798,16 @@ void MViewer::on_actionFill_rect_triggered()
 {
     if (selection_fsm != 2 || !current_l.valid) return;
     updateStory(a_story->fillrect(current_l,(selection_scaled & current_l.picture.rect())));
+}
+
+void MViewer::on_actionDesaturate_triggered()
+{
+    if (current_l.valid)
+        updateStory(a_story->desaturate(current_l));
+}
+
+void MViewer::on_actionColorize_triggered()
+{
+    if (current_l.valid)
+        updateStory(a_story->colorize(current_l));
 }

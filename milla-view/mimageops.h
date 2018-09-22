@@ -22,8 +22,10 @@ struct MMacroRecord {
         Concatenate,
         Crop,
         FillRect,
+        Desaturate,
         Colorize
     } action;
+
     MImageListRecord left, right;
     int link_l = -1, link_r = -1;
     QRect roi;
@@ -58,6 +60,8 @@ public:
     QPixmap crop(MImageListRecord const &in, QRect const &rct);
 
     QPixmap fillrect(MImageListRecord const &in, QRect const &rct);
+
+    QPixmap desaturate(MImageListRecord const &in);
 
     QPixmap colorize(MImageListRecord const &in);
 

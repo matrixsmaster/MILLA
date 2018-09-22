@@ -231,6 +231,10 @@ private slots:
 
     void on_actionFill_rect_triggered();
 
+    void on_actionDesaturate_triggered();
+
+    void on_actionColorize_triggered();
+
 private:
     Ui::MViewer *ui;
     DBHelper db;
@@ -243,7 +247,6 @@ private:
     QPushButton* stopButton;
     QMovie* loadingMovie;
     QLabel* loadingLabel = nullptr;
-    ProgressCB thumbload_pbar;
 
     bool stop_flag = false;
     double scaleFactor = 1;

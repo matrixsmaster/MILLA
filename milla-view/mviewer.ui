@@ -2712,6 +2712,7 @@
      <addaction name="actionCrop"/>
      <addaction name="actionConcatenate"/>
      <addaction name="actionFill_rect"/>
+     <addaction name="actionDesaturate"/>
      <addaction name="actionColorize"/>
     </widget>
     <addaction name="actionLink_left_to_right"/>
@@ -3492,6 +3493,11 @@
   <action name="actionColorize">
    <property name="text">
     <string>Colorize</string>
+   </property>
+  </action>
+  <action name="actionDesaturate">
+   <property name="text">
+    <string>Desaturate</string>
    </property>
   </action>
  </widget>

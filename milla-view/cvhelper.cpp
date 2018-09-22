@@ -44,6 +44,7 @@ Mat CVHelper::slowConvert(QImage const &in)
 QImage CVHelper::quickConvertBack(Mat &in)
 {
     QImage n(in.cols,in.rows,QImage::Format_RGBA8888);
+    //TODO: Use Mat::reshape()
     if (in.type() != CV_8UC4) in.convertTo(in,CV_8UC4);
     memcpy(n.bits(),in.ptr(),in.cols*in.rows*4);
     return n;
@@ -108,7 +109,7 @@ Mat CVHelper::loadMat(QByteArray const &arr)
     uptr = (const size_t*)iptr;
     size_t tot = *uptr;
     if (tot != res.elemSize() * res.total()) {
-        qDebug() << "[db] ALERT: matrix size invalid";
+        qDebug() << "ALERT: matrix size invalid";
         return res;
     }
     uptr++;
@@ -221,11 +222,8 @@ QPixmap CVHelper::drawROIs(QPixmap const &on, QRect &visBound, MImageExtras cons
             winner = i;
 
         } else if (index >= 0) {
-            if (cidx == index) {
-                winner = i;
-//                break;
-            } else
-                cidx++;
+            if (cidx == index) winner = i;
+            else cidx++;
         }
     }
 
@@ -237,8 +235,106 @@ QPixmap CVHelper::drawROIs(QPixmap const &on, QRect &visBound, MImageExtras cons
 
 QColor CVHelper::determineMediumColor(QPixmap const &img, QRect const &area)
 {
-    //TODO
+#if 0
+    Mat out,in = slowConvert(img.copy(area).toImage());
+    cvtColor(in,out,COLOR_BGR2HSV);
+
+    int hsz[] = {30,32};
+    float hrng[] = {0,180}; //hue
+    float srng[] = {0,256}; //sat
+    const float* rng[] = {hrng,srng};
+    int chans[] = {0,1};
+    calcHist(&out,1,chans,Mat(),in,2,hsz,rng,true,false);
+//    normalize(in,in,0,1,NORM_MINMAX,-1,Mat());
+    Mat nw;
+    int nchans[] = {2};
+    int nhsz[] = {32};
+    float nvrng[] = {0,256};
+    const float* nrng[] = {nvrng};
+    calcHist(&out,1,nchans,Mat(),nw,1,nhsz,nrng,true,false);
+
+    double vvmax = 0, vmax = 0;
+    Point pmax;
+    minMaxLoc(nw,0,&vvmax,0,0);
+    qDebug() << vvmax;
+    minMaxLoc(in,0,&vmax,0,&pmax);
+    qDebug() << vmax << "at" << pmax.x << pmax.y;
+
+    typedef Vec<unsigned char,3> mVec;
+    int h = pmax.y;
+    int s = pmax.x;
+    float binVal = in.at<float>(h, s);
+    //vmax = nw.at<float>(pmax.y);
+    qDebug() << "vmax" << vmax;
+    int intensity = cvRound(binVal*255/vvmax);
+    Mat tmp(1,1,CV_8UC3);
+    tmp.at<mVec>(0,0) = mVec(h*6,s*8,intensity);
+    cvtColor(tmp,tmp,COLOR_HSV2BGR);
+    mVec r = tmp.at<mVec>(0,0);
+    int rr = r[0];
+    int rg = r[1];
+    int rb = r[2];
+    if (h == pmax.y && s == pmax.x)
+    printf("%d:%d : %03d %03d %03d\n",h,s,rr,rg,rb);
+    qDebug() << rb << rg << rr;
+
+//    QColor ret;
+//    ret.setHsv(pmax.y*6,pmax.x*8,255);
+//    return ret;
+    return QColor(rb,rg,rr);
+
+#elif 0
+
+    Mat hst = getHist(img.copy(area));
+    Mat res[3];
+    qDebug() << hst.channels();
+    split(hst,res);
+    double r = 0, g = 0, b = 0;
+    minMaxLoc(res[0],NULL,&r,NULL,NULL);
+    minMaxLoc(res[1],NULL,&g,NULL,NULL);
+    minMaxLoc(res[2],NULL,&b,NULL,NULL);
+    qDebug() << r << g << b;
+
+#elif 0
+
+    Mat out,in = slowConvert(img.copy(area).toImage());
+    integral(in,out,CV_64F);
+    Mat res[3];
+    split(out,res);
+    double r = res[2].at<double>(area.width(),area.height());
+    double g = res[1].at<double>(area.width(),area.height());
+    double b = res[0].at<double>(area.width(),area.height());
+    qDebug() << r << g << b;
+
+#elif 1
+
+    Mat out,in = slowConvert(img.copy(area).toImage());
+    uchar* frm = in.ptr();
+    double r = 0, g = 0, b = 0;
+    for (int j,i = 0; i < in.rows; i++) {
+        for (j = 0; j < in.cols; j++,frm+=3) {
+            r += frm[2];
+            g += frm[1];
+            b += frm[0];
+        }
+    }
+    r /= static_cast<double>(area.width()*area.height());
+    g /= static_cast<double>(area.width()*area.height());
+    b /= static_cast<double>(area.width()*area.height());
+    qDebug() << r << g << b;
+
+    return QColor(r,g,b);
+#endif
+
     return QColor(Qt::red);
+}
+
+QPixmap CVHelper::colorToGrayscale(QPixmap const &img)
+{
+    Mat out,in = slowConvert(img.toImage());
+    cvtColor(in,out,COLOR_RGB2GRAY);
+    cvtColor(out,in,COLOR_GRAY2RGB);
+    return QPixmap::fromImage(slowConvertBack(in));
 }
 
 QPixmap CVHelper::recolorImage(QPixmap const &img)

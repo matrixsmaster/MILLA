@@ -150,6 +150,19 @@ QPixmap MImageOps::fillrect(MImageListRecord const &in, QRect const &rct)
     return rec.result;
 }
 
+QPixmap MImageOps::desaturate(MImageListRecord const &in)
+{
+    if (!in.valid) return QPixmap();
+
+    MMacroRecord rec;
+    rec.action = MMacroRecord::Desaturate;
+    rec.left = in;
+    rec.result = CVHelper::colorToGrayscale(in.picture);
+
+    add(rec);
+    return rec.result;
+}
+
 QPixmap MImageOps::colorize(MImageListRecord const &in)
 {
     if (!in.valid) return QPixmap();
@@ -414,6 +427,7 @@ bool MImageOps::deserialize(QString const &in)
             case MMacroRecord::Concatenate: i.result = concatenate(i.left,i.right); break;
             case MMacroRecord::Crop: i.result = crop(i.left,i.roi); break;
             case MMacroRecord::FillRect: i.result = fillrect(i.left,i.roi); break;
+            case MMacroRecord::Desaturate: i.result = desaturate(i.left); break;
             case MMacroRecord::Colorize: i.result = colorize(i.left); break;
             }
 

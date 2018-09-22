@@ -63,6 +63,8 @@ public:
 
     static QColor determineMediumColor(QPixmap const &img, QRect const &area);
 
+    static QPixmap colorToGrayscale(QPixmap const &img);
+
     QPixmap recolorImage(QPixmap const &img);
 
 private:
