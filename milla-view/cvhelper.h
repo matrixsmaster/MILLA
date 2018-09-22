@@ -61,6 +61,8 @@ public:
 
     static QPixmap drawROIs(QPixmap const &on, QRect &visBound, MImageExtras const &ext, bool calc_only, int index = -1);
 
+    static QColor determineMainColor(QPixmap const &img, QRect const &area);
+
     static QColor determineMediumColor(QPixmap const &img, QRect const &area);
 
     static QPixmap colorToGrayscale(QPixmap const &img);

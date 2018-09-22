@@ -423,7 +423,7 @@ void MViewer::scaleImage(const MImageListRecord &rec, QScrollArea* scrl, QLabel*
             lbl->setPixmap(rec.picture.scaled(nsz,Qt::KeepAspectRatio,Qt::SmoothTransformation));
     }
 
-    selection_fsm = 0; //invalidate selection
+    if (lbl == ui->label) selection_fsm = 0; //invalidate selection for left panel
 }
 
 unsigned MViewer::incViews(bool left)
@@ -1552,10 +1552,14 @@ bool MViewer::eventFilter(QObject *obj, QEvent *event)
 
     switch (selection_fsm) {
     case 0:
+        qDebug() << "***SAVED***";
         selection_bak = *(ui->label->pixmap());
+        selection_fsm = 10;
         //fall through
+    case 10:
     case 2:
         if (event->type() == QEvent::MouseButtonPress) {
+            ui->label->setPixmap(selection_bak);
             selection.setTopLeft(QPoint(mev->x()-inter.x(),mev->y()-inter.y())+scrl_delta);
             selection_fsm = 1;
         }
@@ -1575,7 +1579,7 @@ bool MViewer::eventFilter(QObject *obj, QEvent *event)
         }
         break;
     default:
-        selection_fsm = 0;
+        selection_fsm = 10;
         break;
     }
 
