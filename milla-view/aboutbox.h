@@ -15,6 +15,9 @@ public:
     explicit AboutBox(QWidget *parent = 0);
     ~AboutBox();
 
+protected:
+    void showEvent(QShowEvent*);
+
 private:
     Ui::AboutBox *ui;
 };

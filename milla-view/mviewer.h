@@ -248,7 +248,7 @@ private:
     bool stop_flag = false;
     double scaleFactor = 1;
     MImageListRecord current_l, current_r;
-    QRect selection;
+    QRect selection, selection_scaled;
     int selection_fsm = 0;
     QPixmap selection_bak;
     SearchFormData last_search;

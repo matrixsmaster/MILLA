@@ -839,8 +839,8 @@ void MViewer::displayLinkedImages(QString const &fn)
 
 void MViewer::on_actionAbout_triggered()
 {
-//    AboutBox box;
-//    box.exec();
+    AboutBox box;
+    box.exec();
 
     QString msg = tr("<p><b>MILLA</b> image viewer</p>"
                      "<p><i>" MILLA_VERSION "</i></p>"
@@ -1506,11 +1506,7 @@ void MViewer::on_actionAdd_to_story_triggered()
 void MViewer::on_actionCrop_triggered()
 {
     if (selection_fsm != 2 || !current_l.valid) return;
-    float scale = (current_l.picture.size().width() > current_l.picture.size().height())?
-                (double(current_l.picture.size().width()) / double(ui->scrollArea->widget()->rect().width())) :
-                (double(current_l.picture.size().height()) / double(ui->scrollArea->widget()->rect().height()));
-    QRect ns(selection.topLeft()*scale,selection.size()*scale);
-    updateStory(a_story->crop(current_l,ns & current_l.picture.rect()));
+    updateStory(a_story->crop(current_l,(selection_scaled & current_l.picture.rect())));
 }
 
 bool MViewer::eventFilter(QObject *obj, QEvent *event)
@@ -1546,13 +1542,14 @@ bool MViewer::eventFilter(QObject *obj, QEvent *event)
     case 1:
         if (event->type() == QEvent::MouseMove) {
             selection.setBottomRight(QPoint(mev->x()-inter.x(),mev->y()-inter.y())+scrl_delta);
-//            qDebug() << "Aligned:" << aligned;
-//            qDebug() << "Inter:" << inter;
-//            qDebug() << "Selection:" << selection;
-//            qDebug() << "Scroll:" << scrl_delta;
 
         } else if (event->type() == QEvent::MouseButtonRelease) {
             selection.setBottomRight(QPoint(mev->x()-inter.x(),mev->y()-inter.y())+scrl_delta);
+            float scale = (current_l.picture.size().width() > current_l.picture.size().height())?
+                        (double(current_l.picture.size().width()) / double(ui->scrollArea->widget()->rect().width())) :
+                        (double(current_l.picture.size().height()) / double(ui->scrollArea->widget()->rect().height()));
+            selection_scaled = QRect(selection.topLeft()*scale,selection.size()*scale);
+
             selection_fsm++;
         }
         break;
@@ -1779,17 +1776,5 @@ void MViewer::on_actionLayout_6_triggered()
 void MViewer::on_actionFill_rect_triggered()
 {
     if (selection_fsm != 2 || !current_l.valid) return;
-    float scale = (current_l.picture.size().width() > current_l.picture.size().height())?
-                (double(current_l.picture.size().width()) / double(ui->scrollArea->widget()->rect().width())) :
-                (double(current_l.picture.size().height()) / double(ui->scrollArea->widget()->rect().height()));
-    QRect ns(selection.topLeft()*scale,selection.size()*scale);
-    //FIXME: debug only
-    qDebug() << "Scroll W" << ui->scrollArea->size().width();
-    qDebug() << "Scroll H" << ui->scrollArea->size().height();
-    qDebug() << "Inside:" << ui->scrollArea->widget()->rect();
-    qDebug() << "Pic W" << current_l.picture.size().width();
-    qDebug() << "Pic H" << current_l.picture.size().height();
-    qDebug() << "Scale:" << scale;
-    qDebug() << "Fill:" << ns;
-    //TODO
+    updateStory(a_story->fillrect(current_l,(selection_scaled & current_l.picture.rect())));
 }

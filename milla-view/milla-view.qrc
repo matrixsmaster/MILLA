@@ -4,5 +4,6 @@
         <file>star-empty.png</file>
         <file>milla.png</file>
         <file>loading_icon.gif</file>
+        <file>license.txt</file>
     </qresource>
 </RCC>

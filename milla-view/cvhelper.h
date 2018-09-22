@@ -67,7 +67,7 @@ public:
 
 private:
     FaceDetector facedetector;
-    MColorNet* color_net;
+    MColorNet* color_net = nullptr;
 };
 
 #endif // CVHELPER_H
