@@ -13,8 +13,13 @@ CVHelper::~CVHelper()
 Mat CVHelper::quickConvert(QImage &in) //FIXME: not always working
 {
     if (in.format() != QImage::Format_RGB888) {
-        in = in.convertToFormat(QImage::Format_RGB888);
-        qDebug() << "converting";
+        qDebug() << "Converting";
+        try {
+            in = in.convertToFormat(QImage::Format_RGB888);
+        } catch(...) {
+            qDebug() << "Error converting";
+            return Mat();
+        }
     }
     return cv::Mat(in.size().height(),in.size().width(),CV_8UC3,in.bits());
 }
@@ -23,8 +28,13 @@ Mat CVHelper::slowConvert(QImage const &in)
 {
     QImage n;
     if (in.format() != QImage::Format_RGB888) {
-        qDebug() << "converting";
-        n = in.convertToFormat(QImage::Format_RGB888);
+        qDebug() << "Converting";
+        try {
+            n = in.convertToFormat(QImage::Format_RGB888);
+        } catch(...) {
+            qDebug() << "Error converting";
+            return Mat();
+        }
     } else
         n = in;
 
@@ -44,16 +54,32 @@ Mat CVHelper::slowConvert(QImage const &in)
 QImage CVHelper::quickConvertBack(Mat &in)
 {
     QImage n(in.cols,in.rows,QImage::Format_RGBA8888);
-    //TODO: Use Mat::reshape()
-    if (in.type() != CV_8UC4) in.convertTo(in,CV_8UC4);
+    try {
+        //TODO: Use Mat::reshape()
+        if (in.type() != CV_8UC4) {
+            qDebug() << "Converting";
+            in.convertTo(in,CV_8UC4);
+        }
+    } catch(...) {
+        qDebug() << "Error converting";
+        return n;
+    }
     memcpy(n.bits(),in.ptr(),in.cols*in.rows*4);
     return n;
 }
 
 QImage CVHelper::slowConvertBack(Mat &in)
 {
-    if (in.type() != CV_8UC3) in.convertTo(in,CV_8UC3);
     QImage n(in.cols,in.rows,QImage::Format_RGB888);
+    try {
+        if (in.type() != CV_8UC3) {
+            qDebug() << "Converting";
+            in.convertTo(in,CV_8UC3);
+        }
+    } catch(...) {
+        qDebug() << "Error converting";
+        return n;
+    }
 
     uchar* frm = in.ptr();
     for (int j,i = 0; i < n.height(); i++) {
@@ -128,7 +154,12 @@ Mat CVHelper::getHist(Mat &in)
     int channels[] = {0, 1, 2};
     Mat out;
 
-    calcHist(&in,1,channels,Mat(),out,3,histSize,ranges,true,false);
+    try {
+        calcHist(&in,1,channels,Mat(),out,3,histSize,ranges,true,false);
+    } catch(...) {
+        qDebug() << "Error creating histogram";
+    }
+
     return out;
 }
 
@@ -236,23 +267,28 @@ QPixmap CVHelper::drawROIs(QPixmap const &on, QRect &visBound, MImageExtras cons
 QColor CVHelper::determineMainColor(QPixmap const &img, QRect const &area)
 {
     Mat out,in = slowConvert(img.copy(area).toImage());
-    cvtColor(in,out,COLOR_BGR2HSV);
+    Vec3b r;
+    try {
+        cvtColor(in,out,COLOR_BGR2HSV);
 
-    int hsz[] = {30,32}; //x6, x8
-    float hrng[] = {0,180}; //hue
-    float srng[] = {0,256}; //sat
-    const float* rng[] = {hrng,srng};
-    int chans[] = {0,1};
-    calcHist(&out,1,chans,Mat(),in,2,hsz,rng,true,false);
+        int hsz[] = {30,32}; //x6, x8
+        float hrng[] = {0,180}; //hue
+        float srng[] = {0,256}; //sat
+        const float* rng[] = {hrng,srng};
+        int chans[] = {0,1};
+        calcHist(&out,1,chans,Mat(),in,2,hsz,rng,true,false);
 
-    double vmax;
-    Point pmax;
-    minMaxLoc(in,0,&vmax,0,&pmax);
+        double vmax;
+        Point pmax;
+        minMaxLoc(in,0,&vmax,0,&pmax);
 
-    Mat tmp(1,1,CV_8UC3);
-    tmp.at<Vec3b>(0,0) = Vec3b(pmax.y*6,pmax.x*8,255);
-    cvtColor(tmp,tmp,COLOR_HSV2BGR);
-    Vec3b r = tmp.at<Vec3b>(0,0);
+        Mat tmp(1,1,CV_8UC3);
+        tmp.at<Vec3b>(0,0) = Vec3b(pmax.y*6,pmax.x*8,255);
+        cvtColor(tmp,tmp,COLOR_HSV2BGR);
+        r = tmp.at<Vec3b>(0,0);
+    } catch (Exception &e) {
+        std::cout << "OCV exception: " << e.what() << std::endl;
+    }
 
     return QColor(r[2],r[1],r[0]);
 }
@@ -282,8 +318,12 @@ QColor CVHelper::determineMediumColor(QPixmap const &img, QRect const &area)
 QPixmap CVHelper::colorToGrayscale(QPixmap const &img)
 {
     Mat out,in = slowConvert(img.toImage());
-    cvtColor(in,out,COLOR_RGB2GRAY);
-    cvtColor(out,in,COLOR_GRAY2RGB);
+    try {
+        cvtColor(in,out,COLOR_RGB2GRAY);
+        cvtColor(out,in,COLOR_GRAY2RGB);
+    } catch(...) {
+        qDebug() << "OCV Error";
+    }
     return QPixmap::fromImage(slowConvertBack(in));
 }
 

@@ -1,5 +1,6 @@
 #include <QDebug>
 #include <QApplication>
+#include <QMessageBox>
 #include "facedetector.h"
 
 using namespace cv;
@@ -16,7 +17,7 @@ FaceDetector::FaceDetector()
         QString fn = QApplication::applicationDirPath();
         fn += FACE_CASCADE_FILE;
         if (!face_cascade->load(fn.toStdString())) {
-            qDebug() << "Unable to load cascade from " << fn;
+            QMessageBox::warning(NULL,"Error",QString("Unable to load face cascade from %1").arg(fn));
             delete face_cascade;
             face_cascade = nullptr;
         }

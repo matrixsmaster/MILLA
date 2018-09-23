@@ -1,3 +1,4 @@
+#include <QMessageBox>
 #include "mdnnbase.h"
 
 using namespace cv;
@@ -14,8 +15,16 @@ MDNNBase::MDNNBase(QString netfile, QString netweights)
     if (!netweights.isEmpty()) {
         netbinary = netweights;
         if (!mind) {
-            Net tmp = readNetFromCaffe(nettext.toStdString(),netbinary.toStdString());
-            *mind = tmp;
+            Net tmp;
+            try {
+                tmp = readNetFromCaffe(nettext.toStdString(),netbinary.toStdString());
+            } catch (Exception &e) {
+                cout << "OCV exception: " << e.what() << endl;
+            }
+            if (tmp.empty())
+                QMessageBox::warning(NULL,"Error",QString("Unable to load neural network from %1 : %2").arg(netfile,netweights));
+            else
+                *mind = tmp;
         }
     }
 }

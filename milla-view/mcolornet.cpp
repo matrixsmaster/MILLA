@@ -7,7 +7,6 @@ using namespace std;
 MColorNet::MColorNet(QString netfile, QString netweights) :
     MDNNBase(netfile,netweights)
 {
-
 }
 
 cv::Mat MColorNet::doColor(cv::Mat const &in)
