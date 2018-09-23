@@ -198,6 +198,12 @@
                 </property>
                 <item alignment="Qt::AlignTop">
                  <widget class="QLabel" name="label_3">
+                  <property name="sizePolicy">
+                   <sizepolicy hsizetype="Ignored" vsizetype="Preferred">
+                    <horstretch>0</horstretch>
+                    <verstretch>0</verstretch>
+                   </sizepolicy>
+                  </property>
                   <property name="palette">
                    <palette>
                     <active>
@@ -729,6 +735,12 @@
                 </property>
                 <item alignment="Qt::AlignTop">
                  <widget class="QLabel" name="label_4">
+                  <property name="sizePolicy">
+                   <sizepolicy hsizetype="Ignored" vsizetype="Preferred">
+                    <horstretch>0</horstretch>
+                    <verstretch>0</verstretch>
+                   </sizepolicy>
+                  </property>
                   <property name="palette">
                    <palette>
                     <active>

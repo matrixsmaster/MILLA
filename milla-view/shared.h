@@ -10,7 +10,7 @@
 #include <functional>
 
 
-#define MILLA_VERSION           "0.5.1.3 next-gen"
+#define MILLA_VERSION           "0.5.1.4 next-gen"
 #define MILLA_CLI_BANNER        "MILLA:  Qt5-based, AI-enhanced image viewer"
 #define MILLA_CONFIG_PATH       "/.milla/"
 #define MILLA_SITE              "http://github.com/matrixsmaster/MILLA"

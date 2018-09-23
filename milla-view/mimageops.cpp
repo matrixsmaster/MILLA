@@ -237,7 +237,10 @@ bool MImageOps::moveCurrent(bool backward)
 
 bool MImageOps::addComment(QString const &com)
 {
-    if (pos == history.end()) return false;
+    if (pos == history.end()) {
+        if (history.empty()) return false;
+        --pos;
+    }
     pos->comment = com;
     pos->comment.replace('\"','\'');
     return true;

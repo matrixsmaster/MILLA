@@ -378,8 +378,11 @@ void MViewer::showSelectedImage()
         qDebug() << "Opening file as a special file format: " << plugins.openFileFormat(current_l.filename);
 
     //check if some time-consuming process is underway, don't use the view timer
-    if (!stopButton->isEnabled())
+    if (!stopButton->isEnabled()) {
+        progressBar->setValue(0);
+        ui->statusBar->showMessage("");
         view_timer.start(MILLA_VIEW_TIMER);
+    }
 }
 
 void MViewer::scaleImage(const MImageListRecord &rec, QScrollArea* scrl, QLabel* lbl, QLabel* inflbl, double factor)
@@ -397,7 +400,7 @@ void MViewer::scaleImage(const MImageListRecord &rec, QScrollArea* scrl, QLabel*
     scrl->updateGeometry();
     scrl->setWidgetResizable(true);
     inflbl->setText(QString::asprintf("%s: %d x %d",
-                                      rec.fnshort.toStdString().c_str(),
+                                      rec.fnshort.left(MILLA_MAXSHORTLENGTH).toStdString().c_str(),
                                       rec.picture.size().width(),
                                       rec.picture.size().height()));
 
@@ -476,10 +479,7 @@ void MViewer::leftImageMetaUpdate()
         else ui->plainTextEdit->clear();
     }
     kudos(current_l,0);
-
     ui->radio_settags->setChecked(true);
-    progressBar->setValue(0);
-    ui->statusBar->showMessage("");
 }
 
 void MViewer::processArguments()
