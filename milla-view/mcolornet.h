@@ -8,7 +8,7 @@ class MColorNet : public MDNNBase
 public:
     MColorNet(QString netfile, QString netweights);
 
-    cv::Mat doColor(cv::Mat const &in);
+    cv::Mat doColor(const cv::Mat &in);
 };
 
 #endif // MCOLORNET_H

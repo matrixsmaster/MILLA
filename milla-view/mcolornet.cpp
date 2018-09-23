@@ -4,45 +4,88 @@ using namespace cv;
 using namespace cv::dnn;
 using namespace std;
 
+//From OCV DNN example:
+static const int W_in = 224;
+static const int H_in = 224;
+//the 313 ab cluster centers from pts_in_hull.npy (already transposed)
+static float hull_pts[] = {
+    -90., -90., -90., -90., -90., -80., -80., -80., -80., -80., -80., -80., -80., -70., -70., -70., -70., -70., -70., -70., -70.,
+    -70., -70., -60., -60., -60., -60., -60., -60., -60., -60., -60., -60., -60., -60., -50., -50., -50., -50., -50., -50., -50., -50.,
+    -50., -50., -50., -50., -50., -50., -40., -40., -40., -40., -40., -40., -40., -40., -40., -40., -40., -40., -40., -40., -40., -30.,
+    -30., -30., -30., -30., -30., -30., -30., -30., -30., -30., -30., -30., -30., -30., -30., -20., -20., -20., -20., -20., -20., -20.,
+    -20., -20., -20., -20., -20., -20., -20., -20., -20., -10., -10., -10., -10., -10., -10., -10., -10., -10., -10., -10., -10., -10.,
+    -10., -10., -10., -10., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 10., 10., 10., 10., 10., 10., 10.,
+    10., 10., 10., 10., 10., 10., 10., 10., 10., 10., 10., 20., 20., 20., 20., 20., 20., 20., 20., 20., 20., 20., 20., 20., 20., 20.,
+    20., 20., 20., 30., 30., 30., 30., 30., 30., 30., 30., 30., 30., 30., 30., 30., 30., 30., 30., 30., 30., 30., 40., 40., 40., 40.,
+    40., 40., 40., 40., 40., 40., 40., 40., 40., 40., 40., 40., 40., 40., 40., 40., 50., 50., 50., 50., 50., 50., 50., 50., 50., 50.,
+    50., 50., 50., 50., 50., 50., 50., 50., 50., 60., 60., 60., 60., 60., 60., 60., 60., 60., 60., 60., 60., 60., 60., 60., 60., 60.,
+    60., 60., 60., 70., 70., 70., 70., 70., 70., 70., 70., 70., 70., 70., 70., 70., 70., 70., 70., 70., 70., 70., 70., 80., 80., 80.,
+    80., 80., 80., 80., 80., 80., 80., 80., 80., 80., 80., 80., 80., 80., 80., 80., 90., 90., 90., 90., 90., 90., 90., 90., 90., 90.,
+    90., 90., 90., 90., 90., 90., 90., 90., 90., 100., 100., 100., 100., 100., 100., 100., 100., 100., 100., 50., 60., 70., 80., 90.,
+    20., 30., 40., 50., 60., 70., 80., 90., 0., 10., 20., 30., 40., 50., 60., 70., 80., 90., -20., -10., 0., 10., 20., 30., 40., 50.,
+    60., 70., 80., 90., -30., -20., -10., 0., 10., 20., 30., 40., 50., 60., 70., 80., 90., 100., -40., -30., -20., -10., 0., 10., 20.,
+    30., 40., 50., 60., 70., 80., 90., 100., -50., -40., -30., -20., -10., 0., 10., 20., 30., 40., 50., 60., 70., 80., 90., 100., -50.,
+    -40., -30., -20., -10., 0., 10., 20., 30., 40., 50., 60., 70., 80., 90., 100., -60., -50., -40., -30., -20., -10., 0., 10., 20.,
+    30., 40., 50., 60., 70., 80., 90., 100., -70., -60., -50., -40., -30., -20., -10., 0., 10., 20., 30., 40., 50., 60., 70., 80., 90.,
+    100., -80., -70., -60., -50., -40., -30., -20., -10., 0., 10., 20., 30., 40., 50., 60., 70., 80., 90., -80., -70., -60., -50.,
+    -40., -30., -20., -10., 0., 10., 20., 30., 40., 50., 60., 70., 80., 90., -90., -80., -70., -60., -50., -40., -30., -20., -10.,
+    0., 10., 20., 30., 40., 50., 60., 70., 80., 90., -100., -90., -80., -70., -60., -50., -40., -30., -20., -10., 0., 10., 20., 30.,
+    40., 50., 60., 70., 80., 90., -100., -90., -80., -70., -60., -50., -40., -30., -20., -10., 0., 10., 20., 30., 40., 50., 60., 70.,
+    80., -110., -100., -90., -80., -70., -60., -50., -40., -30., -20., -10., 0., 10., 20., 30., 40., 50., 60., 70., 80., -110., -100.,
+    -90., -80., -70., -60., -50., -40., -30., -20., -10., 0., 10., 20., 30., 40., 50., 60., 70., 80., -110., -100., -90., -80., -70.,
+    -60., -50., -40., -30., -20., -10., 0., 10., 20., 30., 40., 50., 60., 70., -110., -100., -90., -80., -70., -60., -50., -40., -30.,
+    -20., -10., 0., 10., 20., 30., 40., 50., 60., 70., -90., -80., -70., -60., -50., -40., -30., -20., -10., 0.
+};
+
 MColorNet::MColorNet(QString netfile, QString netweights) :
     MDNNBase(netfile,netweights)
 {
 }
 
-cv::Mat MColorNet::doColor(cv::Mat const &in)
+Mat MColorNet::doColor(cv::Mat const &in)
 {
-#if 0
-    // setup additional layers
-    int sz[] = {2, 313, 1, 1};
-    const Mat pts_in_hull(4, sz, CV_32F, hull_pts);
-    Ptr<Layer> class8_ab = net.getLayer("class8_ab");
-    class8_ab->blobs.push_back(pts_in_hull);
-    Ptr<Layer> conv8_313_rh = net.getLayer("conv8_313_rh");
-    conv8_313_rh->blobs.push_back(Mat(1, 313, CV_32F, Scalar(2.606)));
+    //check network is ready
+    if (!mind || mind->empty()) return Mat();
 
-    // extract L channel and subtract mean
-    Mat lab, L, input;
-    img.convertTo(img, CV_32F, 1.0/255);
-    cvtColor(img, lab, COLOR_BGR2Lab);
-    extractChannel(lab, L, 0);
-    resize(L, input, Size(W_in, H_in));
-    input -= 50;
+    Mat color;
+    try {
+        //setup additional layers
+        int sz[] = {2,313,1,1};
+        const Mat pts_in_hull(4,sz,CV_32F,hull_pts);
+        Ptr<Layer> class8_ab = mind->getLayer("class8_ab");
+        class8_ab->blobs.push_back(pts_in_hull);
+        Ptr<Layer> conv8_313_rh = mind->getLayer("conv8_313_rh");
+        conv8_313_rh->blobs.push_back(Mat(1,313,CV_32F,Scalar(2.606)));
 
-    // run the L channel through the network
-    Mat inputBlob = blobFromImage(input);
-    net.setInput(inputBlob);
-    Mat result = net.forward();
+        //extract L channel and subtract mean
+        Mat img,lab,L,input;
+        in.convertTo(img,CV_32F,1.0/255);
+        cvtColor(img,lab,COLOR_BGR2Lab);
+        extractChannel(lab,L,0);
+        resize(L,input,Size(W_in,H_in));
+        input -= 50;
 
-    // retrieve the calculated a,b channels from the network output
-    Size siz(result.size[2], result.size[3]);
-    Mat a = Mat(siz, CV_32F, result.ptr(0,0));
-    Mat b = Mat(siz, CV_32F, result.ptr(0,1));
-    resize(a, a, img.size());
-    resize(b, b, img.size());
+        //run the L channel through the network
+        Mat inputBlob = blobFromImage(input);
+        mind->setInput(inputBlob);
+        Mat result = mind->forward();
 
-    // merge, and convert back to BGR
-    Mat color, chn[] = {L, a, b};
-    merge(chn, 3, lab);
-    cvtColor(lab, color, COLOR_Lab2BGR);
-#endif
+        //retrieve the calculated a,b channels from the network output
+        Size siz(result.size[2],result.size[3]);
+        Mat a = Mat(siz,CV_32F,result.ptr(0,0));
+        Mat b = Mat(siz,CV_32F,result.ptr(0,1));
+        resize(a,a,img.size());
+        resize(b,b,img.size());
+
+        //merge,and convert back to BGR
+        Mat chn[] = {L,a,b};
+        merge(chn,3,lab);
+        cvtColor(lab,color,COLOR_Lab2BGR);
+        color.convertTo(color,CV_8U,255);
+
+    } catch (Exception &e) {
+        cout << "OCV exception: " << e.what() << endl;
+    }
+
+    return color;
 }

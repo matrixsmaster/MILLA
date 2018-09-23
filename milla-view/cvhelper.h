@@ -38,7 +38,7 @@ struct MImageExtras {
 class CVHelper
 {
 public:
-    CVHelper() {}
+    CVHelper();
     virtual ~CVHelper();
 
     static cv::Mat quickConvert(QImage &in);
@@ -61,7 +61,11 @@ public:
 
     static QPixmap drawROIs(QPixmap const &on, QRect &visBound, MImageExtras const &ext, bool calc_only, int index = -1);
 
+    static cv::Vec3b determineMainColor(cv::Mat const &in);
+
     static QColor determineMainColor(QPixmap const &img, QRect const &area);
+
+    static cv::Vec3b determineMediumColor(cv::Mat const &in);
 
     static QColor determineMediumColor(QPixmap const &img, QRect const &area);
 

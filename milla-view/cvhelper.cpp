@@ -4,6 +4,14 @@
 
 using namespace cv;
 
+CVHelper::CVHelper()
+{
+    QString pth = QApplication::applicationDirPath();
+
+    //preload DNNs since at least one instance of CVHelper is always on
+    color_net = new MColorNet(pth+COLORIZATION_NET_FILE,pth+COLORIZATION_NET_WEIGHT);
+}
+
 CVHelper::~CVHelper()
 {
     facedetector.Finalize();
@@ -264,10 +272,10 @@ QPixmap CVHelper::drawROIs(QPixmap const &on, QRect &visBound, MImageExtras cons
     return calc_only? on : QPixmap::fromImage(inq);
 }
 
-QColor CVHelper::determineMainColor(QPixmap const &img, QRect const &area)
+Vec3b CVHelper::determineMainColor(cv::Mat const &in)
 {
-    Mat out,in = slowConvert(img.copy(area).toImage());
-    Vec3b r;
+    Mat out,tmp;
+    Vec3b r(0,0,0);
     try {
         cvtColor(in,out,COLOR_BGR2HSV);
 
@@ -276,51 +284,64 @@ QColor CVHelper::determineMainColor(QPixmap const &img, QRect const &area)
         float srng[] = {0,256}; //sat
         const float* rng[] = {hrng,srng};
         int chans[] = {0,1};
-        calcHist(&out,1,chans,Mat(),in,2,hsz,rng,true,false);
+        calcHist(&out,1,chans,Mat(),tmp,2,hsz,rng,true,false);
 
         double vmax;
         Point pmax;
-        minMaxLoc(in,0,&vmax,0,&pmax);
+        minMaxLoc(tmp,0,&vmax,0,&pmax);
 
         Mat tmp(1,1,CV_8UC3);
         tmp.at<Vec3b>(0,0) = Vec3b(pmax.y*6,pmax.x*8,255);
         cvtColor(tmp,tmp,COLOR_HSV2BGR);
         r = tmp.at<Vec3b>(0,0);
+        qDebug() << r[2] << r[1] << r[0];
+
     } catch (Exception &e) {
         std::cout << "OCV exception: " << e.what() << std::endl;
     }
+    return r;
+}
 
+QColor CVHelper::determineMainColor(QPixmap const &img, QRect const &area)
+{
+    Mat in = slowConvert(img.copy(area).toImage());
+    Vec3b r = determineMainColor(in);
     return QColor(r[2],r[1],r[0]);
+}
+
+Vec3b CVHelper::determineMediumColor(cv::Mat const &in)
+{
+    Vec3b r(0,0,0);
+    double vr[3] = {0,0,0};
+    const uchar* frm = in.ptr();
+
+    for (int k,j,i = 0; i < in.rows; i++) {
+        for (j = 0; j < in.cols; j++,frm+=3) {
+            for (k = 0; k < 3; k++)
+                vr[k] += frm[k];
+        }
+    }
+
+    for (int k = 0; k < 3; k++)
+        r[k] = floor(vr[k] / static_cast<double>(in.rows*in.cols));
+
+    qDebug() << r[2] << r[1] << r[0];
+    return r;
 }
 
 QColor CVHelper::determineMediumColor(QPixmap const &img, QRect const &area)
 {
     Mat in = slowConvert(img.copy(area).toImage());
-
-    uchar* frm = in.ptr();
-    double r = 0, g = 0, b = 0;
-    for (int j,i = 0; i < in.rows; i++) {
-        for (j = 0; j < in.cols; j++,frm+=3) {
-            r += frm[2];
-            g += frm[1];
-            b += frm[0];
-        }
-    }
-
-    r /= static_cast<double>(area.width()*area.height());
-    g /= static_cast<double>(area.width()*area.height());
-    b /= static_cast<double>(area.width()*area.height());
-    qDebug() << r << g << b;
-
-    return QColor(r,g,b);
+    Vec3b r = determineMediumColor(in);
+    return QColor(r[2],r[1],r[0]);
 }
 
 QPixmap CVHelper::colorToGrayscale(QPixmap const &img)
 {
     Mat out,in = slowConvert(img.toImage());
     try {
-        cvtColor(in,out,COLOR_RGB2GRAY);
-        cvtColor(out,in,COLOR_GRAY2RGB);
+        cvtColor(in,out,COLOR_BGR2GRAY);
+        cvtColor(out,in,COLOR_GRAY2BGR);
     } catch(...) {
         qDebug() << "OCV Error";
     }
@@ -329,12 +350,7 @@ QPixmap CVHelper::colorToGrayscale(QPixmap const &img)
 
 QPixmap CVHelper::recolorImage(QPixmap const &img)
 {
-    if (!color_net) {
-        QString pth = QApplication::applicationDirPath();
-        color_net = new MColorNet(pth+COLORIZATION_NET_FILE,pth+COLORIZATION_NET_WEIGHT);
-    }
     if (!color_net->isValid()) return QPixmap();
-
     Mat in = slowConvert(img.toImage());
     Mat out = color_net->doColor(in);
     return QPixmap::fromImage(slowConvertBack(out));

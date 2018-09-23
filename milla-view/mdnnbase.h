@@ -10,10 +10,11 @@ class MDNNBase
 {
 public:
     MDNNBase(QString netfile, QString netweights);
+    virtual ~MDNNBase();
 
     bool isValid() { return valid; }
 
-private:
+protected:
     static cv::dnn::Net* mind;
     static int inst_cnt;
     bool valid = false;

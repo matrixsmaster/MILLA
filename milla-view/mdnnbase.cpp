@@ -1,3 +1,4 @@
+#include <QDebug>
 #include <QMessageBox>
 #include "mdnnbase.h"
 
@@ -23,8 +24,23 @@ MDNNBase::MDNNBase(QString netfile, QString netweights)
             }
             if (tmp.empty())
                 QMessageBox::warning(NULL,"Error",QString("Unable to load neural network from %1 : %2").arg(netfile,netweights));
-            else
+            else {
+                mind = new Net();
                 *mind = tmp;
-        }
+                valid = true;
+                qDebug() << "Mind loaded" << mind;
+            }
+        } else
+            valid = true;
+    }
+}
+
+MDNNBase::~MDNNBase()
+{
+    if ((--inst_cnt <= 0) && (mind)) {
+        qDebug() << "Mind destroyed" << mind;
+        delete mind;
+        mind = nullptr;
+        valid = false;
     }
 }

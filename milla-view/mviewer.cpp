@@ -1552,7 +1552,6 @@ bool MViewer::eventFilter(QObject *obj, QEvent *event)
 
     switch (selection_fsm) {
     case 0:
-        qDebug() << "***SAVED***";
         selection_bak = *(ui->label->pixmap());
         selection_fsm = 10;
         //fall through
