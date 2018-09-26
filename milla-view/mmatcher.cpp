@@ -18,9 +18,12 @@ bool MMatcher::Comparator(MImageExtras const &cur, double &key)
     double cur_area = cur.picsize.width() * cur.picsize.height();
     if (orig_area / cur_area > 2 || cur_area / orig_area > 2) return false; //too big or too small
 
-    //FIXME: use normalization!
+    //normalize them
+    Mat ina,inb;
+    normalize(original.hist,ina,0,1,NORM_MINMAX,-1,Mat());
+    normalize(cur.hist,inb,0,1,NORM_MINMAX,-1,Mat());
 
-    key = compareHist(original.hist,cur.hist,HISTCMP_CORREL);
+    key = compareHist(ina,inb,HISTCMP_CORREL);
     return (key > 0);
 }
 
