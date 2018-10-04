@@ -289,6 +289,8 @@ private:
 
     MImageExtras getExtraCacheLine(QString const &fn, bool forceload = false, bool ignore_thumbs = false);
 
+    void updateModelThumbnailSettings(ThumbnailModel* ptr, bool purelist);
+
     void showImageList(QStringList const &lst);
 
     void showSelectedImage();

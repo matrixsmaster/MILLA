@@ -309,13 +309,22 @@ MImageExtras MViewer::getExtraCacheLine(QString const &fn, bool forceload, bool 
     return res;
 }
 
+void MViewer::updateModelThumbnailSettings(ThumbnailModel* ptr, bool purelist)
+{
+    ptr->setShortenFilenames(!purelist);
+    ui->listView->setViewMode(purelist? QListView::ListMode : QListView::IconMode);
+    ui->listView->setFlow(purelist? QListView::TopToBottom : QListView::LeftToRight);
+    ui->listView->setWrapping(!purelist);
+    ui->listView->setSpacing(purelist? 5:10);
+    ui->listView->setContextMenuPolicy(Qt::CustomContextMenu);
+}
+
 void MViewer::showImageList(QStringList const &lst)
 {
     cleanUp(); //remove everything
     prepareLongProcessing(true); //reset progress bar after thumbnails loading
 
     //prepare new selection model
-    bool purelist = !(ui->actionThumbnails_cloud->isChecked()); //list or cloud
     ThumbnailModel* ptr = new ThumbnailModel(lst,[this] (auto v) {
         //progress bar callback
         this->progressBar->setValue(floor(v));
@@ -326,13 +335,8 @@ void MViewer::showImageList(QStringList const &lst)
     ui->listView);
 
     //fill in settings to correctly display this selection model
-    ptr->setShortenFilenames(!purelist);
     ui->listView->setModel(ptr);
-    ui->listView->setViewMode(purelist? QListView::ListMode : QListView::IconMode);
-    ui->listView->setFlow(purelist? QListView::TopToBottom : QListView::LeftToRight);
-    ui->listView->setWrapping(!purelist);
-    ui->listView->setSpacing(purelist? 5:10);
-    ui->listView->setContextMenuPolicy(Qt::CustomContextMenu);
+    updateModelThumbnailSettings(ptr,!(ui->actionThumbnails_cloud->isChecked()));
 
     //connect events to selection model
     connect(ui->listView->selectionModel(),&QItemSelectionModel::selectionChanged,[this] { showSelectedImage(); });
@@ -917,11 +921,7 @@ void MViewer::on_actionClear_image_cache_triggered()
 void MViewer::on_actionThumbnails_cloud_changed()
 {
     ThumbnailModel* ptm = dynamic_cast<ThumbnailModel*>(ui->listView->model());
-    if (!ptm) return;
-
-    QStringList lst;
-    for (auto &i : ptm->GetAllImages()) lst.push_back(i.filename);
-    showImageList(lst);
+    if (ptm) updateModelThumbnailSettings(ptm,!(ui->actionThumbnails_cloud->isChecked()));
 }
 
 void MViewer::selectIEFileDialog(bool import)
