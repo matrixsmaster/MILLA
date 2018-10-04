@@ -249,6 +249,7 @@ private:
     QLabel* loadingLabel = nullptr;
 
     bool stop_flag = false;
+    ProgressCB prog_callback;
     double scaleFactor = 1;
     MImageListRecord current_l, current_r;
     QRect selection, selection_scaled;

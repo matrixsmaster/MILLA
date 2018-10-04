@@ -7,6 +7,7 @@ MillaPluginLoader::MillaPluginLoader() : QObject()
     pluginsDir.cd(MILLA_PLUGIN_RELPATH);
 
     for (auto &i : pluginsDir.entryList(QDir::Files)) {
+        qDebug() << "[PLUGINS] Checking " << pluginsDir.absoluteFilePath(i);
         QPluginLoader loader(pluginsDir.absoluteFilePath(i));
         QObject* plugin = loader.instance();
         if (!plugin) continue;

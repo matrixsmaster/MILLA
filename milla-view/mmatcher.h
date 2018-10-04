@@ -15,7 +15,7 @@ public:
     MMatcher(MImageExtras const &to, QString const &fn, int maxresults = 0);
     virtual ~MMatcher() {}
 
-    QStringList LocalMatcher(QList<MImageListRecord> &known, CacheRetrieveCB cb);
+    QStringList LocalMatcher(QList<MImageListRecord> &known, CacheRetrieveCB ccb, ProgressCB pcb);
 
     QStringList GlobalMatcher(ProgressCB cb);
 
@@ -23,6 +23,8 @@ public:
 
 private:
     MImageExtras const &original;
+    cv::Mat orig_hist_norm;
+    bool normalized;
     QString filename;
     int results;
     double orig_area;

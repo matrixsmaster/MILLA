@@ -46,6 +46,13 @@ MViewer::MViewer(QWidget *parent) :
     //Callback function for long processing interrupt button
     connect(stopButton,&QPushButton::clicked,this,[this] { stop_flag = true; });
 
+    //Callback function for progressbar for external processing facilities
+    prog_callback = ([this] (double p) {
+        progressBar->setValue(floor(p));
+        QCoreApplication::processEvents();
+        return !stop_flag;
+    });
+
     //Connect the Star Labels to rating function
     connect(ui->star_1,&StarLabel::clicked,this,[this] { changedStars(1); });
     connect(ui->star_2,&StarLabel::clicked,this,[this] { changedStars(2); });
@@ -59,11 +66,7 @@ MViewer::MViewer(QWidget *parent) :
     //Connect plugins subsystem to main window
     plugins.setViewerContext(MillaPluginContext({ &current_l,ui->scrollArea_2,ui->label_2,this }));
     //List all loaded plugins
-    plugins.addPluginsToMenu(*(ui->menuPlugins), [this] (double p) {
-        progressBar->setValue(floor(p));
-        QCoreApplication::processEvents();
-        return !stop_flag;
-    });
+    plugins.addPluginsToMenu(*(ui->menuPlugins),prog_callback);
 
     //Create the "short-term memory" tab
     MMemoryModel* mmm = new MMemoryModel(loader,ui->listView_4);
@@ -557,17 +560,16 @@ void MViewer::on_actionMatch_triggered()
 
     if (ui->actionGlobal_search->isChecked()) {
         prepareLongProcessing();
-        lst = match.GlobalMatcher([this] (double p) {
-            progressBar->setValue(floor(p));
-            QCoreApplication::processEvents();
-            return !stop_flag;
-        });
+        lst = match.GlobalMatcher(prog_callback);
         prepareLongProcessing(true);
 
     } else {
         ThumbnailModel* ptm = dynamic_cast<ThumbnailModel*>(ui->listView->model());
         if (!ptm) return;
-        lst = match.LocalMatcher(ptm->GetAllImages(),[this] (auto s) { return this->getExtraCacheLine(s); });
+        lst = match.LocalMatcher(ptm->GetAllImages(),[this] (auto s) {
+            this->checkExtraCache();
+            return this->getExtraCacheLine(s);
+        },prog_callback);
     }
 
     searchResults(lst);
@@ -782,11 +784,7 @@ void MViewer::on_actionRefine_search_triggered()
 
     QStringList res;
     prepareLongProcessing();
-    res = db.doParametricSearch(flt,[this] (double p) {
-        progressBar->setValue(floor(p));
-        QCoreApplication::processEvents();
-        return !stop_flag;
-    });
+    res = db.doParametricSearch(flt,prog_callback);
     prepareLongProcessing(true);
 
     if (res.empty())
@@ -960,11 +958,7 @@ void MViewer::selectIEFileDialog(bool import)
 
     //create importer
     MImpExpModule mod(&tags_cache,(ptm? &(ptm->GetAllImages()) : nullptr));
-    mod.setProgressBar([this] (double v) {
-        this->progressBar->setValue(floor(v));
-        QCoreApplication::processEvents();
-        return !stop_flag;
-    });
+    mod.setProgressBar(prog_callback);
 
     //and start the process
     prepareLongProcessing();
@@ -1119,28 +1113,22 @@ void MViewer::on_actionReload_metadata_triggered()
 
 void MViewer::on_actionSanitize_DB_triggered()
 {
-    ProgressCB cb = ([this] (double p) {
-        progressBar->setValue(floor(p));
-        QCoreApplication::processEvents();
-        return !stop_flag;
-    });
-
     //step 0. remove unreachable files
     prepareLongProcessing();
     ui->statusBar->showMessage("Checking files...");
-    db.sanitizeFiles(cb);
+    db.sanitizeFiles(prog_callback);
     prepareLongProcessing(true);
 
     //step 1. check all links
     prepareLongProcessing();
     ui->statusBar->showMessage("Checking links...");
-    db.sanitizeLinks(cb);
+    db.sanitizeLinks(prog_callback);
     prepareLongProcessing(true);
 
     //step 2. renew tags ratings
     prepareLongProcessing();
     ui->statusBar->showMessage("Checking tags...");
-    db.sanitizeTags(cb);
+    db.sanitizeTags(prog_callback);
 
     qDebug() << "[Sanitizer] Done.";
     prepareLongProcessing(true);
@@ -1220,11 +1208,7 @@ void MViewer::on_actionFind_duplicates_triggered()
     prepareLongProcessing();
 
     ui->statusBar->showMessage("Checking for duplicates in DB...");
-    QString report = db.detectExactCopies([this] (double p) {
-        progressBar->setValue(floor(p));
-        QCoreApplication::processEvents();
-        return !stop_flag;
-    });
+    QString report = db.detectExactCopies(prog_callback);
 
     bool abrt = stop_flag;
     prepareLongProcessing(true);
