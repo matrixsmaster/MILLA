@@ -10,11 +10,13 @@
 #include <QSplitter>
 #include <QMenu>
 #include <ctime>
+#include <memory>
 #include "db_format.h"
 #include "shared.h"
 #include "cvhelper.h"
 #include "searchform.h"
 #include "mimageops.h"
+#include "dbcache.h"
 
 typedef QList<std::tuple<QString,unsigned,bool>> MTagsCheckList;
 
@@ -70,11 +72,13 @@ public:
 
     static bool updateFileNotes(QString const &fn, QString &notes);
 
-    static bool createLinkBetweenImages(QByteArray const &left, QByteArray const &right, bool force = false, uint stamp = 0);
+    bool createLinkBetweenImages(QByteArray const &left, QByteArray const &right, bool force = false, uint stamp = 0);
 
-    static bool removeLinkBetweenImages(QByteArray const &left, QByteArray const &right, bool force = false);
+    bool removeLinkBetweenImages(QByteArray const &left, QByteArray const &right, bool force = false);
 
-    static QStringList getLinkedImages(QByteArray const &sha, bool reverse);
+    QStringList getLinkedImages(QByteArray const &sha, bool reverse);
+
+    QStringList getLinkedImages(QString const &fn, bool reverse);
 
     static QStringList tagSearch(MTagCache const &cache, QList<MImageListRecord>* within = nullptr, int maxitems = 0);
 
@@ -84,17 +88,17 @@ public:
 
     static QStringList getAllFiles();
 
-    static QString getFileBySHA(QByteArray const &sha);
+    QString getFileBySHA(QByteArray const &sha);
 
-    static QByteArray getSHAbyFile(QString const &fn);
+    QByteArray getSHAbyFile(QString const &fn);
 
-    static bool removeFile(QString const &fn);
+    bool removeFile(QString const &fn);
 
-    static void sanitizeFiles(ProgressCB progress_cb);
+    void sanitizeFiles(ProgressCB progress_cb);
 
-    static void sanitizeLinks(ProgressCB progress_cb);
+    void sanitizeLinks(ProgressCB progress_cb);
 
-    static void sanitizeTags(ProgressCB progress_cb);
+    void sanitizeTags(ProgressCB progress_cb);
 
     static QString detectExactCopies(ProgressCB progress_cb);
 
@@ -136,10 +140,13 @@ public:
 
     static QString getDBInfoString();
 
+    void invalidateCache();
+
 private:
     std::map<time_t,QAction*> recents;
     QList<MImageListRecord> searchlist;
     QString wintable;
+    std::shared_ptr<DBCache> cache;
 
     bool checkAndCreate(const char *tname, const char *format);
 };

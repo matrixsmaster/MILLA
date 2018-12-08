@@ -20,7 +20,7 @@ MDNNBase::MDNNBase(QString netfile, QString netweights)
             try {
                 tmp = readNetFromCaffe(nettext.toStdString(),netbinary.toStdString());
             } catch (Exception &e) {
-                cout << "OCV exception: " << e.what() << endl;
+                cout << "[DNNBase] OCV exception: " << e.what() << endl;
             }
             if (tmp.empty())
                 QMessageBox::warning(NULL,"Error",QString("Unable to load neural network from %1 : %2").arg(netfile,netweights));
@@ -28,7 +28,7 @@ MDNNBase::MDNNBase(QString netfile, QString netweights)
                 mind = new Net();
                 *mind = tmp;
                 valid = true;
-                qDebug() << "Mind loaded" << mind;
+                qDebug() << "[DNNBase] Virtual mind loaded" << mind;
             }
         } else
             valid = true;
@@ -38,7 +38,7 @@ MDNNBase::MDNNBase(QString netfile, QString netweights)
 MDNNBase::~MDNNBase()
 {
     if ((--inst_cnt <= 0) && (mind)) {
-        qDebug() << "Mind destroyed" << mind;
+        qDebug() << "[DNNBase] Virtual mind destroyed" << mind;
         delete mind;
         mind = nullptr;
         valid = false;

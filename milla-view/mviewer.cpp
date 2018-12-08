@@ -387,7 +387,7 @@ void MViewer::showSelectedImage()
     //check if some time-consuming process is underway, don't use the view timer
     if (!stopButton->isEnabled()) {
         progressBar->setValue(0);
-        ui->statusBar->showMessage("");
+//        ui->statusBar->showMessage("");
         view_timer.start(MILLA_VIEW_TIMER);
     }
 }
@@ -833,12 +833,9 @@ void MViewer::on_actionLink_bidirectional_triggered()
 
 void MViewer::displayLinkedImages(QString const &fn)
 {
-    MImageExtras extr = getExtraCacheLine(fn);
-    if (!extr.valid) return;
-
-    QStringList out = db.getLinkedImages(extr.sha,false);
+    QStringList out = db.getLinkedImages(fn,false);
     if (ui->actionShow_reverse_links->isChecked())
-        out += db.getLinkedImages(extr.sha,true);
+        out += db.getLinkedImages(fn,true);
 
     if (ui->actionExplore_links_tree->isChecked()) {
         QSet<QString> inset, outset = out.toSet();
@@ -862,6 +859,7 @@ void MViewer::displayLinkedImages(QString const &fn)
         out = QStringList::fromSet(outset);
     }
 
+    ui->statusBar->showMessage(QString::asprintf("%i linked images",out.count()));
     resultsPresentation(out,ui->listView_3,MVTAB_LINKS);
     connect(ui->listView_3->selectionModel(),&QItemSelectionModel::selectionChanged,[this] {
         current_r = ui->listView_3->selectionModel()->selectedIndexes().first().data(MImageListModel::FullDataRole).value<MImageListRecord>();
@@ -1130,6 +1128,10 @@ void MViewer::on_actionSanitize_DB_triggered()
     ui->statusBar->showMessage("Checking tags...");
     db.sanitizeTags(prog_callback);
 
+    //step 3. reload cache
+    db.invalidateCache();
+
+    //process complete
     qDebug() << "[Sanitizer] Done.";
     prepareLongProcessing(true);
     ui->statusBar->showMessage("Done");

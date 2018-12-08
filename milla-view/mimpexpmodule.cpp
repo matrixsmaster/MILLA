@@ -66,14 +66,14 @@ bool MImpExpModule::exportStats(ExportFormData const &s, QTextStream &f)
 
     if (s.header) {
         if (s.filename) f << "File name" << s.separator;
-        if (s.views) f << "Views count" << s.separator;
-        if (s.rating) f << "Rating" << s.separator;
-        if (s.likes) f << "Kudos" << s.separator;
-        if (s.tags) f << "Tags" << s.separator;
-        if (s.tagids) f << "Tag IDs" << s.separator;
-        if (s.notes) f << "Notes" << s.separator;
-        if (s.sha) f << "SHA-256" << s.separator;
-        if (s.length) f << "File size" << s.separator;
+        if (s.views)    f << "Views count" << s.separator;
+        if (s.rating)   f << "Rating" << s.separator;
+        if (s.likes)    f << "Kudos" << s.separator;
+        if (s.tags)     f << "Tags" << s.separator;
+        if (s.tagids)   f << "Tag IDs" << s.separator;
+        if (s.notes)    f << "Notes" << s.separator;
+        if (s.sha)      f << "SHA-256" << s.separator;
+        if (s.length)   f << "File size" << s.separator;
         if (s.separator != '\n') f << '\n';
     }
 
@@ -86,14 +86,14 @@ bool MImpExpModule::exportStats(ExportFormData const &s, QTextStream &f)
         q.prepare(DBF_EXPORT_RECORD "file = :fn");
         q.bindValue(":fn",i);
         if (q.exec() && q.next()) {
-            if (s.views) f << q.value(0).toUInt() << s.separator;
-            if (s.rating) f << q.value(1).toInt() << s.separator;
-            if (s.likes) f << q.value(2).toInt() << s.separator;
-            if (s.tags) f << "\"" << tagsLineConvert(q.value(3).toString(),false) << "\"" << s.separator;
-            if (s.tagids) f << "\"" << q.value(3).toString() << "\"" << s.separator;
-            if (s.notes) f << "\"" << q.value(4).toString() << "\"" << s.separator;
-            if (s.sha) f << q.value(5).toByteArray().toHex() << s.separator;
-            if (s.length) f << q.value(6).toUInt() << s.separator;
+            if (s.views)    f << q.value(0).toUInt() << s.separator;
+            if (s.rating)   f << q.value(1).toInt() << s.separator;
+            if (s.likes)    f << q.value(2).toInt() << s.separator;
+            if (s.tags)     f << "\"" << tagsLineConvert(q.value(3).toString(),false) << "\"" << s.separator;
+            if (s.tagids)   f << "\"" << q.value(3).toString() << "\"" << s.separator;
+            if (s.notes)    f << "\"" << q.value(4).toString() << "\"" << s.separator;
+            if (s.sha)      f << q.value(5).toByteArray().toHex() << s.separator;
+            if (s.length)   f << q.value(6).toUInt() << s.separator;
         }
 
         if (s.separator != '\n') f << '\n';
@@ -126,17 +126,17 @@ bool MImpExpModule::exportStories(ExportFormData const &s, QTextStream &f)
 {
     QSqlQuery q;
     if (s.header) {
-        if (s.story_update) f << "Updated" << s.separator;
-        if (s.story_title) f << "Title" << s.separator;
-        if (s.story_actions) f << "Actions" << s.separator;
+        if (s.story_update)   f << "Updated" << s.separator;
+        if (s.story_title)    f << "Title" << s.separator;
+        if (s.story_actions)  f << "Actions" << s.separator;
         if (s.separator != '\n') f << '\n';
     }
 
     if (!q.exec("SELECT updated, title, actions FROM stories")) return false;
     while (q.next()) {
-        if (s.story_update) f << q.value(0).toUInt() << s.separator;
-        if (s.story_title) f << q.value(1).toString() << s.separator;
-        if (s.story_actions) f << '\"' << q.value(2).toString() << '\"' << s.separator;
+        if (s.story_update)   f << q.value(0).toUInt() << s.separator;
+        if (s.story_title)    f << q.value(1).toString() << s.separator;
+        if (s.story_actions)  f << '\"' << q.value(2).toString() << '\"' << s.separator;
         if (s.separator != '\n') f << '\n';
     }
 
@@ -148,8 +148,8 @@ bool MImpExpModule::exportLinks(ExportFormData const &s, QTextStream &f)
     QSqlQuery q;
     if (s.header) {
         if (s.link_created) f << "Created" << s.separator;
-        if (s.link_left) f << "Left_side" << s.separator;
-        if (s.link_right) f << "Right_side" << s.separator;
+        if (s.link_left)    f << "Left_side" << s.separator;
+        if (s.link_right)   f << "Right_side" << s.separator;
         if (s.separator != '\n') f << '\n';
     }
 
@@ -180,6 +180,7 @@ bool MImpExpModule::dataImport(ExportFormData const &d, QTextStream &f, InitRecC
 {
     QSqlQuery q;
     bool ok;
+    DBHelper dbh;
 
     //calculate number of fileds we expect in the input file
     int m = 0;
@@ -337,7 +338,7 @@ bool MImpExpModule::dataImport(ExportFormData const &d, QTextStream &f, InitRecC
             if (ostories.contains(stit) && d.imp_noover) continue; //don't overwrite existing story
             ix = d.story_update? 2:1;
             QString act = removeQuotes(sl.at(ix));
-            ok = DBHelper::updateStory(stit,act,d.story_update? sl.at(0).toUInt():0);
+            ok = dbh.updateStory(stit,act,d.story_update? sl.at(0).toUInt():0);
 
             qDebug() << "[IMPEXP] Import story data: " << ok;
 
@@ -347,7 +348,7 @@ bool MImpExpModule::dataImport(ExportFormData const &d, QTextStream &f, InitRecC
 
             QByteArray lft = QByteArray::fromHex(sl.at(ix).toLatin1());
             QByteArray rgh = QByteArray::fromHex(sl.at(++ix).toLatin1());
-            ok = DBHelper::createLinkBetweenImages(lft,rgh,!d.imp_noover,d.link_created? sl.at(0).toUInt():0);
+            ok = dbh.createLinkBetweenImages(lft,rgh,!d.imp_noover,d.link_created? sl.at(0).toUInt():0);
 
             qDebug() << "[IMPEXP] Import link data: " << ok;
         }

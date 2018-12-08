@@ -1,16 +1,19 @@
 #include "dbhelper.h"
 #include "mmatcher.h"
 
-static int instance = 0;
+static int m_instance = 0;
+static std::shared_ptr<DBCache> m_cache;
 
 DBHelper::DBHelper() : QObject()
 {
-    instance++;
+    if (m_instance++)
+        cache = m_cache;
 }
 
 DBHelper::~DBHelper()
 {
-    if (--instance == 0) {
+    if (--m_instance == 0) {
+        cache.reset();
         QSqlDatabase::database().close();
         qDebug() << "[db] Database closed";
     }
@@ -55,6 +58,8 @@ bool DBHelper::initDatabase()
     for (auto &i : tabs) {
         if (!checkAndCreate(i.first,i.second)) return false;
     }
+
+    invalidateCache();
 
     return ok;
 }
@@ -497,6 +502,7 @@ bool DBHelper::createLinkBetweenImages(QByteArray const &left, QByteArray const 
     ok = q.exec();
 
     qDebug() << "[db] Inserting link: " << ok;
+    if (ok && cache) cache->addLink(left,right);
     return ok;
 }
 
@@ -522,31 +528,43 @@ bool DBHelper::removeLinkBetweenImages(QByteArray const &left, QByteArray const 
     ok = q.exec();
 
     qDebug() << "[db] Removing link: " << ok;
+    if (ok && cache) cache->removeLink(left,right);
     return ok;
 }
 
 QStringList DBHelper::getLinkedImages(QByteArray const &sha, bool reverse)
 {
     QStringList out;
-    QSqlQuery q;
 
-    if (reverse) q.prepare("SELECT left FROM links WHERE right = :sha");
-    else q.prepare("SELECT right FROM links WHERE left = :sha");
+    if (!cache) {
+        QSqlQuery q;
 
-    q.bindValue(":sha",sha);
-    if (!q.exec()) return out;
+        if (reverse) q.prepare("SELECT left FROM links WHERE right = :sha");
+        else q.prepare("SELECT right FROM links WHERE left = :sha");
 
-    while (q.next()) {
-        if (!q.value(0).canConvert(QVariant::ByteArray)) continue;
+        q.bindValue(":sha",sha);
+        if (!q.exec()) return out;
 
-        QSqlQuery qq;
-        qq.prepare("SELECT file FROM stats WHERE sha256 = :sha");
-        qq.bindValue(":sha",q.value(0).toByteArray());
-        if (qq.exec() && qq.next())
-            out.push_back(qq.value(0).toString());
-    }
+        while (q.next()) {
+            if (!q.value(0).canConvert(QVariant::ByteArray)) continue;
+
+            QSqlQuery qq;
+            qq.prepare("SELECT file FROM stats WHERE sha256 = :sha");
+            qq.bindValue(":sha",q.value(0).toByteArray());
+            if (qq.exec() && qq.next())
+                out.push_back(qq.value(0).toString());
+        }
+
+    } else
+        out = cache->getLinkedTo(sha,reverse);
 
     return out;
+}
+
+QStringList DBHelper::getLinkedImages(QString const &fn, bool reverse)
+{
+    if (!cache) return QStringList();
+    return cache->getLinkedTo(fn,reverse);
 }
 
 QStringList DBHelper::tagSearch(MTagCache const &cache, QList<MImageListRecord>* within, int maxitems)
@@ -776,23 +794,31 @@ QStringList DBHelper::getAllFiles()
 
 QString DBHelper::getFileBySHA(QByteArray const &sha)
 {
-    QSqlQuery q;
-    q.prepare("SELECT file FROM stats WHERE sha256 = :sha");
-    q.bindValue(":sha",sha);
-    if (!q.exec() || !q.next()) return QString();
+    if (!cache) {
+        QSqlQuery q;
+        q.prepare("SELECT file FROM stats WHERE sha256 = :sha");
+        q.bindValue(":sha",sha);
+        if (!q.exec() || !q.next()) return QString();
 
-    qDebug() << "[db] File found by SHA-256: " << q.value(0).toString();
-    return q.value(0).toString();
+        qDebug() << "[db] File found by SHA-256: " << q.value(0).toString();
+        return q.value(0).toString();
+    }
+
+    return cache->getFilenameBySHA(sha);
 }
 
 QByteArray DBHelper::getSHAbyFile(QString const &fn)
 {
-    QSqlQuery q;
-    q.prepare("SELECT sha256 FROM stats WHERE file = :fn");
-    q.bindValue(":fn",fn);
-    if (!q.exec() || !q.next() || !q.value(0).canConvert<QByteArray>()) return QByteArray();
+    if (!cache) {
+        QSqlQuery q;
+        q.prepare("SELECT sha256 FROM stats WHERE file = :fn");
+        q.bindValue(":fn",fn);
+        if (!q.exec() || !q.next() || !q.value(0).canConvert<QByteArray>()) return QByteArray();
 
-    return q.value(0).toByteArray();
+        return q.value(0).toByteArray();
+    }
+
+    return cache->getSHAbyFilename(fn);
 }
 
 bool DBHelper::removeFile(QString const &fn)
@@ -806,12 +832,15 @@ bool DBHelper::removeFile(QString const &fn)
     bool ok1 = q.exec();
     qDebug() << "[db] Removing file " << fn << " from stats: " << ok1;
 
-    //...and from thumbnails table too
+    //...and from thumbnails table too...
     q.clear();
     q.prepare("DELETE FROM thumbs WHERE file = :fn");
     q.bindValue(":fn",fn);
     bool ok2 = q.exec();
     qDebug() << "[db] Removing file " << fn << " from thumbs: " << ok2;
+
+    //...and from cache
+    if (cache) cache->removeFile(fn);
 
     return (ok1 || ok2);
 }
@@ -1356,4 +1385,11 @@ QString DBHelper::getDBInfoString()
     unsigned links = q.value(0).toUInt();
 
     return QString::asprintf("DB: %u stat records; %u links; %lli %ciB",stat,links,sz,prf);
+}
+
+void DBHelper::invalidateCache()
+{
+    cache.reset(new DBCache());
+    m_cache = cache;
+    qDebug() << "[db] Cache invalidated";
 }

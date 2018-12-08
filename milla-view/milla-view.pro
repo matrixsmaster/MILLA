@@ -34,7 +34,8 @@ SOURCES += main.cpp\
     listeditor.cpp \
     mdnnbase.cpp \
     mcolornet.cpp \
-    aboutbox.cpp
+    aboutbox.cpp \
+    dbcache.cpp
 
 HEADERS  += mviewer.h \
     thumbnailmodel.h \
@@ -59,7 +60,8 @@ HEADERS  += mviewer.h \
     listeditor.h \
     mdnnbase.h \
     mcolornet.h \
-    aboutbox.h
+    aboutbox.h \
+    dbcache.h
 
 FORMS    += mviewer.ui \
     searchform.ui \

@@ -260,7 +260,8 @@ QString MImageOps::serializeFileRecord(const MImageListRecord &rec, int link)
     QTextStream ss(&s);
 
     if (!rec.generated) {
-        QByteArray sha = DBHelper::getSHAbyFile(rec.filename);
+        DBHelper dbh;
+        QByteArray sha = dbh.getSHAbyFile(rec.filename);
         if (sha.isEmpty()) {
             qDebug() << "Unable to get SHA-256 for " << rec.filename;
             return rec.filename;
@@ -314,8 +315,9 @@ bool MImageOps::deserializeFileRecord(MImageListRecord &rec, int link)
 
     default: //by SHA-256 sum
     {
+        DBHelper dbh;
         QByteArray sha = QByteArray::fromHex(rec.filename.toLatin1());
-        rec.filename = DBHelper::getFileBySHA(sha);
+        rec.filename = dbh.getFileBySHA(sha);
     }
         break;
     }
