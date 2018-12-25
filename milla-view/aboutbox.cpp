@@ -29,10 +29,10 @@ void AboutBox::showEvent(QShowEvent* /*ev*/)
     //Draw "Debug build" string on the logo
     QImage over(ui->label->pixmap()->toImage());
     QPainter paint(&over);
-    paint.rotate(63);
+    paint.rotate(60);
     paint.setPen(Qt::white);
     paint.setFont(QFont("Noto Sans",37,QFont::Bold));
-    paint.drawText(170,-30,"DEBUG BUILD");
+    paint.drawText(170,-50,"DEBUG BUILD");
     ui->label->setPixmap(QPixmap::fromImage(over));
 #endif
 
