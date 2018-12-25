@@ -77,10 +77,10 @@ void SGUIPlugin::fireUp()
     vfs = new VFS(info.vfs_fn.toStdString(),true);
     vfs->setReadOnly(true);
 
-    sgui = new SGUI(vfs,vfs,this);
+    sgui = new SGUI(vfs,this);
     //sgui->setFrameskip(true);
 
-    if (!sgui->setScript(info.startup.toStdString().c_str(),false,true,true)) {
+    if (!sgui->setScriptF(info.startup.toStdString().c_str(),false,true,true)) {
         qDebug() << "[SGUIPlugin] Unable to load startup script " << info.startup;
         cleanUp();
         return;

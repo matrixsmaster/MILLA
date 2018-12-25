@@ -14,12 +14,13 @@ DBHelper::~DBHelper()
 {
     if (--m_instance == 0) {
         cache.reset();
+        m_cache.reset();
         QSqlDatabase::database().close();
         qDebug() << "[db] Database closed";
     }
 }
 
-bool DBHelper::initDatabase()
+bool DBHelper::initDatabase(ProgressCB progress_cb)
 {
     QSqlDatabase db = QSqlDatabase::addDatabase("QSQLITE");
 
@@ -59,7 +60,8 @@ bool DBHelper::initDatabase()
         if (!checkAndCreate(i.first,i.second)) return false;
     }
 
-    invalidateCache();
+    cache.reset(new DBCache(progress_cb));
+    m_cache = cache;
 
     return ok;
 }
@@ -1389,7 +1391,7 @@ QString DBHelper::getDBInfoString()
 
 void DBHelper::invalidateCache()
 {
-    cache.reset(new DBCache());
+    cache.reset(new DBCache(nullptr));
     m_cache = cache;
     qDebug() << "[db] Cache invalidated";
 }

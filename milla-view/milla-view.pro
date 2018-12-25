@@ -35,7 +35,8 @@ SOURCES += main.cpp\
     mdnnbase.cpp \
     mcolornet.cpp \
     aboutbox.cpp \
-    dbcache.cpp
+    dbcache.cpp \
+    splashscreen.cpp
 
 HEADERS  += mviewer.h \
     thumbnailmodel.h \
@@ -61,14 +62,16 @@ HEADERS  += mviewer.h \
     mdnnbase.h \
     mcolornet.h \
     aboutbox.h \
-    dbcache.h
+    dbcache.h \
+    splashscreen.h
 
 FORMS    += mviewer.ui \
     searchform.ui \
     exportform.ui \
     storyselector.ui \
     listeditor.ui \
-    aboutbox.ui
+    aboutbox.ui \
+    splashscreen.ui
 
 CONFIG   += c++14
 QMAKE_CXXFLAGS  += -Wextra

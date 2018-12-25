@@ -1,16 +1,27 @@
 #include <QDebug>
 #include "dbcache.h"
 
-DBCache::DBCache()
+DBCache::DBCache(ProgressCB progress_cb)
 {
-    QSqlQuery q;
+    QSqlQuery q,qa;
+    double prg, dp;
 
-    if (!q.exec("SELECT file, sha256 FROM stats")) {
+    qDebug() << "[DBCache] Cache created";
+    if (!(qa.exec("SELECT COUNT(file) FROM stats") && qa.next()) || !q.exec("SELECT file, sha256 FROM stats")) {
         qDebug() << "[DBCache] Unable to load stats table, giving up";
         return;
     }
 
+    prg = 0;
+    dp = 100.f / (double)(qa.value(0).toUInt());
+    size_t n = 0; //FIXME: debug only
+    qDebug() << "[DBCache] Starting cache filling process...";
+
     while (q.next()) {
+        qDebug() << "[DBCache] " << n++; //FIXME: debug only
+        prg += dp;
+        if (progress_cb && !progress_cb(prg)) break;
+
         QString fn = q.value(0).toString();
         QString sha = q.value(1).toByteArray().toHex();
         cache_names_forward[fn] = sha;
@@ -33,6 +44,11 @@ DBCache::DBCache()
     }
 
     qDebug() << "[DBCache] links cache populated, " << cache_links_forward.size()*2 << " entries";
+}
+
+DBCache::~DBCache()
+{
+    qDebug() << "[DBCache] Destroyed";
 }
 
 void DBCache::addFile(QString const &fn, QByteArray const &sha)

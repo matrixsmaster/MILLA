@@ -12,8 +12,8 @@
 class DBCache
 {
 public:
-    DBCache();
-    virtual ~DBCache() {}
+    DBCache(ProgressCB progress_cb);
+    virtual ~DBCache();
 
     void addFile(QString const &fn, QByteArray const &sha);
     void removeFile(QString const &fn);

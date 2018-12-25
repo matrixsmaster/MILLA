@@ -2,21 +2,30 @@
 #include "ui_mviewer.h"
 #include "searchform.h"
 #include "aboutbox.h"
+#include "splashscreen.h"
 
-MViewer::MViewer(QWidget *parent) :
-    QMainWindow(parent),
-    ui(new Ui::MViewer)
+MViewer::MViewer(QWidget *parent) : QMainWindow(parent)
 {
+    ui = new Ui::MViewer();
     ui->setupUi(this); //create the actual form
 
+    //Prepare the splash sccreen
+    SplashScreen* sscp = new SplashScreen();
+    sscp->show();
+    QCoreApplication::processEvents();
+
     //Load the database
-    if (!db.initDatabase()) {
+    if (!db.initDatabase([sscp] (double p) { return sscp->setProgress(p); } )) {
         QMessageBox::critical(this, tr("Fatal error"), tr("Unable to initialize database"));
         qDebug() << "FATAL: Unable to initialize database " DB_FILEPATH;
 
         //in case of failure, we can't proceed, so we use the view timer as auto-close event generator
         connect(&view_timer,&QTimer::timeout,this,[this] { QApplication::exit(1); });
         view_timer.start(2);
+
+        //remove splash screen
+        sscp->hide();
+        delete sscp;
         return;
     }
 
@@ -107,6 +116,10 @@ MViewer::MViewer(QWidget *parent) :
     status_pending = "[" + db.getDBInfoString() + "]";
     ui->statusBar->showMessage(status_pending);
     status_pending += " Current dir: ";
+
+    //Remove splash screen
+    sscp->hide();
+    delete sscp;
 }
 
 MViewer::~MViewer()
@@ -148,6 +161,7 @@ void MViewer::cleanUp()
     ui->label_2->setPixmap(QPixmap());
     ui->label_3->clear();
     ui->label_4->clear();
+    ui->plainTextEdit->clear();
 
     updateTags();
     updateStars();

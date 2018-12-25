@@ -6,8 +6,8 @@ using namespace std;
 
 int main(int argc, char *argv[])
 {
-    cout << MILLA_CLI_BANNER " ver. " MILLA_VERSION << endl;
-    cout << "(C) Dmitry 'MatrixS_Master' Soloviov, 2018. All rights reserved." << endl;
+    cout << MILLA_CLI_BANNER MILLA_VERSION << endl;
+    cout << MILLA_CLI_COPYRIGHT << endl;
 
     QApplication a(argc, argv);
     setlocale(LC_NUMERIC,"C");

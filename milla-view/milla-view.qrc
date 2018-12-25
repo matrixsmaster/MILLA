@@ -5,5 +5,7 @@
         <file>milla.png</file>
         <file>loading_icon.gif</file>
         <file>license.txt</file>
+        <file>splash_01.png</file>
+        <file>splash_02.png</file>
     </qresource>
 </RCC>
