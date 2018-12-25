@@ -53,14 +53,14 @@
    </property>
    <property name="font">
     <font>
-     <family>Serif</family>
+     <family>Norasi</family>
      <pointsize>20</pointsize>
      <weight>75</weight>
      <bold>true</bold>
     </font>
    </property>
    <property name="text">
-    <string>MILLA</string>
+    <string>M i L L A</string>
    </property>
    <property name="scaledContents">
     <bool>true</bool>
@@ -84,7 +84,7 @@
     </font>
    </property>
    <property name="text">
-    <string>Image Viewer</string>
+    <string>image viewer</string>
    </property>
    <property name="alignment">
     <set>Qt::AlignCenter</set>

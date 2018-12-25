@@ -118,9 +118,9 @@
      <colorrole role="Base">
       <brush brushstyle="SolidPattern">
        <color alpha="255">
-        <red>215</red>
-        <green>102</green>
-        <blue>255</blue>
+        <red>131</red>
+        <green>69</green>
+        <blue>153</blue>
        </color>
       </brush>
      </colorrole>
@@ -145,8 +145,8 @@
      <colorrole role="Highlight">
       <brush brushstyle="SolidPattern">
        <color alpha="255">
-        <red>203</red>
-        <green>0</green>
+        <red>255</red>
+        <green>255</green>
         <blue>255</blue>
        </color>
       </brush>
@@ -264,9 +264,9 @@
      <colorrole role="Base">
       <brush brushstyle="SolidPattern">
        <color alpha="255">
-        <red>215</red>
-        <green>102</green>
-        <blue>255</blue>
+        <red>131</red>
+        <green>69</green>
+        <blue>153</blue>
        </color>
       </brush>
      </colorrole>
@@ -291,8 +291,8 @@
      <colorrole role="Highlight">
       <brush brushstyle="SolidPattern">
        <color alpha="255">
-        <red>203</red>
-        <green>0</green>
+        <red>255</red>
+        <green>255</green>
         <blue>255</blue>
        </color>
       </brush>
@@ -474,7 +474,7 @@
    </palette>
   </property>
   <property name="windowTitle">
-   <string>Splash</string>
+   <string notr="true">MiLLA</string>
   </property>
   <property name="windowIcon">
    <iconset resource="milla-view.qrc">
@@ -550,17 +550,30 @@
   <widget class="QProgressBar" name="progressBar">
    <property name="geometry">
     <rect>
-     <x>190</x>
-     <y>570</y>
-     <width>291</width>
-     <height>23</height>
+     <x>150</x>
+     <y>580</y>
+     <width>321</width>
+     <height>15</height>
     </rect>
    </property>
    <property name="value">
-    <number>60</number>
+    <number>0</number>
    </property>
    <property name="textVisible">
     <bool>false</bool>
+   </property>
+  </widget>
+  <widget class="QLabel" name="label_3">
+   <property name="geometry">
+    <rect>
+     <x>150</x>
+     <y>560</y>
+     <width>321</width>
+     <height>20</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Initializing...</string>
    </property>
   </widget>
  </widget>

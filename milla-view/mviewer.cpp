@@ -12,7 +12,7 @@ MViewer::MViewer(QWidget *parent) : QMainWindow(parent)
     //Prepare the splash sccreen
     SplashScreen* sscp = new SplashScreen();
     sscp->show();
-    QCoreApplication::processEvents();
+    sscp->postShow();
 
     //Load the database
     if (!db.initDatabase([sscp] (double p) { return sscp->setProgress(p); } )) {

@@ -14,11 +14,9 @@ DBCache::DBCache(ProgressCB progress_cb)
 
     prg = 0;
     dp = 100.f / (double)(qa.value(0).toUInt());
-    size_t n = 0; //FIXME: debug only
     qDebug() << "[DBCache] Starting cache filling process...";
 
     while (q.next()) {
-        qDebug() << "[DBCache] " << n++; //FIXME: debug only
         prg += dp;
         if (progress_cb && !progress_cb(prg)) break;
 
