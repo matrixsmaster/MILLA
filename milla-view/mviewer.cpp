@@ -491,6 +491,7 @@ void MViewer::leftImageMetaUpdate()
     if (current_l.valid && !current_l.generated) {
         updateTags(current_l.filename);
         updateStars(current_l.filename);
+
         if (ui->actionShow_linked_image->isChecked())
             displayLinkedImages(current_l.filename);
 
@@ -498,6 +499,9 @@ void MViewer::leftImageMetaUpdate()
         ui->lcdNumber->display((double)db.getFileViews(current_l.filename,ok));
         if (ok) ui->plainTextEdit->setPlainText(db.getFileNotes(current_l.filename));
         else ui->plainTextEdit->clear();
+
+        if (!ui->plainTextEdit->toPlainText().isEmpty())
+            ui->tabWidget->setCurrentIndex(MVTAB_NOTES);
     }
     kudos(current_l,0);
     ui->radio_settags->setChecked(true);
@@ -1670,6 +1674,8 @@ void MViewer::linkageAction(bool link)
         if (db.removeLinkBetweenImages(extl.sha,extr.sha)) ui->statusBar->showMessage("Unlinked");
         else ui->statusBar->showMessage("Unable to unlink images");
     }
+
+    if (ui->actionShow_linked_image->isChecked()) displayLinkedImages(current_l.filename);
 }
 
 void MViewer::on_actionUnlink_images_triggered()
