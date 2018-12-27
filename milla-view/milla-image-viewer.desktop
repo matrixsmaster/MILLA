@@ -2,7 +2,7 @@
 Name=MILLA Image Viewer
 Comment=A viewer with extended functionality for search and matching
 Exec=/opt/milla/bin/milla-view %F
-Icon=/opt/milla/share/icons/milla.png
+Icon=/opt/milla/share/icons/milla-icon.png
 Terminal=false
 Type=Application
 Categories=Qt;Graphics;RasterGraphics;Viewer;2DGraphics;

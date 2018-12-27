@@ -16,6 +16,10 @@
   <property name="windowTitle">
    <string>List</string>
   </property>
+  <property name="windowIcon">
+   <iconset resource="milla-view.qrc">
+    <normaloff>:/milla-icon.png</normaloff>:/milla-icon.png</iconset>
+  </property>
   <layout class="QGridLayout" name="gridLayout">
    <item row="1" column="1">
     <layout class="QVBoxLayout" name="verticalLayout">
@@ -74,7 +78,9 @@
    </item>
   </layout>
  </widget>
- <resources/>
+ <resources>
+  <include location="milla-view.qrc"/>
+ </resources>
  <connections>
   <connection>
    <sender>buttonBox</sender>

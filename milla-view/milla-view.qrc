@@ -7,5 +7,6 @@
         <file>license.txt</file>
         <file>splash_01.png</file>
         <file>splash_02.png</file>
+        <file>milla-icon.png</file>
     </qresource>
 </RCC>

@@ -16,6 +16,10 @@
   <property name="windowTitle">
    <string>Player settings</string>
   </property>
+  <property name="windowIcon">
+   <iconset resource="../milla-view/milla-view.qrc">
+    <normaloff>:/milla-icon.png</normaloff>:/milla-icon.png</iconset>
+  </property>
   <layout class="QGridLayout" name="gridLayout">
    <item row="3" column="2">
     <widget class="QDialogButtonBox" name="buttonBox">
@@ -64,7 +68,9 @@
   </layout>
  </widget>
  <layoutdefault spacing="6" margin="11"/>
- <resources/>
+ <resources>
+  <include location="../milla-view/milla-view.qrc"/>
+ </resources>
  <connections>
   <connection>
    <sender>buttonBox</sender>

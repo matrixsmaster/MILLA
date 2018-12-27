@@ -478,7 +478,7 @@
   </property>
   <property name="windowIcon">
    <iconset resource="milla-view.qrc">
-    <normaloff>:/milla.png</normaloff>:/milla.png</iconset>
+    <normaloff>:/milla-icon.png</normaloff>:/milla-icon.png</iconset>
   </property>
   <property name="modal">
    <bool>true</bool>
