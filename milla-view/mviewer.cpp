@@ -1639,7 +1639,7 @@ void MViewer::on_actionOpen_with_triggered()
 void MViewer::on_actionEdit_exclusion_list_triggered()
 {
     ListEditor dlg;
-    dlg.setTextLabel("Add or remove text fragments, which will exclude particular paths from search list once they're found in that paths.");
+    dlg.setTextLabel(tr("Add or remove text fragments, which will exclude particular paths from search list once they're found in that paths."));
     dlg.setList(DBHelper::getExtraStringVal(DBF_EXTRA_EXCLUSION_LIST).split(';',QString::SkipEmptyParts));
 
     if (dlg.exec())
