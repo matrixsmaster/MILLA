@@ -21,11 +21,11 @@ CVHelper::~CVHelper()
 Mat CVHelper::quickConvert(QImage &in) //FIXME: not always working
 {
     if (in.format() != QImage::Format_RGB888) {
-        qDebug() << "Converting";
+        qDebug() << "[CVHelper] Converting";
         try {
             in = in.convertToFormat(QImage::Format_RGB888);
         } catch(...) {
-            qDebug() << "Error converting";
+            qDebug() << "[CVHelper] Error converting";
             return Mat();
         }
     }
@@ -36,11 +36,11 @@ Mat CVHelper::slowConvert(QImage const &in)
 {
     QImage n;
     if (in.format() != QImage::Format_RGB888) {
-        qDebug() << "Converting";
+        qDebug() << "[CVHelper] Converting";
         try {
             n = in.convertToFormat(QImage::Format_RGB888);
         } catch(...) {
-            qDebug() << "Error converting";
+            qDebug() << "[CVHelper] Error converting";
             return Mat();
         }
     } else
@@ -65,11 +65,11 @@ QImage CVHelper::quickConvertBack(Mat &in)
     try {
         //TODO: Use Mat::reshape()
         if (in.type() != CV_8UC4) {
-            qDebug() << "Converting";
+            qDebug() << "[CVHelper] Converting";
             in.convertTo(in,CV_8UC4);
         }
     } catch(...) {
-        qDebug() << "Error converting";
+        qDebug() << "[CVHelper] Error converting";
         return n;
     }
     memcpy(n.bits(),in.ptr(),in.cols*in.rows*4);
@@ -81,11 +81,11 @@ QImage CVHelper::slowConvertBack(Mat &in)
     QImage n(in.cols,in.rows,QImage::Format_RGB888);
     try {
         if (in.type() != CV_8UC3) {
-            qDebug() << "Converting";
+            qDebug() << "[CVHelper] Converting";
             in.convertTo(in,CV_8UC3);
         }
     } catch(...) {
-        qDebug() << "Error converting";
+        qDebug() << "[CVHelper] Error converting";
         return n;
     }
 
@@ -143,7 +143,7 @@ Mat CVHelper::loadMat(QByteArray const &arr)
     uptr = (const size_t*)iptr;
     size_t tot = *uptr;
     if (tot != res.elemSize() * res.total()) {
-        qDebug() << "ALERT: matrix size invalid";
+        qDebug() << "[CVHelper] ALERT: matrix size invalid";
         return res;
     }
     uptr++;
@@ -165,7 +165,7 @@ Mat CVHelper::getHist(Mat &in)
     try {
         calcHist(&in,1,channels,Mat(),out,3,histSize,ranges,true,false);
     } catch(...) {
-        qDebug() << "Error creating histogram";
+        qDebug() << "[CVHelper] Error creating histogram";
     }
 
     return out;
@@ -211,7 +211,7 @@ MImageExtras CVHelper::collectImageExtraData(QString const &fn, QPixmap const &o
             for (int kk = 0; kk < in.cols && !res.color; kk++) {
                 if (_ptr[0] != _ptr[1] || _ptr[1] != _ptr[2] || _ptr[2] != _ptr[0]) {
                     res.color = true;
-                    qDebug() << "[grsdetect] Deep scan mismatch: " << _ptr[0] << _ptr[1] << _ptr[2];
+                    qDebug() << "[CVHelper] Gray detect: Deep scan mismatch: " << _ptr[0] << _ptr[1] << _ptr[2];
                 }
                 _ptr += 3;
             }
@@ -294,10 +294,10 @@ Vec3b CVHelper::determineMainColor(cv::Mat const &in)
         tmp.at<Vec3b>(0,0) = Vec3b(pmax.y*6,pmax.x*8,255);
         cvtColor(tmp,tmp,COLOR_HSV2BGR);
         r = tmp.at<Vec3b>(0,0);
-        qDebug() << r[2] << r[1] << r[0];
+        qDebug() << "[CVHelper] Main Color:" << r[2] << r[1] << r[0];
 
     } catch (Exception &e) {
-        std::cout << "OCV exception: " << e.what() << std::endl;
+        std::cout << "[CVHelper] OCV exception: " << e.what() << std::endl;
     }
     return r;
 }
@@ -325,7 +325,7 @@ Vec3b CVHelper::determineMediumColor(cv::Mat const &in)
     for (int k = 0; k < 3; k++)
         r[k] = floor(vr[k] / static_cast<double>(in.rows*in.cols));
 
-    qDebug() << r[2] << r[1] << r[0];
+    qDebug() << "[CVHelper] Medium Color:" << r[2] << r[1] << r[0];
     return r;
 }
 
@@ -343,7 +343,7 @@ QPixmap CVHelper::colorToGrayscale(QPixmap const &img)
         cvtColor(in,out,COLOR_BGR2GRAY);
         cvtColor(out,in,COLOR_GRAY2BGR);
     } catch(...) {
-        qDebug() << "OCV Error";
+        qDebug() << "[CVHelper] OCV Error";
     }
     return QPixmap::fromImage(slowConvertBack(in));
 }

@@ -1,23 +1,21 @@
 #include <QDebug>
 #include <QPainter>
 #include <QFile>
+#include <QDesktopWidget>
 #include <opencv2/opencv.hpp>
 #include "aboutbox.h"
 #include "ui_aboutbox.h"
 #include "shared.h"
 #include "dbhelper.h"
+#include "cvhelper.h"
 #include "mmatcher.h"
-
-
-//TODO: tidy this mess up a bit
 
 AboutBox::AboutBox(QWidget *parent) :
     QDialog(parent),
     ui(new Ui::AboutBox)
 {
     ui->setupUi(this);
-//    timer = nullptr;
-//    busy = false;
+    setGeometry(QStyle::alignedRect(Qt::LeftToRight,Qt::AlignCenter,size(),qApp->desktop()->availableGeometry()));
 }
 
 AboutBox::~AboutBox()
@@ -59,24 +57,13 @@ void AboutBox::prepareLogo()
     quads.clear();
     QPixmap logo = *ui->label->pixmap();//->scaled(ui->label->size(),Qt::KeepAspectRatio,Qt::SmoothTransformation);
     if (!logo.isNull()) {
-        qDebug() << logo.width() << logo.height();
         quad_size.setX(logo.width() / MILLA_ABOUT_MOSAIC_SIZE);
         quad_size.setY(logo.height() / MILLA_ABOUT_MOSAIC_SIZE);
-        qDebug() << quad_size.x() << quad_size.y();
         for (int y = 0; y < quad_size.y(); y++) {
             for (int x = 0; x < quad_size.x(); x++) {
                 QRect r(x*MILLA_ABOUT_MOSAIC_SIZE,y*MILLA_ABOUT_MOSAIC_SIZE,MILLA_ABOUT_MOSAIC_SIZE,MILLA_ABOUT_MOSAIC_SIZE);
-#if 1
                 QColor c = CVHelper::determineMediumColor(logo,r);
-                qDebug() << r << c;
                 quads.push_back(std::pair<QColor,int>(c,MILLA_ABOUT_MOSAIC_MAXDIFF));
-#else
-                QPixmap rp = logo.copy(r);
-                std::pair<cv::Mat,double> c;
-                c.first = CVHelper::getHist(rp);
-                c.second = MILLA_ABOUT_MOSAIC_MINDIFF;
-                quads.push_back(c);
-#endif
             }
         }
     }
@@ -101,7 +88,6 @@ void AboutBox::showEvent(QShowEvent* ev)
     fl.close();
 
     //get the list of all files and start the timer
-//    timer = new QTimer();
     files = DBHelper::getAllFiles();
     if (!files.isEmpty()) {
         connect(&timer,&QTimer::timeout,this,[this] { this->Mosaic(); });
@@ -111,23 +97,9 @@ void AboutBox::showEvent(QShowEvent* ev)
     //prepare the mutatable logo
     prepareLogo();
 
-    //add stopper
-//    connect(this,&QDialog::finished,this,[this] { this->Stop(); });
-
     //ok, we're done
     ev->accept();
 }
-
-#if 0
-void AboutBox::Stop()
-{
-//    if (!timer) return;
-//    timer.stop();
-//    delete timer;
-//    timer = nullptr;
-    qDebug() << "Stopped";
-}
-#endif
 
 void AboutBox::Mosaic()
 {
@@ -135,8 +107,6 @@ void AboutBox::Mosaic()
         prepareLogo();
         return;
     }
-
-//    busy = true;
 
     int idx;
     do {
@@ -146,48 +116,33 @@ void AboutBox::Mosaic()
 
     MImageListRecord rec;
     rec.filename = files.at(idx);
-    if (!DBHelper::getThumbnail(rec)) {
-//        busy = false;
-        return;
+    if (!DBHelper::getThumbnail(rec)) return;
+
+    QRect trct = rec.thumb.rect();
+    if (trct.width() > trct.height()) {
+        trct.setLeft((trct.width()-trct.height())/2);
+        trct.setWidth(trct.height());
+    } else {
+        trct.setTop((trct.height()-trct.width())/2);
+        trct.setHeight(trct.width());
     }
-
-#if 1
-    QColor col = CVHelper::determineMediumColor(rec.thumb,rec.thumb.rect());
-    qDebug() << idx << rec.filename << col << rec.thumb.rect();
-
+    QColor col = CVHelper::determineMediumColor(rec.thumb,trct);
     int ha = col.toHsl().hue();
     int df = MILLA_ABOUT_MOSAIC_MAXDIFF;
     int n = 0, wn = -1;
     for (auto &i : quads) {
         int v = std::abs(i.first.toHsl().hue()-ha);
-//        qDebug() << v;
         if (v < df) {
             df = v;
             wn = n;
         }
         n++;
     }
-    qDebug() << ha << df << wn;
+
     if (wn < 0 || df > quads.at(wn).second) {
         if (++misscount >= MILLA_ABOUT_MOSAIC_MAXMISS) prepareLogo();
-//        busy = false;
         return;
     }
-#else
-    cv::Mat his = CVHelper::getHist(rec.thumb);
-    int df = MILLA_ABOUT_MOSAIC_MINDIFF;
-    int n = 0, wn = -1;
-    for (auto &i : quads) {
-        double v = MMatcher::OneTimeMatcher(his,i.first);
-        if (v > df) {
-            df = v;
-            wn = n;
-        }
-        n++;
-    }
-    qDebug() << df << wn;
-    if (wn < 0 || df < quads.at(wn).second) return;
-#endif
 
     quads.at(wn).second = df;
 
@@ -197,6 +152,6 @@ void AboutBox::Mosaic()
 
     QImage over(ui->label->pixmap()->toImage());
     QPainter paint(&over);
-    paint.drawPixmap(targ,rec.thumb,rec.thumb.rect());
+    paint.drawPixmap(targ,rec.thumb,trct);
     ui->label->setPixmap(QPixmap::fromImage(over));
 }

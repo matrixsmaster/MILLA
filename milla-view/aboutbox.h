@@ -8,11 +8,9 @@
 #include <QStringList>
 #include <vector>
 #include <set>
-#include "cvhelper.h"
 
 #define MILLA_ABOUT_MOSAIC_TIMER 100
 #define MILLA_ABOUT_MOSAIC_SIZE 80
-//#define MILLA_ABOUT_MOSAIC_MINDIFF 25
 #define MILLA_ABOUT_MOSAIC_MINDIFF 60
 #define MILLA_ABOUT_MOSAIC_MAXDIFF 9999
 #define MILLA_ABOUT_MOSAIC_MAXMISS 200
@@ -31,11 +29,8 @@ public:
     ~AboutBox();
 
     void Mosaic();
-//    void Stop();
 
 protected:
-//    volatile bool busy;
-
     void showEvent(QShowEvent* ev);
 
 private:
@@ -43,7 +38,6 @@ private:
     QStringList files;
     QTimer timer;
     std::vector<std::pair<QColor,int>> quads;
-//    std::vector<std::pair<cv::Mat,double>> quads;
     QPoint quad_size;
     std::set<int> visited;
     int misscount;
