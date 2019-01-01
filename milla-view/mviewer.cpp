@@ -1146,7 +1146,11 @@ void MViewer::on_actionSanitize_DB_triggered()
     ui->statusBar->showMessage("Checking tags...");
     db.sanitizeTags(prog_callback);
 
-    //step 3. reload cache
+    //step 3. run various other DB engine-related stuff
+    ui->statusBar->showMessage("DB maintenance...");
+    db.sanitizeDBMeta();
+
+    //step 4. reload cache
     db.invalidateCache();
 
     //process complete

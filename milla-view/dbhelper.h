@@ -100,6 +100,8 @@ public:
 
     void sanitizeTags(ProgressCB progress_cb);
 
+    static void sanitizeDBMeta();
+
     static QString detectExactCopies(ProgressCB progress_cb);
 
     void setWinTableName(QString const &nm);

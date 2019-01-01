@@ -1033,6 +1033,14 @@ void DBHelper::sanitizeTags(ProgressCB progress_cb)
     }
 }
 
+void DBHelper::sanitizeDBMeta()
+{
+    QSqlQuery q;
+    qDebug() << "[db] Running vacuum...";
+    bool ok = q.exec("VACUUM");
+    qDebug() << "[db] Vacuum: " << ok;
+}
+
 QString DBHelper::detectExactCopies(ProgressCB progress_cb)
 {
     QString res;

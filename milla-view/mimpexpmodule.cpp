@@ -182,6 +182,13 @@ bool MImpExpModule::dataImport(ExportFormData const &d, QTextStream &f, InitRecC
     bool ok;
     DBHelper dbh;
 
+    //check if we able to filter known records
+    QSet<QString> filterlist;
+    if (d.loaded_only) {
+        if (!foreign_list) return false;
+        for (auto &i : *foreign_list) filterlist.insert(i.filename);
+    }
+
     //calculate number of fileds we expect in the input file
     int m = 0;
     switch (d.table) {
@@ -267,6 +274,14 @@ bool MImpExpModule::dataImport(ExportFormData const &d, QTextStream &f, InitRecC
 
             ok = q.exec() && q.next(); //are you feeling lucky?
             qDebug() << "[IMPEXP] File entry first match: " << ok;
+
+            //are we importing data for currently loaded files only?
+            if (ok && d.loaded_only) {
+                if (!filterlist.contains(q.value(0).toString())) {
+                    qDebug() << "[IMPEXP] A record for " << q.value(0).toString() << " filtered out";
+                    continue;
+                }
+            }
 
             //second take (what if file IS here, but was moved)
             if (!ok && d.filename && d.sha) {
