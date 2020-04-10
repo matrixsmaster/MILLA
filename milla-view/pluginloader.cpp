@@ -10,7 +10,10 @@ MillaPluginLoader::MillaPluginLoader() : QObject()
         qDebug() << "[PLUGINS] Checking " << pluginsDir.absoluteFilePath(i);
         QPluginLoader loader(pluginsDir.absoluteFilePath(i));
         QObject* plugin = loader.instance();
-        if (!plugin) continue;
+        if (!plugin) {
+            qDebug() << "[PLUGINS] Error loading plugin: " << loader.errorString();
+            continue;
+        }
 
         MillaGenericPlugin* plug = qobject_cast<MillaGenericPlugin*>(plugin);
         if (!plug) continue;

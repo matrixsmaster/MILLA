@@ -18,7 +18,7 @@ class MovPlugin : public QObject, public MillaGenericPlugin
     Q_INTERFACES(MillaGenericPlugin)
 
 public:
-    MovPlugin(QObject *parent = 0);
+    MovPlugin(QObject *parent = nullptr);
     virtual ~MovPlugin();
 
     QString getPluginName() { return "SilentMovie"; }

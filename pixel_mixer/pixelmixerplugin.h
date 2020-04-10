@@ -34,7 +34,7 @@ public:
     QVariant action(QVariant in);
 
 private:
-    ProgressCB progress_cb = 0;
+    ProgressCB progress_cb = nullptr;
     double radius = 16;
     bool once = false;
 };

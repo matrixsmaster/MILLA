@@ -1,4 +1,5 @@
 #include <QDebug>
+#include <QStyle>
 #include <QFile>
 #include <QTextStream>
 #include <QApplication>

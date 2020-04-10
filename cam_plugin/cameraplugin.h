@@ -15,7 +15,7 @@ class CameraPlugin : public QObject, public MillaGenericPlugin
     Q_INTERFACES(MillaGenericPlugin)
 
 public:
-    CameraPlugin(QObject *parent = 0);
+    CameraPlugin(QObject *parent = nullptr);
     virtual ~CameraPlugin();
 
     QString getPluginName() { return "WebCamera"; }

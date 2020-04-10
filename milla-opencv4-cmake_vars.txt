@@ -1,0 +1,358 @@
+# rename it as CMakeCache.txt and put into the build dir
+
+//Build CUDA modules stubs when no CUDA SDK
+BUILD_CUDA_STUBS:BOOL=OFF
+
+//Create build rules for OpenCV Documentation
+BUILD_DOCS:BOOL=OFF
+
+//Build all examples
+BUILD_EXAMPLES:BOOL=OFF
+
+//Create Java wrapper exporting all functions of OpenCV library
+// (requires static build of OpenCV modules)
+BUILD_FAT_JAVA_LIB:BOOL=OFF
+
+//Build IPP IW from source
+BUILD_IPP_IW:BOOL=ON
+
+//Build Intel ITT from source
+BUILD_ITT:BOOL=ON
+
+//Build libjasper from source
+BUILD_JASPER:BOOL=OFF
+
+//Enable Java support
+BUILD_JAVA:BOOL=ON
+
+//Build libjpeg from source
+BUILD_JPEG:BOOL=OFF
+
+//Build only listed modules (comma-separated, e.g. 'videoio,dnn,ts')
+BUILD_LIST:STRING=
+
+//Build openexr from source
+BUILD_OPENEXR:BOOL=OFF
+
+//Enables 'make package_source' command
+BUILD_PACKAGE:BOOL=ON
+
+//Build performance tests
+BUILD_PERF_TESTS:BOOL=ON
+
+//Build libpng from source
+BUILD_PNG:BOOL=OFF
+
+//Force to build libprotobuf from sources
+BUILD_PROTOBUF:BOOL=ON
+
+//Build shared libraries (.dll/.so) instead of static ones (.lib/.a)
+BUILD_SHARED_LIBS:BOOL=OFF
+
+//Download and build TBB from source
+BUILD_TBB:BOOL=OFF
+
+//Build accuracy & regression tests
+BUILD_TESTS:BOOL=ON
+
+//Build libtiff from source
+BUILD_TIFF:BOOL=OFF
+
+//Use symlinks instead of files copying during build (and !!INSTALL!!)
+BUILD_USE_SYMLINKS:BOOL=OFF
+
+//Build WebP from source
+BUILD_WEBP:BOOL=OFF
+
+//Include debug info into release binaries ('OFF' means default
+// settings)
+BUILD_WITH_DEBUG_INFO:BOOL=OFF
+
+//Enables dynamic linking of IPP (only for standalone IPP)
+BUILD_WITH_DYNAMIC_IPP:BOOL=OFF
+
+//Build zlib from source
+BUILD_ZLIB:BOOL=OFF
+
+//Specify list of enabled baseline CPU optimizations
+CPU_BASELINE:STRING=SSE3
+
+//Specify list of dispatched CPU optimizations
+CPU_DISPATCH:STRING=SSE4_1;SSE4_2;AVX;FP16;AVX2;AVX512_SKX
+
+//Disable explicit optimized code (dispatched code/intrinsics/loop
+// unrolling/etc)
+CV_DISABLE_OPTIMIZATION:BOOL=OFF
+
+//Use intrinsic-based optimized code
+CV_ENABLE_INTRINSICS:BOOL=ON
+
+//Enable OpenCV code trace
+CV_TRACE:BOOL=ON
+
+//Enable hardening of the resulting binaries (against security
+// attacks, detects memory corruption, etc)
+ENABLE_BUILD_HARDENING:BOOL=OFF
+
+//Use ccache
+ENABLE_CCACHE:BOOL=ON
+
+//Enable coverage collection with  GCov
+ENABLE_COVERAGE:BOOL=OFF
+
+//Enable -ffast-math (not recommended for GCC 4.6.x)
+ENABLE_FAST_MATH:BOOL=OFF
+
+//Add target with Python flake8 checker
+ENABLE_FLAKE8:BOOL=OFF
+
+//Enable GNU STL Debug mode (defines _GLIBCXX_DEBUG)
+ENABLE_GNU_STL_DEBUG:BOOL=OFF
+
+//Collect implementation data on function call
+ENABLE_IMPL_COLLECTION:BOOL=OFF
+
+//Instrument functions to collect calls trace and performance
+ENABLE_INSTRUMENTATION:BOOL=OFF
+
+//Enable Link Time Optimization
+ENABLE_LTO:BOOL=OFF
+
+//Show all warnings even if they are too noisy
+ENABLE_NOISY_WARNINGS:BOOL=OFF
+
+//Enable -fomit-frame-pointer for GCC
+ENABLE_OMIT_FRAME_POINTER:BOOL=ON
+
+//Generate position independent code (necessary for shared libraries)
+ENABLE_PIC:BOOL=ON
+
+//Use precompiled headers
+ENABLE_PRECOMPILED_HEADERS:BOOL=ON
+
+//Enable profiling in the GCC compiler (Add flags: -g -pg)
+ENABLE_PROFILING:BOOL=OFF
+
+//Add target with Pylint checks
+ENABLE_PYLINT:BOOL=OFF
+
+//Solution folder in Visual Studio or in other IDEs
+ENABLE_SOLUTION_FOLDERS:BOOL=OFF
+
+//Generate XML file for abi_compliance_checker tool
+GENERATE_ABI_DESCRIPTOR:BOOL=OFF
+
+//Change install rules to build the distribution package
+INSTALL_CREATE_DISTRIB:BOOL=OFF
+
+//Install C examples
+INSTALL_C_EXAMPLES:BOOL=OFF
+
+//Install Python examples
+INSTALL_PYTHON_EXAMPLES:BOOL=OFF
+
+//Install accuracy and performance test binaries and test data
+INSTALL_TESTS:BOOL=OFF
+
+//Use MKL with OpenMP multithreading
+MKL_WITH_OPENMP:BOOL=OFF
+
+//Use MKL with TBB multithreading
+MKL_WITH_TBB:BOOL=OFF
+
+//Build with OpenCL support
+OPENCV_DNN_OPENCL:BOOL=ON
+
+//Dump called OpenCV hooks
+OPENCV_DUMP_HOOKS_FLOW:BOOL=OFF
+
+//Enable non-free algorithms
+OPENCV_ENABLE_NONFREE:BOOL=ON
+
+//Where to look for additional OpenCV modules (can be ;-separated
+// list of paths)
+OPENCV_EXTRA_MODULES_PATH:PATH=
+
+//Force using 3rdparty code from source
+OPENCV_FORCE_3RDPARTY_BUILD:BOOL=OFF
+
+//Generate .pc file for pkg-config build tool (deprecated)
+OPENCV_GENERATE_PKGCONFIG:BOOL=OFF
+
+//Generate setup_vars* scripts
+OPENCV_GENERATE_SETUPVARS:BOOL=ON
+
+//Python3 version
+OPENCV_PYTHON3_VERSION:BOOL=OFF
+
+//Include IEEE1394 support
+WITH_1394:BOOL=ON
+
+//Include Aravis GigE support
+WITH_ARAVIS:BOOL=OFF
+
+//Include Clp support (EPL)
+WITH_CLP:BOOL=OFF
+
+//Include NVidia Cuda Basic Linear Algebra Subprograms (BLAS) library
+// support
+WITH_CUBLAS:BOOL=ON
+
+//Include NVidia Cuda Runtime support
+WITH_CUDA:BOOL=OFF
+
+//Include NVidia Cuda Fast Fourier Transform (FFT) library support
+WITH_CUFFT:BOOL=ON
+
+//Include Eigen2/Eigen3 support
+WITH_EIGEN:BOOL=ON
+
+//Include FFMPEG support
+WITH_FFMPEG:BOOL=ON
+
+//Include GDAL Support
+WITH_GDAL:BOOL=OFF
+
+//Include DICOM support
+WITH_GDCM:BOOL=OFF
+
+//Include Smartek GigE support
+WITH_GIGEAPI:BOOL=OFF
+
+//Include gPhoto2 library support
+WITH_GPHOTO2:BOOL=OFF
+
+//Include Gstreamer support
+WITH_GSTREAMER:BOOL=ON
+
+//Enable Gstreamer 0.10 support (instead of 1.x)
+WITH_GSTREAMER_0_10:BOOL=OFF
+
+//Include GTK support
+WITH_GTK:BOOL=ON
+
+//Use GTK version 2
+WITH_GTK_2_X:BOOL=OFF
+
+//Include Halide support
+WITH_HALIDE:BOOL=OFF
+
+//Include Ste||ar Group HPX support
+WITH_HPX:BOOL=OFF
+
+//Include HDR support
+WITH_IMGCODEC_HDR:BOOL=ON
+
+//Include PFM formats support
+WITH_IMGCODEC_PFM:BOOL=ON
+
+//Include PNM (PBM,PGM,PPM) and PAM formats support
+WITH_IMGCODEC_PXM:BOOL=ON
+
+//Include SUNRASTER support
+WITH_IMGCODEC_SUNRASTER:BOOL=ON
+
+//Include Intel Inference Engine support
+WITH_INF_ENGINE:BOOL=OFF
+
+//Include Intel IPP support
+WITH_IPP:BOOL=ON
+
+//Include Intel ITT support
+WITH_ITT:BOOL=ON
+
+//Include JPEG2K support
+WITH_JASPER:BOOL=ON
+
+//Include JPEG support
+WITH_JPEG:BOOL=ON
+
+//Include Lapack library support
+WITH_LAPACK:BOOL=ON
+
+//Include Intel librealsense support
+WITH_LIBREALSENSE:BOOL=OFF
+
+//Include Intel Media SDK support
+WITH_MFX:BOOL=OFF
+
+//Include NVidia Video Decoding library support
+WITH_NVCUVID:BOOL=ON
+
+//Include OpenCL Runtime support
+WITH_OPENCL:BOOL=ON
+
+//Include AMD OpenCL BLAS library support
+WITH_OPENCLAMDBLAS:BOOL=ON
+
+//Include AMD OpenCL FFT library support
+WITH_OPENCLAMDFFT:BOOL=ON
+
+//Include OpenCL Shared Virtual Memory support
+WITH_OPENCL_SVM:BOOL=OFF
+
+//Include ILM support via OpenEXR
+WITH_OPENEXR:BOOL=ON
+
+//Include OpenGL support
+WITH_OPENGL:BOOL=OFF
+
+//Include OpenMP support
+WITH_OPENMP:BOOL=OFF
+
+//Include OpenNI support
+WITH_OPENNI:BOOL=OFF
+
+//Include OpenNI2 support
+WITH_OPENNI2:BOOL=OFF
+
+//Include OpenVX support
+WITH_OPENVX:BOOL=OFF
+
+//Include PNG support
+WITH_PNG:BOOL=ON
+
+//Enable libprotobuf
+WITH_PROTOBUF:BOOL=ON
+
+//Use pthreads-based parallel_for
+WITH_PTHREADS_PF:BOOL=ON
+
+//Include Prosilica GigE support
+WITH_PVAPI:BOOL=OFF
+
+//Build with Qt Backend support
+WITH_QT:BOOL=OFF
+
+//Include library QR-code decoding
+WITH_QUIRC:BOOL=ON
+
+//Include Intel TBB support
+WITH_TBB:BOOL=OFF
+
+//Include TIFF support
+WITH_TIFF:BOOL=ON
+
+//Include Video 4 Linux support
+WITH_V4L:BOOL=ON
+
+//Include VA support
+WITH_VA:BOOL=OFF
+
+//Include Intel VA-API/OpenCL support
+WITH_VA_INTEL:BOOL=OFF
+
+//Include VTK library support (and build opencv_viz module eiher)
+WITH_VTK:BOOL=ON
+
+//Include Vulkan support
+WITH_VULKAN:BOOL=OFF
+
+//Include WebP support
+WITH_WEBP:BOOL=ON
+
+//Include XIMEA cameras support
+WITH_XIMEA:BOOL=OFF
+
+//Include Xine support (GPL)
+WITH_XINE:BOOL=OFF

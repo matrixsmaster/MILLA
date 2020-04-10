@@ -1,8 +1,8 @@
-sudo mkdir /opt/milla
-sudo cp -av ../Desktop-Release/bin /opt/milla/
-sudo cp -av ../Desktop-Release/share /opt/milla/
-sudo mkdir /opt/milla/share/icons
-sudo cp -av milla-view/milla*.png /opt/milla/share/icons/
+mkdir /opt/milla
+cp -av ../build-milla-Desktop-Release/bin /opt/milla/
+cp -av ../build-milla-Desktop-Release/share /opt/milla/
+mkdir /opt/milla/share/icons
+cp -av milla-view/milla*.png /opt/milla/share/icons/
 mkdir ~/.local/share/applications
 cp -av milla-view/milla-image-viewer.desktop ~/.local/share/applications/
 update-desktop-database ~/.local/share/applications

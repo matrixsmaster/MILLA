@@ -15,7 +15,7 @@ class LifeGenPlugin : public QObject, public MillaGenericPlugin
     Q_INTERFACES(MillaGenericPlugin)
 
 public:
-    LifeGenPlugin(QObject *parent = 0);
+    LifeGenPlugin(QObject *parent = nullptr);
     virtual ~LifeGenPlugin() {}
 
     QString getPluginName() { return "LifeGen"; }
