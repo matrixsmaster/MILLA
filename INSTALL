@@ -1,8 +1,17 @@
-mkdir /opt/milla
+As root:
+
+mkdir -p /opt/milla/share/icons
 cp -av ../build-milla-Desktop-Release/bin /opt/milla/
 cp -av ../build-milla-Desktop-Release/share /opt/milla/
-mkdir /opt/milla/share/icons
 cp -av milla-view/milla*.png /opt/milla/share/icons/
-mkdir ~/.local/share/applications
+cp 3rdparty/* /opt/milla/share/
+cd /opt/milla/share
+cat colors_a* > colors.7z
+7zr e colors.7z
+rm -vf colors_a* colors.7z
+
+As regular user:
+
+mkdir -p ~/.local/share/applications
 cp -av milla-view/milla-image-viewer.desktop ~/.local/share/applications/
 update-desktop-database ~/.local/share/applications
