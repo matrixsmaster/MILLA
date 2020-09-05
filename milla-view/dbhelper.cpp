@@ -1289,6 +1289,17 @@ bool DBHelper::updateMemorySlot(int n, QString const &fn)
     return ok;
 }
 
+bool DBHelper::eraseMemorySlot(int n)
+{
+    QSqlQuery q;
+    q.prepare("DELETE FROM memory WHERE slot = :n");
+    q.bindValue(":n",n);
+    bool ok = q.exec();
+
+    qDebug() << "[db] Erasing memory slot " << n << ": " << ok;
+    return ok;
+}
+
 bool DBHelper::eraseMemory()
 {
     QSqlQuery q;

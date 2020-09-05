@@ -9,6 +9,7 @@ StorySelector::StorySelector(QWidget *parent) :
     ui->setupUi(this);
 
     QStringList lst = DBHelper::getStoriesList();
+    lst.sort(Qt::CaseInsensitive);
     for (auto &i : lst) ui->listWidget->addItem(i);
 }
 

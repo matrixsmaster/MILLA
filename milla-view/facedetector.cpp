@@ -34,7 +34,7 @@ void FaceDetector::detectFacesPass1(const Mat &inp, vector<Rect>* store)
     try {
         cvtColor(inp,work,COLOR_BGR2GRAY);
         equalizeHist(work,work);
-        face_cascade->detectMultiScale(work,items,1.1,3,0,Size(32,32));
+        face_cascade->detectMultiScale(work,items,FACEDETECT_SCALE,FACEDETECT_NEIGHBORS,0,Size(FACEDETECT_SIZE_W,FACEDETECT_SIZE_H));
     } catch (...) {
         qDebug() << "Error";
         return;

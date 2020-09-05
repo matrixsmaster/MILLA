@@ -126,6 +126,8 @@ public:
 
     static bool updateMemorySlot(int n, QString const &fn);
 
+    static bool eraseMemorySlot(int n);
+
     static bool eraseMemory();
 
     static QStringList getStoriesList();

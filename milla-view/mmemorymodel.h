@@ -15,6 +15,8 @@ public:
 
     void setSlot(int n, MImageListRecord const &rec);
 
+    void eraseSlot(int n);
+
     void clear(bool full = false);
 };
 

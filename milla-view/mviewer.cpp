@@ -96,6 +96,13 @@ MViewer::MViewer(QWidget *parent) : QMainWindow(parent)
             }
         });
     }
+    //Add "erase" actions
+    for (int i = 0; i < MAXMEMORYSLOTS; i++) {
+        QAction* a = ui->menuShort_term_memory->addAction(QString::asprintf("Erase slot %d",i+1));
+        if (!a) break;
+        a->setShortcut(QKeySequence(QString::asprintf("Ctrl+F%d",i+1)));
+        connect(a,&QAction::triggered,this,[i,mmm] { mmm->eraseSlot(i); });
+    }
     //Connect the memory tab selection model to right image pane
     connect(ui->listView_4->selectionModel(),&QItemSelectionModel::selectionChanged,[this] {
         current_r = ui->listView_4->selectionModel()->selectedIndexes().first().data(MImageListModel::FullDataRole).value<MImageListRecord>();
@@ -103,8 +110,12 @@ MViewer::MViewer(QWidget *parent) : QMainWindow(parent)
         incViews(false);
     });
 
-    //Enable events receive for left pane (for selection)
+    //Enable events filter for left pane (for selection)
     ui->scrollArea->installEventFilter(this);
+
+    //Enable events filter for labels (for copying file names)
+    ui->label_3->installEventFilter(this);
+    ui->label_4->installEventFilter(this);
 
     //Reset form
     cleanUp();
@@ -367,7 +378,7 @@ void MViewer::showImageList(QStringList const &lst)
     //update other fields
     updateRecents();
     on_actionDescending_triggered(); //renew sorting
-    on_pushButton_9_clicked(); //clear story
+    //on_pushButton_9_clicked(); //clear story (?)
 }
 
 void MViewer::showSelectedImage()
@@ -511,6 +522,7 @@ void MViewer::processArguments()
 {
     QStringList args = QApplication::arguments();
     if (args.size() < 2) {
+        qDebug() << "[DEBUG] Loading most recent dir " << db.getMostRecentDir();
         showImageList(loader->open(db.getMostRecentDir()));
         return;
     }
@@ -813,6 +825,7 @@ void MViewer::on_actionRefine_search_triggered()
         QMessageBox::information(this,tr("Search"),tr("Nothing found. Try to relax the search parameters."));
     else
         searchResults(res);
+    ui->actionContinue_search->setEnabled(!res.empty());
 }
 
 void MViewer::on_actionSwap_images_triggered()
@@ -828,6 +841,7 @@ void MViewer::on_actionSwap_images_triggered()
 void MViewer::on_actionClear_results_triggered()
 {
     if (ui->listView_2->model()) ui->listView_2->model()->deleteLater();
+    ui->actionContinue_search->setEnabled(false);
     search_cnt = 0;
 }
 
@@ -1552,6 +1566,17 @@ bool MViewer::eventFilter(QObject *obj, QEvent *event)
         return QObject::eventFilter(obj,event);
     }
 
+    //check event source - is it from one of top labels?
+    if (obj == ui->label_3 || obj == ui->label_4) {
+        if (event->type() != QEvent::MouseButtonPress) return QObject::eventFilter(obj,event);
+        if (obj == ui->label_3 && current_l.valid)
+            QGuiApplication::clipboard()->setText(current_l.filename);
+        else if (obj == ui->label_4 && current_r.valid)
+            QGuiApplication::clipboard()->setText(current_r.filename);
+        return true;
+    }
+
+    //evrything down here is related to left ScrollArea
     QRect aligned = QStyle::alignedRect(QApplication::layoutDirection(),QFlag(ui->label->alignment()),ui->label->pixmap()->size(),ui->label->rect());
     QRect inter = aligned.intersected(ui->label->rect());
     QPoint scrl_delta(0,0);
@@ -1577,12 +1602,19 @@ bool MViewer::eventFilter(QObject *obj, QEvent *event)
 
         } else if (event->type() == QEvent::MouseButtonRelease) {
             selection.setBottomRight(QPoint(mev->x()-inter.x(),mev->y()-inter.y())+scrl_delta);
-            float scale = (current_l.picture.size().width() > current_l.picture.size().height())?
-                        (double(current_l.picture.size().width()) / double(ui->scrollArea->widget()->rect().width())) :
-                        (double(current_l.picture.size().height()) / double(ui->scrollArea->widget()->rect().height()));
-            selection_scaled = QRect(selection.topLeft()*scale,selection.size()*scale);
+            qDebug() << "Selection size = " << selection.width() << " x " << selection.height();
+            if (selection.width() < 2 && selection.height() < 2) {
+                selection_fsm = 10;
+                ui->label->setPixmap(selection_bak);
 
-            selection_fsm++;
+            } else {
+                float scale = (current_l.picture.size().width() > current_l.picture.size().height())?
+                            (double(current_l.picture.size().width()) / double(ui->scrollArea->widget()->rect().width())) :
+                            (double(current_l.picture.size().height()) / double(ui->scrollArea->widget()->rect().height()));
+                selection_scaled = QRect(selection.topLeft()*scale,selection.size()*scale);
+
+                selection_fsm++;
+            }
         }
         break;
     default:
@@ -1590,7 +1622,7 @@ bool MViewer::eventFilter(QObject *obj, QEvent *event)
         break;
     }
 
-    if (current_l.valid && selection_fsm) {
+    if (current_l.valid && selection_fsm && selection_fsm < 10) {
         QImage tmp = selection_bak.toImage();
         QPainter painter(&tmp);
         QPen paintpen(Qt::black);
@@ -1618,6 +1650,7 @@ QString MViewer::printInfo(QString const &title, MImageListRecord const &targ)
 void MViewer::on_actionInfo_triggered()
 {
     QString inf = printInfo("Left",current_l);
+    if (current_l.valid && current_r.valid) inf += '\n';
     inf += printInfo("Right",current_r);
     if (!inf.isEmpty()) QMessageBox::information(this,tr("Info"),inf);
 }
@@ -1632,8 +1665,8 @@ void MViewer::on_actionOpen_with_triggered()
 
     if (ok && !cmd.isEmpty()) {
         DBHelper::setExtraStringVal(DBF_EXTRA_EXTERNAL_EDITOR,cmd);
-        cmd += ' ' + current_l.filename;
-        cmd += " &";
+        cmd += " \"" + current_l.filename;
+        cmd += "\" &";
         qDebug() << "[RUN] " << cmd;
         //TODO: portable and safer version
         system(cmd.toStdString().c_str()); //WARNING: potentially insecure, and Linux-only
@@ -1823,4 +1856,16 @@ void MViewer::on_actionColorize_triggered()
 {
     if (current_l.valid)
         updateStory(a_story->colorize(current_l));
+}
+
+void MViewer::on_actionContinue_search_triggered()
+{
+    prepareLongProcessing();
+    QStringList res = db.doParametricSearch(last_search,prog_callback);
+    prepareLongProcessing(true);
+    if (res.empty())
+        QMessageBox::information(this,tr("Search"),tr("Nothing found. Try to relax the search parameters."));
+    else
+        searchResults(res);
+    ui->actionContinue_search->setEnabled(!res.empty());
 }

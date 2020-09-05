@@ -632,6 +632,9 @@
                   <property name="text">
                    <string/>
                   </property>
+                  <property name="textFormat">
+                   <enum>Qt::PlainText</enum>
+                  </property>
                   <property name="alignment">
                    <set>Qt::AlignCenter</set>
                   </property>
@@ -1168,6 +1171,9 @@
                   </property>
                   <property name="text">
                    <string/>
+                  </property>
+                  <property name="textFormat">
+                   <enum>Qt::PlainText</enum>
                   </property>
                   <property name="alignment">
                    <set>Qt::AlignCenter</set>
@@ -2828,6 +2834,7 @@
     <addaction name="separator"/>
     <addaction name="actionClear_results"/>
     <addaction name="actionRefine_search"/>
+    <addaction name="actionContinue_search"/>
     <addaction name="actionMatch"/>
    </widget>
    <widget class="QMenu" name="menuPlugins">
@@ -3074,7 +3081,7 @@
     <string>Update thumbnails</string>
    </property>
    <property name="shortcut">
-    <string>Ctrl+R</string>
+    <string>Ctrl+U</string>
    </property>
   </action>
   <action name="action_None">
@@ -3134,7 +3141,7 @@
     <string>Reload metadata</string>
    </property>
    <property name="shortcut">
-    <string>Ctrl+U</string>
+    <string>Ctrl+R</string>
    </property>
   </action>
   <action name="actionSanitize_DB">
@@ -3263,10 +3270,16 @@
    <property name="text">
     <string>Flip vertical</string>
    </property>
+   <property name="shortcut">
+    <string>Shift+V</string>
+   </property>
   </action>
   <action name="actionFlip_horizontal">
    <property name="text">
     <string>Flip horizontal</string>
+   </property>
+   <property name="shortcut">
+    <string>Shift+H</string>
    </property>
   </action>
   <action name="actionZoom_in">
@@ -3510,6 +3523,17 @@
   <action name="actionDesaturate">
    <property name="text">
     <string>Desaturate</string>
+   </property>
+  </action>
+  <action name="actionContinue_search">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
+   <property name="text">
+    <string>Continue search</string>
+   </property>
+   <property name="shortcut">
+    <string>Alt+F</string>
    </property>
   </action>
  </widget>

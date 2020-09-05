@@ -18,6 +18,12 @@ void MMemoryModel::setSlot(int n, MImageListRecord const &rec)
     DBHelper::updateMemorySlot(n,rec.filename);
 }
 
+void MMemoryModel::eraseSlot(int n)
+{
+    if (n < 0 || n >= MAXMEMORYSLOTS) return;
+    if (DBHelper::eraseMemorySlot(n)) clear();
+}
+
 void MMemoryModel::clear(bool full)
 {
     beginInsertRows(QModelIndex(),images.size(),images.size());

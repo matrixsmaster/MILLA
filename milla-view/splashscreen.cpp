@@ -15,7 +15,8 @@ SplashScreen::SplashScreen(QWidget *parent) :
     ui(new Ui::SplashScreen)
 {
     ui->setupUi(this);
-    setWindowFlags(Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint);
+    setWindowFlags(Qt::FramelessWindowHint);
+    //setWindowFlags(Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint);
     setGeometry(QStyle::alignedRect(Qt::LeftToRight,Qt::AlignCenter,size(),qApp->desktop()->availableGeometry()));
 }
 

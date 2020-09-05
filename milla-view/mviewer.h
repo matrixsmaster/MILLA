@@ -14,6 +14,7 @@
 #include <QMovie>
 #include <QInputDialog>
 #include <QMetaMethod>
+#include <QClipboard>
 #include <ctime>
 #include <cstdlib>
 #include <chrono>
@@ -234,6 +235,8 @@ private slots:
     void on_actionDesaturate_triggered();
 
     void on_actionColorize_triggered();
+
+    void on_actionContinue_search_triggered();
 
 private:
     Ui::MViewer *ui;

@@ -10,6 +10,11 @@
 #include <opencv2/highgui.hpp>
 #include "shared.h"
 
+#define FACEDETECT_SCALE 1.1
+#define FACEDETECT_NEIGHBORS 3
+#define FACEDETECT_SIZE_W 32
+#define FACEDETECT_SIZE_H 32
+
 class FaceDetector
 {
 public:
