@@ -255,6 +255,7 @@ bool MImpExpModule::dataImport(ExportFormData const &d, QTextStream &f, InitRecC
         checkBalance(sl,'\"');
         if (sl.length() != m) {
             qDebug() << "[IMPEXP] ALERT: Import error: fields count doesn't match!";
+            qDebug() << "[IMPEXP] string = '" << s << "'";
             return false;
         }
 

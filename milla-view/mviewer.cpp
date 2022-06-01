@@ -20,7 +20,7 @@ MViewer::MViewer(QWidget *parent) : QMainWindow(parent)
         qDebug() << "FATAL: Unable to initialize database " DB_FILEPATH;
 
         //in case of failure, we can't proceed, so we use the view timer as auto-close event generator
-        connect(&view_timer,&QTimer::timeout,this,[this] { QApplication::exit(1); });
+        connect(&view_timer,&QTimer::timeout,this,[] { QApplication::exit(1); });
         view_timer.start(2);
 
         //remove splash screen

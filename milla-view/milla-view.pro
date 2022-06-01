@@ -74,7 +74,7 @@ FORMS    += mviewer.ui \
     splashscreen.ui
 
 CONFIG   += c++14
-QMAKE_CXXFLAGS  += -Wextra
+QMAKE_CXXFLAGS  += -Wextra -Wno-deprecated-declarations
 
 RESOURCES += milla-view.qrc
 

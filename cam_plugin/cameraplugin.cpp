@@ -47,6 +47,7 @@ void CameraPlugin::showUI()
     dlg.setMaxID(maxcamnum-1);
     if (dlg.exec()) cameraidx = dlg.getID();
     else cameraidx = 0;
+    if (cameraidx >= maxcamnum) cameraidx = -1;
 }
 
 QVariant CameraPlugin::getParam(QString key)
@@ -61,6 +62,7 @@ bool CameraPlugin::setParam(QString key, QVariant val)
 {
     if (key == "process_started") {
         if (val.value<bool>() && !camera) {
+            if (cameraidx < 0) return false;
             camera = new VideoCapture(cameraidx);
             return true;
         } else if (!val.value<bool>() && camera) {
