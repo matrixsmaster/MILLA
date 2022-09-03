@@ -37,6 +37,7 @@ enum MVTabIndices {
     MVTAB_RESULTS,
     MVTAB_LINKS,
     MVTAB_MEMORY,
+    MVTAB_DIRS,
     MVTAB_STORY
 };
 
@@ -237,6 +238,8 @@ private slots:
     void on_actionColorize_triggered();
 
     void on_actionContinue_search_triggered();
+
+    void on_listWidget_2_itemDoubleClicked(QListWidgetItem *item);
 
 private:
     Ui::MViewer *ui;

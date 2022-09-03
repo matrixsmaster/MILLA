@@ -1357,9 +1357,12 @@ void MViewer::updateRecents()
 void MViewer::updateStory(QPixmap const &result)
 {
     showGeneratedPicture(result);
-    ui->label_6->setText(QString::asprintf("Step %d/%d",a_story->position(),a_story->size()));
+    ui->label_6->setText(QString::asprintf("Step %d/%d",a_story->position()+1,a_story->size()));
     ui->plainTextEdit_2->setPlainText(a_story->getComment());
     ui->plainTextEdit_2->setEnabled(!result.isNull());
+    QStringList l = a_story->getCurrentFileNames();
+    ui->listWidget_2->clear();
+    for (auto &i : l) ui->listWidget_2->addItem(i);
 }
 
 void MViewer::on_actionRotate_90_CW_triggered()
@@ -1524,7 +1527,7 @@ void MViewer::on_pushButton_7_clicked()
 
 void MViewer::on_actionPick_a_story_triggered()
 {
-    if (!ui->lineEdit_3->text().isEmpty()) {
+    if (a_story->isDirty()) {
         if (QMessageBox::question(this, tr("Question"), tr("Do you want to save current story?"), QMessageBox::Yes | QMessageBox::No) == QMessageBox::Yes)
             on_pushButton_8_clicked();
     }
@@ -1868,4 +1871,12 @@ void MViewer::on_actionContinue_search_triggered()
     else
         searchResults(res);
     ui->actionContinue_search->setEnabled(!res.empty());
+}
+
+void MViewer::on_listWidget_2_itemDoubleClicked(QListWidgetItem *item)
+{
+    if (!db.isStatRecordExists(item->text())) return;
+    current_r = loader->loadFull(item->text());
+    scaleImage(current_r,ui->scrollArea_2,ui->label_2,ui->label_4,1);
+    incViews(false);
 }

@@ -674,8 +674,8 @@
                        <rect>
                         <x>0</x>
                         <y>0</y>
-                        <width>322</width>
-                        <height>334</height>
+                        <width>336</width>
+                        <height>327</height>
                        </rect>
                       </property>
                       <layout class="QHBoxLayout" name="horizontalLayout_12">
@@ -1214,8 +1214,8 @@
                        <rect>
                         <x>0</x>
                         <y>0</y>
-                        <width>327</width>
-                        <height>334</height>
+                        <width>383</width>
+                        <height>327</height>
                        </rect>
                       </property>
                       <layout class="QHBoxLayout" name="horizontalLayout_11">
@@ -1289,7 +1289,7 @@
             <item>
              <widget class="QTabWidget" name="tabWidget">
               <property name="currentIndex">
-               <number>0</number>
+               <number>3</number>
               </property>
               <widget class="QWidget" name="tab">
                <attribute name="title">
@@ -1345,6 +1345,16 @@
                 </item>
                </layout>
               </widget>
+              <widget class="QWidget" name="tab_6">
+               <attribute name="title">
+                <string>Dirs</string>
+               </attribute>
+               <layout class="QHBoxLayout" name="horizontalLayout_22">
+                <item>
+                 <widget class="QListView" name="listView_6"/>
+                </item>
+               </layout>
+              </widget>
               <widget class="QWidget" name="tab_4">
                <attribute name="title">
                 <string>Story</string>
@@ -1358,21 +1368,21 @@
                   <item>
                    <widget class="QPushButton" name="pushButton_4">
                     <property name="text">
-                     <string>&lt;&lt; Prev</string>
-                    </property>
-                   </widget>
-                  </item>
-                  <item>
-                   <widget class="QPushButton" name="pushButton_9">
-                    <property name="text">
-                     <string>Clear</string>
+                     <string>&lt;- Step</string>
                     </property>
                    </widget>
                   </item>
                   <item>
                    <widget class="QPushButton" name="pushButton_5">
                     <property name="text">
-                     <string>Insert before</string>
+                     <string>|&lt; Move</string>
+                    </property>
+                   </widget>
+                  </item>
+                  <item>
+                   <widget class="QPushButton" name="pushButton_9">
+                    <property name="text">
+                     <string>Clear all</string>
                     </property>
                    </widget>
                   </item>
@@ -1408,7 +1418,14 @@
                    </layout>
                   </item>
                   <item>
-                   <widget class="QPlainTextEdit" name="plainTextEdit_2"/>
+                   <layout class="QHBoxLayout" name="horizontalLayout_21">
+                    <item>
+                     <widget class="QPlainTextEdit" name="plainTextEdit_2"/>
+                    </item>
+                    <item>
+                     <widget class="QListWidget" name="listWidget_2"/>
+                    </item>
+                   </layout>
                   </item>
                  </layout>
                 </item>
@@ -1420,21 +1437,21 @@
                   <item>
                    <widget class="QPushButton" name="pushButton_6">
                     <property name="text">
-                     <string>Next &gt;&gt;</string>
-                    </property>
-                   </widget>
-                  </item>
-                  <item>
-                   <widget class="QPushButton" name="pushButton_8">
-                    <property name="text">
-                     <string>Save</string>
+                     <string>Step -&gt;</string>
                     </property>
                    </widget>
                   </item>
                   <item>
                    <widget class="QPushButton" name="pushButton_7">
                     <property name="text">
-                     <string>Insert after</string>
+                     <string>Move &gt;|</string>
+                    </property>
+                   </widget>
+                  </item>
+                  <item>
+                   <widget class="QPushButton" name="pushButton_8">
+                    <property name="text">
+                     <string>Save all</string>
                     </property>
                    </widget>
                   </item>
@@ -2672,7 +2689,7 @@
      <x>0</x>
      <y>0</y>
      <width>1000</width>
-     <height>22</height>
+     <height>24</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">
@@ -2930,10 +2947,16 @@
    <property name="text">
     <string>Rotate 90 CW</string>
    </property>
+   <property name="shortcut">
+    <string>Shift+Right</string>
+   </property>
   </action>
   <action name="actionRotate_90_CCW">
    <property name="text">
     <string>Rotate 90 CCW</string>
+   </property>
+   <property name="shortcut">
+    <string>Shift+Left</string>
    </property>
   </action>
   <action name="actionLoad_everything_slow">

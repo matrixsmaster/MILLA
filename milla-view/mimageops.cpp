@@ -14,6 +14,7 @@ void MImageOps::clear()
 {
     history.clear();
     pos = history.begin();
+    dirty = false;
 }
 
 void MImageOps::add(MMacroRecord &rec)
@@ -48,6 +49,7 @@ void MImageOps::add(MMacroRecord &rec)
 
     history.push_back(rec);
     pos = history.end();
+    dirty = true;
 }
 
 QPixmap MImageOps::append(MImageListRecord const &in)
@@ -230,6 +232,7 @@ bool MImageOps::moveCurrent(bool backward)
         else if (i.link_r == ib) i.link_r = ip;
     }
     swap<MMacroRecord>(*pos,*b);
+    dirty = true;
 
     if (last) pos = history.end();
     return true;
@@ -241,8 +244,11 @@ bool MImageOps::addComment(QString const &com)
         if (history.empty()) return false;
         --pos;
     }
-    pos->comment = com;
-    pos->comment.replace('\"','\'');
+    if (pos->comment != com) {
+        pos->comment = com;
+        pos->comment.replace('\"','\'');
+        dirty = true;
+    }
     return true;
 }
 
@@ -250,6 +256,28 @@ QString MImageOps::getComment()
 {
     if (pos == history.end()) return QString();
     return pos->comment;
+}
+
+QString MImageOps::recToString(MImageListRecord const &rec)
+{
+    if (!rec.valid) return QString();
+    if (rec.generated) return QString("Generated image");
+
+    DBHelper dbh;
+    if (dbh.isStatRecordExists(rec.filename)) return rec.filename;
+    return QString("File not found: ") + rec.filename;
+}
+
+QStringList MImageOps::getCurrentFileNames()
+{
+    QStringList r;
+    if (pos == history.end()) return r;
+
+    if (pos->link_l >= 0) r.append(QString::asprintf("Link to step %d",pos->link_l+1));
+    else r.append(recToString(pos->left));
+    if (pos->link_r >= 0) r.append(QString::asprintf("Link to step %d",pos->link_r+1));
+    else r.append(recToString(pos->right));
+    return r;
 }
 
 QString MImageOps::serializeFileRecord(const MImageListRecord &rec, int link)
@@ -440,6 +468,7 @@ bool MImageOps::deserialize(QString const &in)
         }
     }
     loading = false;
+    dirty = false;
 
     pos = history.end();
     return true;

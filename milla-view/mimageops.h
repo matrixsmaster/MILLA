@@ -45,6 +45,8 @@ public:
 
     bool isActive() { return !history.empty(); }
 
+    bool isDirty()  { return dirty; }
+
     int size()      { return history.size(); }
 
     int position()  { return pos - history.begin(); }
@@ -79,6 +81,10 @@ public:
 
     QString getComment();
 
+    QString recToString(MImageListRecord const &rec);
+
+    QStringList getCurrentFileNames();
+
     QString serializeFileRecord(const MImageListRecord &rec, int link);
 
     bool deserializeFileRecord(MImageListRecord &rec, int link);
@@ -92,6 +98,7 @@ private:
     QList<MMacroRecord> history;
     QList<MMacroRecord>::iterator pos;
     bool loading = false;
+    bool dirty = false;
 
     void add(MMacroRecord &rec);
 };
