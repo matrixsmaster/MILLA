@@ -1367,22 +1367,22 @@ void MViewer::updateStory(QPixmap const &result)
 
 void MViewer::on_actionRotate_90_CW_triggered()
 {
-    updateStory(a_story->rotate(current_l,true));
+    if (current_l.valid) updateStory(a_story->rotate(current_l,true));
 }
 
 void MViewer::on_actionRotate_90_CCW_triggered()
 {
-    updateStory(a_story->rotate(current_l,false));
+    if (current_l.valid) updateStory(a_story->rotate(current_l,false));
 }
 
 void MViewer::on_actionFlip_vertical_triggered()
 {
-    updateStory(a_story->flip(current_l,true));
+    if (current_l.valid) updateStory(a_story->flip(current_l,true));
 }
 
 void MViewer::on_actionFlip_horizontal_triggered()
 {
-    updateStory(a_story->flip(current_l,false));
+    if (current_l.valid) updateStory(a_story->flip(current_l,false));
 }
 
 void MViewer::on_actionZoom_in_triggered()
@@ -1478,15 +1478,12 @@ void MViewer::on_actionApply_tagset_from_left_to_right_triggered()
 
 void MViewer::on_actionConcatenate_triggered()
 {
-    updateStory(a_story->concatenate(current_l,current_r));
+    if (current_l.valid) updateStory(a_story->concatenate(current_l,current_r));
 }
 
 void MViewer::on_pushButton_9_clicked()
 {
-    a_story->clear();
-    ui->label_6->setText("Step 0/0");
-    ui->lineEdit_3->clear();
-    ui->plainTextEdit_2->clear();
+    //TODO: remove single step (with confirmation box)
 }
 
 void MViewer::on_pushButton_4_clicked()
@@ -1507,8 +1504,10 @@ void MViewer::on_pushButton_8_clicked()
 {
     if (!a_story->isActive()) return;
     a_story->addComment(ui->plainTextEdit_2->toPlainText());
-    if (db.updateStory(ui->lineEdit_3->text().replace('\"','\''),a_story))
+    if (db.updateStory(ui->lineEdit_3->text().replace('\"','\''),a_story)) {
         ui->statusBar->showMessage("Story saved");
+        a_story->clearDirty();
+    }
 }
 
 void MViewer::on_pushButton_5_clicked()
@@ -1546,7 +1545,7 @@ void MViewer::on_actionPick_a_story_triggered()
 
 void MViewer::on_actionAdd_to_story_triggered()
 {
-    updateStory(a_story->append(current_l));
+    if (current_l.valid) updateStory(a_story->append(current_l));
 }
 
 void MViewer::on_actionCrop_triggered()
@@ -1851,14 +1850,12 @@ void MViewer::on_actionFill_rect_triggered()
 
 void MViewer::on_actionDesaturate_triggered()
 {
-    if (current_l.valid)
-        updateStory(a_story->desaturate(current_l));
+    if (current_l.valid) updateStory(a_story->desaturate(current_l));
 }
 
 void MViewer::on_actionColorize_triggered()
 {
-    if (current_l.valid)
-        updateStory(a_story->colorize(current_l));
+    if (current_l.valid) updateStory(a_story->colorize(current_l));
 }
 
 void MViewer::on_actionContinue_search_triggered()
@@ -1879,4 +1876,21 @@ void MViewer::on_listWidget_2_itemDoubleClicked(QListWidgetItem *item)
     current_r = loader->loadFull(item->text());
     scaleImage(current_r,ui->scrollArea_2,ui->label_2,ui->label_4,1);
     incViews(false);
+}
+
+void MViewer::on_actionClear_story_triggered()
+{
+    if (QMessageBox::question(this, tr("Confirmation"), tr("Do you want to erase all steps in the current story?"), QMessageBox::Yes | QMessageBox::No) != QMessageBox::Yes)
+        return;
+
+    a_story->clear();
+    ui->label_6->setText("Step 0/0");
+    ui->lineEdit_3->clear();
+    ui->plainTextEdit_2->clear();
+    ui->listWidget_2->clear();
+}
+
+void MViewer::on_actionEqualize_triggered()
+{
+    if (current_l.valid) updateStory(a_story->equalize(current_l));
 }

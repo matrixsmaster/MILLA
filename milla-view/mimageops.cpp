@@ -180,6 +180,21 @@ QPixmap MImageOps::colorize(MImageListRecord const &in)
     return rec.result;
 }
 
+QPixmap MImageOps::equalize(MImageListRecord const &in)
+{
+    if (!in.valid) return QPixmap();
+
+    MMacroRecord rec;
+    rec.action = MMacroRecord::Equalize;
+    rec.left = in;
+
+    CVHelper hlp;
+    rec.result = hlp.equalizeHist(in.picture);
+
+    add(rec);
+    return rec.result;
+}
+
 QPixmap MImageOps::first()
 {
     if (history.empty()) return QPixmap();
@@ -462,6 +477,7 @@ bool MImageOps::deserialize(QString const &in)
             case MMacroRecord::FillRect: i.result = fillrect(i.left,i.roi); break;
             case MMacroRecord::Desaturate: i.result = desaturate(i.left); break;
             case MMacroRecord::Colorize: i.result = colorize(i.left); break;
+            case MMacroRecord::Equalize: i.result = equalize(i.left); break;
             }
 
             if (i.result.isNull()) done = false;

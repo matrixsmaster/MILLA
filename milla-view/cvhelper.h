@@ -57,6 +57,8 @@ public:
 
     static cv::Mat getHist(QPixmap const &img);
 
+    static QPixmap equalizeHist(QPixmap const &img);
+
     MImageExtras collectImageExtraData(QString const &fn, QPixmap const &org);
 
     static QPixmap drawROIs(QPixmap const &on, QRect &visBound, MImageExtras const &ext, bool calc_only, int index = -1);

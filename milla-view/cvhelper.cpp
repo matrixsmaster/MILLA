@@ -179,6 +179,19 @@ Mat CVHelper::getHist(QPixmap const &img)
     return getHist(in);
 }
 
+QPixmap CVHelper::equalizeHist(QPixmap const &img)
+{
+    QImage orgm(img.toImage());
+    if (orgm.isNull()) return QPixmap();
+    Mat in = CVHelper::slowConvert(orgm);
+    Mat rgb[3],out[3];
+    cv::split(in,rgb);
+    for (int i = 0; i < 3; i++) cv::equalizeHist(rgb[i],out[i]);
+    Mat res;
+    cv::merge(out,3,res);
+    return QPixmap::fromImage(slowConvertBack(res));
+}
+
 MImageExtras CVHelper::collectImageExtraData(QString const &fn, QPixmap const &org)
 {
     MImageExtras res;

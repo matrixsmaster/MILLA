@@ -23,7 +23,8 @@ struct MMacroRecord {
         Crop,
         FillRect,
         Desaturate,
-        Colorize
+        Colorize,
+        Equalize,
     } action;
 
     MImageListRecord left, right;
@@ -43,13 +44,15 @@ public:
 
     void clear();
 
-    bool isActive() { return !history.empty(); }
+    bool isActive()   { return !history.empty(); }
 
-    bool isDirty()  { return dirty; }
+    bool isDirty()    { return dirty; }
 
-    int size()      { return history.size(); }
+    void clearDirty() { dirty = false; }
 
-    int position()  { return pos - history.begin(); }
+    int size()        { return history.size(); }
+
+    int position()    { return pos - history.begin(); }
 
     QPixmap append(MImageListRecord const &in);
 
@@ -66,6 +69,8 @@ public:
     QPixmap desaturate(MImageListRecord const &in);
 
     QPixmap colorize(MImageListRecord const &in);
+
+    QPixmap equalize(MImageListRecord const &in);
 
     QPixmap first();
 

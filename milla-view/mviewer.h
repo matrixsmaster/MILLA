@@ -241,6 +241,10 @@ private slots:
 
     void on_listWidget_2_itemDoubleClicked(QListWidgetItem *item);
 
+    void on_actionClear_story_triggered();
+
+    void on_actionEqualize_triggered();
+
 private:
     Ui::MViewer *ui;
     DBHelper db;
