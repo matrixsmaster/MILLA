@@ -140,7 +140,11 @@ public:
 
     static QString getExtraStringVal(QString const &key);
 
+    static int getExtraInt(QString const &key);
+
     static bool setExtraStringVal(QString const &key, QString const &val);
+
+    static bool setExtraInt(QString const &key, int val);
 
     static QString getDBInfoString();
 

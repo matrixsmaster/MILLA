@@ -2,6 +2,7 @@
 #define STORYSELECTOR_H
 
 #include <QDialog>
+#include <QListWidgetItem>
 
 namespace Ui {
 class StorySelector;
@@ -16,6 +17,9 @@ public:
     ~StorySelector();
 
     QString getStoryTitle();
+
+private slots:
+    void on_listWidget_itemDoubleClicked(QListWidgetItem *item);
 
 private:
     Ui::StorySelector *ui;

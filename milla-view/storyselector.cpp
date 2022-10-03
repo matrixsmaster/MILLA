@@ -25,3 +25,8 @@ QString StorySelector::getStoryTitle()
     else
         return QString();
 }
+
+void StorySelector::on_listWidget_itemDoubleClicked(QListWidgetItem *item)
+{
+    accept();
+}

@@ -1365,22 +1365,61 @@ QString DBHelper::getExtraStringVal(QString const &key)
     return QString();
 }
 
+int DBHelper::getExtraInt(QString const &key)
+{
+    QSqlQuery q;
+    q.prepare("SELECT bin FROM extras WHERE key = :k");
+    q.bindValue(":k",key);
+    if (!q.exec() || !q.next()) return 0;
+    QByteArray ba = q.value(0).toByteArray();
+    if (ba.length() != sizeof(int)) return 0;
+    int* val = reinterpret_cast<int*>(ba.data());
+    return *val;
+}
+
 bool DBHelper::setExtraStringVal(QString const &key, QString const &val)
 {
     QSqlQuery q;
-    q.prepare("SELECT COUNT(val) FROM extras WHERE key = :k");
+    q.prepare("SELECT COUNT(key) FROM extras WHERE key = :k");
     q.bindValue(":k",key);
     if (!q.exec() || !q.next()) return false;
 
+    QByteArray empty;
     if (!q.value(0).toInt())
-        q.prepare("INSERT INTO extras (key, val) VALUES (:k, :v)");
+        q.prepare("INSERT INTO extras (key, val, bin) VALUES (:k, :v, :b)");
     else
         q.prepare("UPDATE extras SET val = :v WHERE key = :k");
     q.bindValue(":k",key);
     q.bindValue(":v",val);
+    q.bindValue(":b",empty);
     bool ok = q.exec();
 
     qDebug() << "[db] Updating key/val" << key << "/" << val << ":" << ok;
+    return ok;
+}
+
+bool DBHelper::setExtraInt(QString const &key, int val)
+{
+    QSqlQuery q;
+    q.prepare("SELECT COUNT(key) FROM extras WHERE key = :k");
+    q.bindValue(":k",key);
+    if (!q.exec() || !q.next()) return false;
+
+    QString empty;
+    QByteArray buf(sizeof(int),0);
+    int* ptr = reinterpret_cast<int*>(buf.data());
+    *ptr = val;
+
+    if (!q.value(0).toInt())
+        q.prepare("INSERT INTO extras (key, val, bin) VALUES (:k, :v, :b)");
+    else
+        q.prepare("UPDATE extras SET bin = :b WHERE key = :k");
+    q.bindValue(":k",key);
+    q.bindValue(":v",empty);
+    q.bindValue(":b",buf);
+    bool ok = q.exec();
+
+    qDebug() << "[db] Updating key/bin" << key << "/" << val << ":" << ok;
     return ok;
 }
 

@@ -1662,14 +1662,26 @@ void MViewer::on_actionOpen_with_triggered()
     if (!current_l.valid) return;
 
     bool ok;
-    QString cmd = DBHelper::getExtraStringVal(DBF_EXTRA_EXTERNAL_EDITOR);
-    cmd = QInputDialog::getText(this,tr("Open with external program"),tr("Enter command"),QLineEdit::Normal,cmd,&ok);
+    QString orig = DBHelper::getExtraStringVal(DBF_EXTRA_EXTERNAL_EDITOR);
+    QStringList lst = orig.split('\n',Qt::SkipEmptyParts);
+    int def = DBHelper::getExtraInt(DBF_EXTRA_EXTERNAL_EDITOR);
+    QString cmd = QInputDialog::getItem(this,tr("Open with external program"),tr("Select or enter command"),lst,def,true,&ok);
 
     if (ok && !cmd.isEmpty()) {
-        DBHelper::setExtraStringVal(DBF_EXTRA_EXTERNAL_EDITOR,cmd);
+        if (lst.contains(cmd)) {
+            // we know this command, update only the default choice
+            def = lst.indexOf(cmd);
+        } else {
+            // append new command to the list of known commands
+            DBHelper::setExtraStringVal(DBF_EXTRA_EXTERNAL_EDITOR,orig+"\n"+cmd);
+            def = lst.size();
+        }
+        DBHelper::setExtraInt(DBF_EXTRA_EXTERNAL_EDITOR,def);
+
         cmd += " \"" + current_l.filename;
         cmd += "\" &";
         qDebug() << "[RUN] " << cmd;
+
         //TODO: portable and safer version
         system(cmd.toStdString().c_str()); //WARNING: potentially insecure, and Linux-only
     }
