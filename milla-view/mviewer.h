@@ -245,6 +245,8 @@ private slots:
 
     void on_actionEqualize_triggered();
 
+    void on_actionPlay_special_file_triggered();
+
 private:
     Ui::MViewer *ui;
     DBHelper db;

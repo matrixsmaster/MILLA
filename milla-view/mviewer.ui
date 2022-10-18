@@ -2788,6 +2788,7 @@
     </widget>
     <addaction name="actionNext"/>
     <addaction name="actionPrevious"/>
+    <addaction name="actionPlay_special_file"/>
     <addaction name="menuHistory"/>
     <addaction name="separator"/>
     <addaction name="actionNext_face"/>
@@ -3524,22 +3525,12 @@
     <string>Layout 3</string>
    </property>
   </action>
-  <action name="actionNew">
-   <property name="text">
-    <string>New</string>
-   </property>
-  </action>
   <action name="actionFill_rect">
    <property name="text">
     <string>Fill rect</string>
    </property>
    <property name="shortcut">
     <string>Shift+F</string>
-   </property>
-  </action>
-  <action name="actionAuto_colors">
-   <property name="text">
-    <string>Auto-colors</string>
    </property>
   </action>
   <action name="actionColorize">
@@ -3576,6 +3567,14 @@
   <action name="actionEqualize">
    <property name="text">
     <string>Equalize</string>
+   </property>
+  </action>
+  <action name="actionPlay_special_file">
+   <property name="text">
+    <string>Play special file</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+P</string>
    </property>
   </action>
  </widget>

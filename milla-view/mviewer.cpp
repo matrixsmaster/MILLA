@@ -1678,7 +1678,19 @@ void MViewer::on_actionOpen_with_triggered()
         }
         DBHelper::setExtraInt(DBF_EXTRA_EXTERNAL_EDITOR,def);
 
-        cmd += " \"" + current_l.filename;
+        cmd += " \"";
+        if (current_l.generated) {
+            QString fn = "/tmp/milla_temp_image.png"; // FIXME: make it properly!
+            ok = current_l.picture.save(fn);
+            qDebug() << "Saving generated left image to " << fn << ": " << ok;
+            if (!ok) return;
+            cmd += fn;
+        } else if (!current_l.filename.isEmpty())
+            cmd += current_l.filename;
+        else {
+            qDebug() << "ERROR: not a generated image, but also have an empty filename, nothing to do";
+            return;
+        }
         cmd += "\" &";
         qDebug() << "[RUN] " << cmd;
 
@@ -1905,4 +1917,9 @@ void MViewer::on_actionClear_story_triggered()
 void MViewer::on_actionEqualize_triggered()
 {
     if (current_l.valid) updateStory(a_story->equalize(current_l));
+}
+
+void MViewer::on_actionPlay_special_file_triggered()
+{
+    if (current_l.valid && !current_l.filename.isEmpty()) plugins.openFileFormat(current_l.filename);
 }
