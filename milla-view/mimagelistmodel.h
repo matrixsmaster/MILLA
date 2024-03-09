@@ -46,6 +46,8 @@ public:
 
     virtual QModelIndex getRecordIndex(const QString &fn, bool allowPartialMatch = false, size_t* pStartIdx = nullptr);
 
+    virtual bool deleteRecordByFullName(const QString &fn);
+
 protected:
     QList<MImageListRecord> images;
     size_t ram_footprint = 0;

@@ -12,13 +12,14 @@
 #define DB_FILEPATH MILLA_CONFIG_PATH "storage.db"
 #endif
 
-#define DB_VERSION 4
+#define DB_VERSION 5
 
 #define DB_CONTENTS {   {"stats",   DBF_STATS}, \
                         {"tags",    DBF_TAGS}, \
                         {"links",   DBF_LINKS}, \
                         {"thumbs",  DBF_THUMBS}, \
                         {"memory",  DBF_MEMORY}, \
+                        {"dirs",    DBF_DIRS}, \
                         {"stories", DBF_STORIES}, \
                         {"recent",  DBF_RECENT}, \
                         {"extras",  DBF_EXTRAS}, \
@@ -61,6 +62,8 @@
 #define DBF_TAGS_SHORT "key, tag, rating"
 
 #define DBF_MEMORY "slot INT, file TEXT"
+
+#define DBF_DIRS "path TEXT, last TEXT"
 
 #define DBF_STORIES "updated UNSIGNED INT, title TEXT, actions TEXT"
 

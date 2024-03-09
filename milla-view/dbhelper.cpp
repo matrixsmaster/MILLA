@@ -1306,6 +1306,61 @@ bool DBHelper::eraseMemory()
     return q.exec("DELETE FROM memory");
 }
 
+bool DBHelper::updateDirPath(const QString &path, const QString &last)
+{
+    QSqlQuery q;
+    q.prepare("SELECT COUNT(last) FROM dirs WHERE path = :p");
+    q.bindValue(":p",path);
+    if (!q.exec() || !q.next()) return false;
+
+    if (!q.value(0).toInt())
+        q.prepare("INSERT INTO dirs (path, last) VALUES (:p, :l)");
+    else
+        q.prepare("UPDATE dirs SET last = :l WHERE path = :p");
+    q.bindValue(":p",path);
+    q.bindValue(":l",last);
+    bool ok = q.exec();
+
+    qDebug() << "[db] Updating user directory " << path << ":" << ok;
+    return ok;
+}
+
+bool DBHelper::delDirPath(const QString &path)
+{
+    QSqlQuery q;
+    q.prepare("DELETE FROM dirs WHERE path = :p");
+    q.bindValue(":p",path);
+    bool ok = q.exec();
+
+    qDebug() << "[db] Erasing user directory " << path << ": " << ok;
+    return ok;
+}
+
+bool DBHelper::eraseDirs()
+{
+    QSqlQuery q;
+    return q.exec("DELETE FROM dirs");
+}
+
+QStringList DBHelper::getDirsList()
+{
+    QStringList res;
+    QSqlQuery q;
+    if (!q.exec("SELECT path FROM dirs")) return res;
+
+    while (q.next()) res.push_back(q.value(0).toString());
+    return res;
+}
+
+QString DBHelper::getDirLastFile(const QString &path)
+{
+    QSqlQuery q;
+    q.prepare("SELECT last FROM dirs WHERE path = :p");
+    q.bindValue(":p",path);
+    if (q.exec() && q.next()) return q.value(0).toString();
+    return QString();
+}
+
 QStringList DBHelper::getStoriesList()
 {
     QStringList res;

@@ -78,12 +78,45 @@ MViewer::MViewer(QWidget *parent) : QMainWindow(parent)
     plugins.addPluginsToMenu(*(ui->menuPlugins),prog_callback);
 
     //Create the "short-term memory" tab
-    MMemoryModel* mmm = new MMemoryModel(loader,ui->listView_4);
-    ui->listView_4->setModel(mmm);
-    ui->listView_4->setViewMode(QListView::ListMode);
-    ui->listView_4->setFlow(QListView::LeftToRight);
-    ui->listView_4->setWrapping(false);
-    ui->listView_4->setWordWrap(true);
+    createMemoryTab();
+
+    //Create the Directory tab
+    ui->dirList->setModel(new MDirectoryModel(loader,ui->dirList));
+
+    //Enable events filter for left pane (for selection)
+    ui->scrollArea->installEventFilter(this);
+
+    //Enable events filter for labels (for copying file names)
+    ui->label_3->installEventFilter(this);
+    ui->label_4->installEventFilter(this);
+
+    //Reset form
+    cleanUp();
+    updateTags();
+    updateRecents();
+    updateWindowLayout("window");
+    ui->mainToolBar->hide();
+
+    //Update status bar with pending message(s)
+    status_pending = "[" + db.getDBInfoString() + "]";
+    ui->statusBar->showMessage(status_pending);
+    status_pending += " Current dir: ";
+
+    //Remove splash screen
+    sscp->hide();
+    delete sscp;
+}
+
+MViewer::~MViewer()
+{
+    updateWindowLayout("window",true);
+    delete ui;
+}
+
+void MViewer::createMemoryTab()
+{
+    MMemoryModel* mmm = new MMemoryModel(loader,ui->memList);
+    ui->memList->setModel(mmm);
     //Create the menu actions associated with each of memory slots
     for (int i = 0; i < MAXMEMORYSLOTS; i++) {
         QAction* a = ui->menuShort_term_memory->addAction(QString::asprintf("Slot %d",i+1));
@@ -104,39 +137,11 @@ MViewer::MViewer(QWidget *parent) : QMainWindow(parent)
         connect(a,&QAction::triggered,this,[i,mmm] { mmm->eraseSlot(i); });
     }
     //Connect the memory tab selection model to right image pane
-    connect(ui->listView_4->selectionModel(),&QItemSelectionModel::selectionChanged,[this] {
-        current_r = ui->listView_4->selectionModel()->selectedIndexes().first().data(MImageListModel::FullDataRole).value<MImageListRecord>();
+    connect(ui->memList->selectionModel(),&QItemSelectionModel::selectionChanged,[this] {
+        current_r = ui->memList->selectionModel()->selectedIndexes().first().data(MImageListModel::FullDataRole).value<MImageListRecord>();
         scaleImage(current_r,ui->scrollArea_2,ui->label_2,ui->label_4,1);
         incViews(false);
     });
-
-    //Enable events filter for left pane (for selection)
-    ui->scrollArea->installEventFilter(this);
-
-    //Enable events filter for labels (for copying file names)
-    ui->label_3->installEventFilter(this);
-    ui->label_4->installEventFilter(this);
-
-    //Reset form
-    cleanUp();
-    updateTags();
-    updateRecents();
-    updateWindowLayout("window");
-
-    //Update status bar with pending message(s)
-    status_pending = "[" + db.getDBInfoString() + "]";
-    ui->statusBar->showMessage(status_pending);
-    status_pending += " Current dir: ";
-
-    //Remove splash screen
-    sscp->hide();
-    delete sscp;
-}
-
-MViewer::~MViewer()
-{
-    updateWindowLayout("window",true);
-    delete ui;
 }
 
 void MViewer::updateWindowLayout(const QString &name, bool save)
@@ -1410,7 +1415,7 @@ void MViewer::on_actionReset_zoom_triggered()
 
 void MViewer::on_actionClear_all_triggered()
 {
-    MMemoryModel* mmm = dynamic_cast<MMemoryModel*>(ui->listView_4->model());
+    MMemoryModel* mmm = dynamic_cast<MMemoryModel*>(ui->memList->model());
     if (mmm) mmm->clear(true);
 }
 
@@ -1922,4 +1927,79 @@ void MViewer::on_actionEqualize_triggered()
 void MViewer::on_actionPlay_special_file_triggered()
 {
     if (current_l.valid && !current_l.filename.isEmpty()) plugins.openFileFormat(current_l.filename);
+}
+
+void MViewer::on_actionAdd_directory_triggered()
+{
+    QString dir = QFileDialog::getExistingDirectory(this, tr("Open Directory"), "", QFileDialog::ShowDirsOnly | QFileDialog::DontResolveSymlinks);
+    if (dir.isEmpty()) return;
+
+    MDirectoryModel* mdm = dynamic_cast<MDirectoryModel*>(ui->dirList->model());
+    if (mdm) mdm->addDir(dir);
+}
+
+void MViewer::on_actionRemove_directory_triggered()
+{
+    MDirectoryModel* mdm = dynamic_cast<MDirectoryModel*>(ui->dirList->model());
+    if (mdm) mdm->delDir(ui->dirList->selectionModel()->currentIndex().data(Qt::DisplayRole).toString());
+}
+
+void MViewer::on_actionClear_dirs_triggered()
+{
+    MDirectoryModel* mdm = dynamic_cast<MDirectoryModel*>(ui->dirList->model());
+    if (mdm && QMessageBox::question(this, tr("Confirmation"), tr("Do you want to remove all directories from the list?"), QMessageBox::Yes | QMessageBox::No) == QMessageBox::Yes)
+        mdm->delAll();
+}
+
+void MViewer::attemptCopyMoveToDir(bool move)
+{
+    QString dst = ui->dirList->selectionModel()->currentIndex().data(Qt::DisplayRole).toString();
+    QFile src(current_l.filename);
+    if (dst.isEmpty() || !src.exists() || !current_l.valid) return;
+
+    QFileInfo inf(current_l.filename);
+    QString fn = dst + "/" + inf.fileName();
+    bool ok = src.copy(fn);
+    qDebug() << "Copying " << current_l.filename << " to " << fn << ": " << ok << endl;
+    if (!ok) return;
+
+    MDirectoryModel* mdm = dynamic_cast<MDirectoryModel*>(ui->dirList->model());
+    if (mdm) mdm->updateDir(dst,fn);
+
+    if (!move) return;
+
+    if (ui->actionMove_files_to_trash_instead_deleting->isChecked()) {
+        ok = src.moveToTrash();
+        qDebug() << "Moving " << current_l.filename << " to trash: " << ok << endl;
+    } else {
+        ok = src.remove();
+        qDebug() << "Deleting " << current_l.filename << ": " << ok << endl;
+    }
+    if (!ok) return;
+
+    view_timer.stop();
+    current_l.valid = false;
+    ThumbnailModel* ptm = dynamic_cast<ThumbnailModel*>(ui->listView->model());
+    if (ptm) ptm->deleteRecordByFullName(current_l.filename);
+    ui->listView->update();
+}
+
+void MViewer::on_actionCopy_to_dir_triggered()
+{
+    attemptCopyMoveToDir(false);
+}
+
+void MViewer::on_actionMove_to_dir_triggered()
+{
+    attemptCopyMoveToDir(true);
+}
+
+void MViewer::on_actionOpen_dir_triggered()
+{
+    MDirectoryModel* mdm = dynamic_cast<MDirectoryModel*>(ui->dirList->model());
+    if (!mdm) return;
+
+    QString dir = ui->dirList->selectionModel()->currentIndex().data(Qt::DisplayRole).toString();
+    if (dir.isEmpty()) return;
+    showImageList(loader->open(dir));
 }

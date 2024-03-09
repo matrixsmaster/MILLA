@@ -130,6 +130,16 @@ public:
 
     static bool eraseMemory();
 
+    static bool updateDirPath(QString const &path, const QString &last);
+
+    static bool delDirPath(QString const &path);
+
+    static bool eraseDirs();
+
+    static QStringList getDirsList();
+
+    static QString getDirLastFile(QString const &path);
+
     static QStringList getStoriesList();
 
     static bool updateStory(QString const &title, MImageOps* macro, uint stamp = 0);

@@ -25,6 +25,7 @@
 #include "thumbnailmodel.h"
 #include "sresultmodel.h"
 #include "mmemorymodel.h"
+#include "mdirectorymodel.h"
 #include "exportform.h"
 #include "mimpexpmodule.h"
 #include "mmatcher.h"
@@ -247,6 +248,18 @@ private slots:
 
     void on_actionPlay_special_file_triggered();
 
+    void on_actionAdd_directory_triggered();
+
+    void on_actionRemove_directory_triggered();
+
+    void on_actionClear_dirs_triggered();
+
+    void on_actionCopy_to_dir_triggered();
+
+    void on_actionMove_to_dir_triggered();
+
+    void on_actionOpen_dir_triggered();
+
 private:
     Ui::MViewer *ui;
     DBHelper db;
@@ -280,6 +293,8 @@ private:
     std::map<QAction*,QKeySequence> hotkeys;
     MImageOps* a_story = nullptr;
     QString status_pending;
+
+    void createMemoryTab();
 
     void updateWindowLayout(QString const &name, bool save = false);
 
@@ -344,6 +359,8 @@ private:
     void linkageAction(bool link);
 
     void showFaceAction();
+
+    void attemptCopyMoveToDir(bool move);
 };
 
 #endif // MVIEWER_H

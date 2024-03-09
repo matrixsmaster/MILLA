@@ -81,3 +81,16 @@ QModelIndex MImageListModel::getRecordIndex(const QString &fn, bool allowPartial
     if (pStartIdx) *pStartIdx = ok? idx+1:idx;
     return ok? createIndex(idx,0) : QModelIndex();
 }
+
+bool MImageListModel::deleteRecordByFullName(const QString &fn)
+{
+    for (auto i = images.begin(); i != images.end(); ++i) {
+        if (i->filename == fn) {
+            beginInsertRows(QModelIndex(),images.size(),images.size());
+            images.erase(i);
+            endInsertRows();
+            return true;
+        }
+    }
+    return false;
+}

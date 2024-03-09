@@ -14,6 +14,7 @@ TEMPLATE = app
 
 
 SOURCES += main.cpp\
+    mdirectorymodel.cpp \
         mviewer.cpp \
     thumbnailmodel.cpp \
     sresultmodel.cpp \
@@ -39,6 +40,7 @@ SOURCES += main.cpp\
     splashscreen.cpp
 
 HEADERS  += mviewer.h \
+    mdirectorymodel.h \
     thumbnailmodel.h \
     sresultmodel.h \
     searchform.h \

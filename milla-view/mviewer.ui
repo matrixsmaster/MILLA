@@ -1341,7 +1341,14 @@
                </attribute>
                <layout class="QHBoxLayout" name="horizontalLayout_17">
                 <item>
-                 <widget class="QListView" name="listView_4"/>
+                 <widget class="QListView" name="memList">
+                  <property name="flow">
+                   <enum>QListView::LeftToRight</enum>
+                  </property>
+                  <property name="wordWrap">
+                   <bool>true</bool>
+                  </property>
+                 </widget>
                 </item>
                </layout>
               </widget>
@@ -1351,7 +1358,14 @@
                </attribute>
                <layout class="QHBoxLayout" name="horizontalLayout_22">
                 <item>
-                 <widget class="QListView" name="listView_6"/>
+                 <widget class="QListView" name="dirList">
+                  <property name="flow">
+                   <enum>QListView::LeftToRight</enum>
+                  </property>
+                  <property name="wordWrap">
+                   <bool>true</bool>
+                  </property>
+                 </widget>
                 </item>
                </layout>
               </widget>
@@ -2734,6 +2748,7 @@
      <addaction name="actionHotkeys_enabled"/>
      <addaction name="actionAutoplay_special_files"/>
      <addaction name="actionAuto_inc_kudos_for_right_image"/>
+     <addaction name="actionMove_files_to_trash_instead_deleting"/>
     </widget>
     <widget class="QMenu" name="menuOperators">
      <property name="title">
@@ -2815,10 +2830,24 @@
       <string>Short-term memory</string>
      </property>
      <addaction name="actionClear_all"/>
+     <addaction name="actionExport_as_list"/>
      <addaction name="separator"/>
     </widget>
+    <widget class="QMenu" name="menuDirectories">
+     <property name="title">
+      <string>Directories</string>
+     </property>
+     <addaction name="actionAdd_directory"/>
+     <addaction name="actionRemove_directory"/>
+     <addaction name="actionClear_dirs"/>
+     <addaction name="separator"/>
+     <addaction name="actionCopy_to_dir"/>
+     <addaction name="actionMove_to_dir"/>
+     <addaction name="separator"/>
+     <addaction name="actionOpen_dir"/>
+    </widget>
     <addaction name="menuShort_term_memory"/>
-    <addaction name="actionDirectories"/>
+    <addaction name="menuDirectories"/>
     <addaction name="separator"/>
     <addaction name="actionPick_a_story"/>
     <addaction name="actionClear_story"/>
@@ -2902,6 +2931,9 @@
    <addaction name="menuHelp"/>
   </widget>
   <widget class="QToolBar" name="mainToolBar">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
    <attribute name="toolBarArea">
     <enum>TopToolBarArea</enum>
    </attribute>
@@ -3431,11 +3463,6 @@
     <string>Shift+J</string>
    </property>
   </action>
-  <action name="actionOpen_right_image_dir">
-   <property name="text">
-    <string>Open right image dir</string>
-   </property>
-  </action>
   <action name="actionLoad_right_image_dir">
    <property name="text">
     <string>Load right image dir</string>
@@ -3559,11 +3586,6 @@
     <string>Clear story</string>
    </property>
   </action>
-  <action name="actionDirectories">
-   <property name="text">
-    <string>Directories</string>
-   </property>
-  </action>
   <action name="actionEqualize">
    <property name="text">
     <string>Equalize</string>
@@ -3575,6 +3597,55 @@
    </property>
    <property name="shortcut">
     <string>Ctrl+P</string>
+   </property>
+  </action>
+  <action name="actionExport_as_list">
+   <property name="text">
+    <string>Export as list</string>
+   </property>
+  </action>
+  <action name="actionAdd_directory">
+   <property name="text">
+    <string>Add directory</string>
+   </property>
+  </action>
+  <action name="actionRemove_directory">
+   <property name="text">
+    <string>Remove directory</string>
+   </property>
+  </action>
+  <action name="actionClear_dirs">
+   <property name="text">
+    <string>Clear dirs</string>
+   </property>
+  </action>
+  <action name="actionCopy_to_dir">
+   <property name="text">
+    <string>Copy to dir</string>
+   </property>
+   <property name="shortcut">
+    <string>Alt+F5</string>
+   </property>
+  </action>
+  <action name="actionMove_to_dir">
+   <property name="text">
+    <string>Move to dir</string>
+   </property>
+   <property name="shortcut">
+    <string>Alt+F6</string>
+   </property>
+  </action>
+  <action name="actionOpen_dir">
+   <property name="text">
+    <string>Open dir</string>
+   </property>
+  </action>
+  <action name="actionMove_files_to_trash_instead_deleting">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Move files to trash instead of deleting</string>
    </property>
   </action>
  </widget>
