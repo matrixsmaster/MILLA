@@ -9,6 +9,8 @@
 #define AP_DEFAULT_BATCH 512
 #define AP_DEFAULT_TEMP 0
 #define AP_IMAGE_TEMP "/tmp/milla_anna.png"
+#define AP_WAITCB_PERIOD 100ms
+#define AP_WAITCB_INC 10
 
 struct AnnaPluginExtra {
     std::string vision_file, ai_prefix, usr_prefix;
@@ -36,7 +38,7 @@ public:
     bool finalize();
 
     void showUI();
-    void setConfigCB(PlugConfCB cb)               {}
+    void setConfigCB(PlugConfCB cb);
     void setProgressCB(ProgressCB cb)             { progress_cb = cb; }
 
     QVariant getParam(QString key);
@@ -47,6 +49,7 @@ public:
 private:
     MillaPluginContentType cin = MILLA_CONTENT_IMAGE;
     MillaPluginContentType cout = MILLA_CONTENT_TEXT_NOTES;
+    PlugConfCB config_cb = nullptr;
     ProgressCB progress_cb = nullptr;
     AnnaBrain* brain = nullptr;
     AnnaConfig config;

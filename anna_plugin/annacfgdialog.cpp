@@ -28,6 +28,19 @@ void AnnaCfgDialog::updateConfig(AnnaConfig *cfg)
     ex->usr_prefix = ui->prefUsr->text().toStdString();
 }
 
+void AnnaCfgDialog::loadConfig(AnnaConfig *cfg)
+{
+    if (!cfg) return;
+
+    ui->fnModel->setText(cfg->params.model);
+    ui->prompt->setPlainText(cfg->params.prompt);
+
+    AnnaPluginExtra* ex = (AnnaPluginExtra*)(cfg->user);
+    ui->fnVision->setText(QString::fromStdString(ex->vision_file));
+    ui->prefAi->setText(QString::fromStdString(ex->ai_prefix));
+    ui->prefUsr->setText(QString::fromStdString(ex->usr_prefix));
+}
+
 void AnnaCfgDialog::on_pushButton_clicked()
 {
     QString fn = QFileDialog::getOpenFileName(this,"Open LLM file","","GGUF files (*.gguf)");

@@ -18,6 +18,8 @@ public:
 
     void updateConfig(AnnaConfig* cfg);
 
+    void loadConfig(AnnaConfig* cfg);
+
 private slots:
     void on_pushButton_clicked();
 
