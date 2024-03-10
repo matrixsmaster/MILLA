@@ -2,6 +2,17 @@
 #define ANNAPLUGIN_H
 
 #include "plugins.h"
+#include "brain.h"
+//#include "netclient.h"
+
+#define AP_DEFAULT_CONTEXT 4096
+#define AP_DEFAULT_BATCH 512
+#define AP_DEFAULT_TEMP 0
+#define AP_IMAGE_TEMP "/tmp/milla_anna.png"
+
+struct AnnaPluginExtra {
+    std::string vision_file, ai_prefix, usr_prefix;
+};
 
 class AnnaPlugin : public QObject, public MillaGenericPlugin
 {
@@ -37,6 +48,12 @@ private:
     MillaPluginContentType cin = MILLA_CONTENT_IMAGE;
     MillaPluginContentType cout = MILLA_CONTENT_TEXT_NOTES;
     ProgressCB progress_cb = nullptr;
+    AnnaBrain* brain = nullptr;
+    AnnaConfig config;
+    AnnaPluginExtra cfg_extra;
+
+    void DefaultConfig();
+    bool Generate();
 };
 
 #endif // ANNAPLUGIN_H

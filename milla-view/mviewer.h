@@ -65,6 +65,8 @@ public:
 
     void showGeneratedPicture(QPixmap const &in);
 
+    void appendNotes(QString const &str);
+
 private slots:
     void on_pushButton_clicked();
 

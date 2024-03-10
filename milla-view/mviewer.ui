@@ -1297,7 +1297,7 @@
                </attribute>
                <layout class="QHBoxLayout" name="horizontalLayout_13">
                 <item>
-                 <widget class="QPlainTextEdit" name="plainTextEdit"/>
+                 <widget class="QPlainTextEdit" name="notes"/>
                 </item>
                 <item>
                  <widget class="QPushButton" name="pushButton_2">
@@ -1434,7 +1434,7 @@
                   <item>
                    <layout class="QHBoxLayout" name="horizontalLayout_21">
                     <item>
-                     <widget class="QPlainTextEdit" name="plainTextEdit_2"/>
+                     <widget class="QPlainTextEdit" name="storyCard"/>
                     </item>
                     <item>
                      <widget class="QListWidget" name="listWidget_2"/>

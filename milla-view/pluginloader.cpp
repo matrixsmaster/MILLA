@@ -178,14 +178,15 @@ void MillaPluginLoader::pluginAction(QString name, QAction* sender)
     }
 
     if (!skip_convert) {
+        //present the result to the user
         switch (plug->outputContent()) {
         case MILLA_CONTENT_IMAGE:
-            //present the result to the user
             if (res.canConvert<QPixmap>()) out = res.value<QPixmap>();
+            if (!out.isNull()) wnd->showGeneratedPicture(out);
             break;
 
         case MILLA_CONTENT_TEXT_NOTES:
-            //TODO
+            if (res.canConvert<QString>()) wnd->appendNotes(res.value<QString>());
             break;
 
         default:
@@ -193,8 +194,8 @@ void MillaPluginLoader::pluginAction(QString name, QAction* sender)
         }
     }
 
+    //stop processing
     wnd->prepareLongProcessing(true);
-    if (!out.isNull()) wnd->showGeneratedPicture(out);
 }
 
 bool MillaPluginLoader::startPlugin(MillaGenericPlugin* plug, QAction* sender)

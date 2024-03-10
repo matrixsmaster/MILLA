@@ -177,7 +177,7 @@ void MViewer::cleanUp()
     ui->label_2->setPixmap(QPixmap());
     ui->label_3->clear();
     ui->label_4->clear();
-    ui->plainTextEdit->clear();
+    ui->notes->clear();
 
     updateTags();
     updateStars();
@@ -513,10 +513,10 @@ void MViewer::leftImageMetaUpdate()
 
         bool ok;
         ui->lcdNumber->display((double)db.getFileViews(current_l.filename,ok));
-        if (ok) ui->plainTextEdit->setPlainText(db.getFileNotes(current_l.filename));
-        else ui->plainTextEdit->clear();
+        if (ok) ui->notes->setPlainText(db.getFileNotes(current_l.filename));
+        else ui->notes->clear();
 
-        if (!ui->plainTextEdit->toPlainText().isEmpty())
+        if (!ui->notes->toPlainText().isEmpty())
             ui->tabWidget->setCurrentIndex(MVTAB_NOTES);
     }
     kudos(current_l,0);
@@ -914,7 +914,7 @@ void MViewer::on_actionAbout_triggered()
 void MViewer::on_pushButton_2_clicked()
 {
     if (current_l.valid && !current_l.generated)
-        db.updateFileNotes(current_l.filename,ui->plainTextEdit->toPlainText().replace('\"','\''));
+        db.updateFileNotes(current_l.filename,ui->notes->toPlainText().replace('\"','\''));
 }
 
 void MViewer::on_actionKudos_to_left_image_triggered()
@@ -1306,6 +1306,12 @@ void MViewer::showGeneratedPicture(QPixmap const &in)
     }
 }
 
+void MViewer::appendNotes(const QString &str)
+{
+    ui->notes->appendPlainText(str);
+    on_pushButton_2_clicked();
+}
+
 void MViewer::enableShortcuts(QObjectList const &children, bool en)
 {
     for (auto &i : children) {
@@ -1363,8 +1369,8 @@ void MViewer::updateStory(QPixmap const &result)
 {
     showGeneratedPicture(result);
     ui->label_6->setText(QString::asprintf("Step %d/%d",a_story->position()+1,a_story->size()));
-    ui->plainTextEdit_2->setPlainText(a_story->getComment());
-    ui->plainTextEdit_2->setEnabled(!result.isNull());
+    ui->storyCard->setPlainText(a_story->getComment());
+    ui->storyCard->setEnabled(!result.isNull());
     QStringList l = a_story->getCurrentFileNames();
     ui->listWidget_2->clear();
     for (auto &i : l) ui->listWidget_2->addItem(i);
@@ -1494,21 +1500,21 @@ void MViewer::on_pushButton_9_clicked()
 void MViewer::on_pushButton_4_clicked()
 {
     if (!a_story->isActive()) return;
-    a_story->addComment(ui->plainTextEdit_2->toPlainText());
+    a_story->addComment(ui->storyCard->toPlainText());
     updateStory(a_story->previous(ui->actionSkip_empty_story_steps->isChecked()));
 }
 
 void MViewer::on_pushButton_6_clicked()
 {
     if (!a_story->isActive()) return;
-    a_story->addComment(ui->plainTextEdit_2->toPlainText());
+    a_story->addComment(ui->storyCard->toPlainText());
     updateStory(a_story->next(ui->actionSkip_empty_story_steps->isChecked()));
 }
 
 void MViewer::on_pushButton_8_clicked()
 {
     if (!a_story->isActive()) return;
-    a_story->addComment(ui->plainTextEdit_2->toPlainText());
+    a_story->addComment(ui->storyCard->toPlainText());
     if (db.updateStory(ui->lineEdit_3->text().replace('\"','\''),a_story)) {
         ui->statusBar->showMessage("Story saved");
         a_story->clearDirty();
@@ -1518,14 +1524,14 @@ void MViewer::on_pushButton_8_clicked()
 void MViewer::on_pushButton_5_clicked()
 {
     if (!a_story->isActive()) return;
-    a_story->addComment(ui->plainTextEdit_2->toPlainText());
+    a_story->addComment(ui->storyCard->toPlainText());
     if (a_story->moveCurrent(true)) updateStory(a_story->current());
 }
 
 void MViewer::on_pushButton_7_clicked()
 {
     if (!a_story->isActive()) return;
-    a_story->addComment(ui->plainTextEdit_2->toPlainText());
+    a_story->addComment(ui->storyCard->toPlainText());
     if (a_story->moveCurrent(false)) updateStory(a_story->current());
 }
 
@@ -1915,7 +1921,7 @@ void MViewer::on_actionClear_story_triggered()
     a_story->clear();
     ui->label_6->setText("Step 0/0");
     ui->lineEdit_3->clear();
-    ui->plainTextEdit_2->clear();
+    ui->storyCard->clear();
     ui->listWidget_2->clear();
 }
 
