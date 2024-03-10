@@ -47,3 +47,8 @@ INCLUDEPATH += $$ANNA_PATH $$ANNA_PATH/server
 DEPENDPATH += $$ANNA_PATH $$ANNA_PATH/server
 
 LIBS += -L$$ANNA_PATH -lanna
+
+equals(USE_CUBLAS,1) {
+    DEFINES += GGML_USE_CUBLAS
+    LIBS += $$CUBLAS_PATH -lcuda -lcublas -lculibos -lcudart -lcublasLt
+}

@@ -1705,7 +1705,7 @@ void MViewer::on_actionOpen_with_triggered()
         cmd += "\" &";
         qDebug() << "[RUN] " << cmd;
 
-        //TODO: portable and safer version
+        //TODO: portable and safer version --> QProcess
         system(cmd.toStdString().c_str()); //WARNING: potentially insecure, and Linux-only
     }
 }

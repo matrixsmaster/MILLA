@@ -18,7 +18,6 @@ AnnaPlugin::AnnaPlugin() :
 
 AnnaPlugin::~AnnaPlugin()
 {
-    if (brain) delete brain;
     qDebug() << "[ANNA] Plugin destroyed";
 }
 
@@ -31,6 +30,10 @@ bool AnnaPlugin::init()
 bool AnnaPlugin::finalize()
 {
     qDebug() << "[ANNA] Finalize OK";
+    if (brain) {
+        delete brain;
+        brain = nullptr;
+    }
     return true;
 }
 
@@ -122,6 +125,14 @@ QVariant AnnaPlugin::action(QVariant in)
         qDebug() << "[ANNA] Brain created";
     }
 
+    //process prompt first
+    brain->setInput(config.params.prompt);
+    if (!Generate(true)) {
+        qDebug() << "[ANNA] Failed to process the prompt";
+        return QVariant();
+    }
+    qDebug() << "[ANNA] Prompt processed";
+
     //encode image
     QPixmap img;
     if (in.canConvert<QPixmap>()) img = in.value<QPixmap>();
@@ -135,11 +146,12 @@ QVariant AnnaPlugin::action(QVariant in)
         qDebug() << "[ANNA] Unable to embed image: " << QString::fromStdString(brain->getError());
         return QVariant();
     }
+    qDebug() << "[ANNA] Image encoded";
 
     //get the result
     brain->setInput(cfg_extra.usr_prefix);
     brain->setPrefix(cfg_extra.ai_prefix);
-    if (Generate()) {
+    if (Generate(false)) {
         QString out = QString::fromStdString(brain->getOutput());
         qDebug() << "[ANNA] Result: " << out;
         return out;
@@ -151,9 +163,9 @@ QVariant AnnaPlugin::action(QVariant in)
 
 void AnnaPlugin::DefaultConfig()
 {
-    config.convert_eos_to_nl = false;
+    config.convert_eos_to_nl = true;
     config.nl_to_turnover = false;
-    config.verbose_level = 0;
+    config.verbose_level = 2; //FIXME: DEBUG ONLY!!!
     config.user = &cfg_extra;
 
     gpt_params* p = &config.params;
@@ -163,18 +175,18 @@ void AnnaPlugin::DefaultConfig()
     p->n_predict = -1;
     p->n_ctx = AP_DEFAULT_CONTEXT;
     p->n_batch = AP_DEFAULT_BATCH;
-    p->n_gpu_layers = 0;
+    p->n_gpu_layers = 32; //FIXME: DEBUG ONLY!!!
     p->model[0] = 0;
     p->prompt[0] = 0;
     p->sparams.temp = AP_DEFAULT_TEMP;
 }
 
-bool AnnaPlugin::Generate()
+bool AnnaPlugin::Generate(bool no_sample)
 {
     while (brain) {
         //detach actual processing into separate thread
         auto rhnd = async(launch::async,[&]() -> auto {
-            return brain->Processing(false);
+            return brain->Processing(no_sample);
         });
 
         //while calling wait callback
@@ -194,6 +206,9 @@ bool AnnaPlugin::Generate()
         case ANNA_TURNOVER:
             return true;
         case ANNA_READY:
+            if (no_sample) return true;
+            //qDebug() << QString::fromStdString(brain->getOutput());
+            //fall-thru
         case ANNA_PROCESSING:
             //nothing to do, waiting
             break;

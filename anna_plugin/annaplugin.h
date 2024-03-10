@@ -56,7 +56,7 @@ private:
     AnnaPluginExtra cfg_extra;
 
     void DefaultConfig();
-    bool Generate();
+    bool Generate(bool no_sample);
 };
 
 #endif // ANNAPLUGIN_H
