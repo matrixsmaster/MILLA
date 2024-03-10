@@ -1314,7 +1314,7 @@
                </attribute>
                <layout class="QHBoxLayout" name="horizontalLayout_14">
                 <item>
-                 <widget class="QListView" name="listView_2">
+                 <widget class="QListView" name="resList">
                   <property name="resizeMode">
                    <enum>QListView::Adjust</enum>
                   </property>
@@ -1331,7 +1331,7 @@
                </attribute>
                <layout class="QHBoxLayout" name="horizontalLayout_7">
                 <item>
-                 <widget class="QListView" name="listView_3"/>
+                 <widget class="QListView" name="linkList"/>
                 </item>
                </layout>
               </widget>
@@ -2633,7 +2633,7 @@
                </widget>
               </item>
               <item>
-               <widget class="QLineEdit" name="lineEdit_2"/>
+               <widget class="QLineEdit" name="tagQSearch"/>
               </item>
               <item>
                <widget class="QPushButton" name="pushButton_3">
@@ -2830,7 +2830,7 @@
       <string>Short-term memory</string>
      </property>
      <addaction name="actionClear_all"/>
-     <addaction name="actionExport_as_list"/>
+     <addaction name="actionMove_to_found"/>
      <addaction name="separator"/>
     </widget>
     <widget class="QMenu" name="menuDirectories">
@@ -2877,6 +2877,7 @@
      </property>
      <addaction name="actionLeft_image"/>
      <addaction name="actionRight_image"/>
+     <addaction name="actionMove_to_memory"/>
     </widget>
     <addaction name="actionGlobal_search"/>
     <addaction name="actionEdit_exclusion_list"/>
@@ -2895,6 +2896,7 @@
     <addaction name="actionList_all"/>
     <addaction name="actionAlways_show_GUI"/>
     <addaction name="actionRepeat_last"/>
+    <addaction name="actionStop_all"/>
     <addaction name="separator"/>
    </widget>
    <widget class="QMenu" name="menuWindow">
@@ -3599,11 +3601,6 @@
     <string>Ctrl+P</string>
    </property>
   </action>
-  <action name="actionExport_as_list">
-   <property name="text">
-    <string>Export as list</string>
-   </property>
-  </action>
   <action name="actionAdd_directory">
    <property name="text">
     <string>Add directory</string>
@@ -3648,6 +3645,24 @@
     <string>Move files to trash instead of deleting</string>
    </property>
   </action>
+  <action name="actionMove_to_found">
+   <property name="text">
+    <string>Move to found</string>
+   </property>
+  </action>
+  <action name="actionMove_to_memory">
+   <property name="text">
+    <string>Move to memory</string>
+   </property>
+  </action>
+  <action name="actionStop_all">
+   <property name="text">
+    <string>Stop all</string>
+   </property>
+   <property name="shortcut">
+    <string>F12</string>
+   </property>
+  </action>
  </widget>
  <layoutdefault spacing="6" margin="11"/>
  <customwidgets>
@@ -3664,7 +3679,7 @@
   <connection>
    <sender>pushButton_3</sender>
    <signal>clicked()</signal>
-   <receiver>lineEdit_2</receiver>
+   <receiver>tagQSearch</receiver>
    <slot>clear()</slot>
    <hints>
     <hint type="sourcelabel">

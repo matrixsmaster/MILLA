@@ -44,6 +44,15 @@ QVariant MImageListModel::data(const QModelIndex &index, int role) const
     return QVariant();
 }
 
+QStringList MImageListModel::getAllFileNames()
+{
+    QStringList res;
+    for (auto &i : images) {
+        if (!i.filename.isEmpty() && i.valid) res.push_back(i.filename);
+    }
+    return res;
+}
+
 size_t MImageListModel::ItemSizeInBytes(int idx)
 {
     return ItemSizeInBytes(images.at(idx));

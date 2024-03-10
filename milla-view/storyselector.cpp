@@ -26,7 +26,7 @@ QString StorySelector::getStoryTitle()
         return QString();
 }
 
-void StorySelector::on_listWidget_itemDoubleClicked(QListWidgetItem *item)
+void StorySelector::on_listWidget_itemDoubleClicked(QListWidgetItem * /*item*/)
 {
     accept();
 }

@@ -172,7 +172,7 @@ private slots:
 
     void on_actionClear_all_triggered();
 
-    void on_lineEdit_2_textChanged(const QString &arg1);
+    void on_tagQSearch_textChanged(const QString &arg1);
 
     void on_actionApply_tagset_triggered();
 
@@ -259,6 +259,12 @@ private slots:
     void on_actionMove_to_dir_triggered();
 
     void on_actionOpen_dir_triggered();
+
+    void on_actionMove_to_found_triggered();
+
+    void on_actionMove_to_memory_triggered();
+
+    void on_actionStop_all_triggered();
 
 private:
     Ui::MViewer *ui;

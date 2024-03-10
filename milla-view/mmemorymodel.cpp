@@ -38,3 +38,10 @@ void MMemoryModel::clear(bool full)
 
     if (full) DBHelper::eraseMemory();
 }
+
+void MMemoryModel::assignFirst(const QStringList &lst)
+{
+    for (int i = 0; i < MAXMEMORYSLOTS && i < lst.size(); i++)
+        DBHelper::updateMemorySlot(i,lst.at(i));
+    clear();
+}

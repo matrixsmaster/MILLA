@@ -170,8 +170,8 @@ void MViewer::cleanUp()
     jump_idx = 0;
 
     if (ui->listView->model()) ui->listView->model()->deleteLater();
-    if (ui->listView_2->model()) ui->listView_2->model()->deleteLater();
-    if (ui->listView_3->model()) ui->listView_3->model()->deleteLater();
+    if (ui->resList->model()) ui->resList->model()->deleteLater();
+    if (ui->linkList->model()) ui->linkList->model()->deleteLater();
 
     ui->label->setPixmap(QPixmap());
     ui->label_2->setPixmap(QPixmap());
@@ -318,7 +318,7 @@ MImageExtras MViewer::getExtraCacheLine(QString const &fn, bool forceload, bool 
     ThumbnailModel* ptm = dynamic_cast<ThumbnailModel*>(ui->listView->model());
     if (ptm && !ignore_thumbs) {
         size_t idx = 0;
-        for (auto &i : ptm->GetAllImages()) {
+        for (auto &i : ptm->getAllImages()) {
             if (i.filename == fn) {
                 if (forceload) ptm->LoadUp(idx);
                 if (i.loaded) org = i.picture;
@@ -405,7 +405,7 @@ void MViewer::showSelectedImage()
     //update image and associated data fields
     scaleImage(current_l,ui->scrollArea,ui->label,ui->label_3,1.f);
     leftImageMetaUpdate();
-    ui->lineEdit_2->clear();
+    ui->tagQSearch->clear();
 
     //garbage collection
     checkExtraCache();
@@ -590,8 +590,8 @@ void MViewer::on_actionMatch_triggered()
     }
 
     //destroy model immediately, to prevent it from loading more images (if background loading is activated)
-    SResultModel* mdl = static_cast<SResultModel*>(ui->listView_2->model());
-    ui->listView_2->setModel(nullptr);
+    SResultModel* mdl = static_cast<SResultModel*>(ui->resList->model());
+    ui->resList->setModel(nullptr);
     delete mdl;
 
     MMatcher match(orig,current_l.filename,MILLA_MAXMATCH_RESULTS);
@@ -605,7 +605,7 @@ void MViewer::on_actionMatch_triggered()
     } else {
         ThumbnailModel* ptm = dynamic_cast<ThumbnailModel*>(ui->listView->model());
         if (!ptm) return;
-        lst = match.LocalMatcher(ptm->GetAllImages(),[this] (auto s) {
+        lst = match.LocalMatcher(ptm->getAllImages(),[this] (auto s) {
             this->checkExtraCache();
             return this->getExtraCacheLine(s);
         },prog_callback);
@@ -619,7 +619,7 @@ void MViewer::on_actionLoad_everything_slow_triggered()
     ThumbnailModel* ptm = dynamic_cast<ThumbnailModel*>(ui->listView->model());
     if (!ptm) return;
 
-    double passed = 0, spd = 0, est, prg = 0, all = (double)(ptm->GetAllImages().size());
+    double passed = 0, spd = 0, est, prg = 0, all = (double)(ptm->getAllImages().size());
     double dp = 100.f / all;
     size_t k = 0;
 
@@ -628,7 +628,7 @@ void MViewer::on_actionLoad_everything_slow_triggered()
     using namespace std::chrono;
     auto start = steady_clock::now();
 
-    for (auto &i : ptm->GetAllImages()) {
+    for (auto &i : ptm->getAllImages()) {
         QCoreApplication::processEvents();
         if (stop_flag) break;
         createStatRecord(i.filename); //ignore result
@@ -676,7 +676,7 @@ void MViewer::on_listWidget_itemClicked(QListWidgetItem *item)
             if (!ptm) return;
         }
 
-        searchResults(db.tagSearch(tags_cache,(ptm? &(ptm->GetAllImages()):nullptr),MILLA_MAXTAG_RESULTS));
+        searchResults(db.tagSearch(tags_cache,(ptm? &(ptm->getAllImages()):nullptr),MILLA_MAXTAG_RESULTS));
         return;
     }
 
@@ -731,10 +731,10 @@ void MViewer::resultsPresentation(QStringList lst, QListView* view, int tabIndex
 void MViewer::searchResults(QStringList lst)
 {
     ui->statusBar->showMessage(QString::asprintf("%i images found",lst.count()));
-    resultsPresentation(lst,ui->listView_2,MVTAB_RESULTS);
+    resultsPresentation(lst,ui->resList,MVTAB_RESULTS);
 
-    connect(ui->listView_2->selectionModel(),&QItemSelectionModel::selectionChanged,[this] {
-        MImageListRecord _r = ui->listView_2->selectionModel()->selectedIndexes().first().data(MImageListModel::FullDataRole).value<MImageListRecord>();
+    connect(ui->resList->selectionModel(),&QItemSelectionModel::selectionChanged,[this] {
+        MImageListRecord _r = ui->resList->selectionModel()->selectedIndexes().first().data(MImageListModel::FullDataRole).value<MImageListRecord>();
         if (ui->actionLeft_image->isChecked()) {
             current_l = _r;
             scaleImage(current_l,ui->scrollArea,ui->label,ui->label_3,1);
@@ -795,10 +795,10 @@ void MViewer::on_actionRefine_search_triggered()
         glob = ui->actionGlobal_search->isChecked();
         break;
     case SRSCP_FOUND:
-        ptm = dynamic_cast<MImageListModel*>(ui->listView_2->model());
+        ptm = dynamic_cast<MImageListModel*>(ui->resList->model());
         break;
     case SRSCP_LINKS:
-        ptm = dynamic_cast<MImageListModel*>(ui->listView_3->model());
+        ptm = dynamic_cast<MImageListModel*>(ui->linkList->model());
         break;
     case SRSCP_CONTINUE:
         cont = true;
@@ -818,7 +818,7 @@ void MViewer::on_actionRefine_search_triggered()
             }
             db.initParametricSearch(lst);
         } else if (ptm)
-            db.initParametricSearch(ptm->GetAllImages());
+            db.initParametricSearch(ptm->getAllImages());
     }
 
     QStringList res;
@@ -845,7 +845,7 @@ void MViewer::on_actionSwap_images_triggered()
 
 void MViewer::on_actionClear_results_triggered()
 {
-    if (ui->listView_2->model()) ui->listView_2->model()->deleteLater();
+    if (ui->resList->model()) ui->resList->model()->deleteLater();
     ui->actionContinue_search->setEnabled(false);
     search_cnt = 0;
 }
@@ -897,9 +897,9 @@ void MViewer::displayLinkedImages(QString const &fn)
     }
 
     ui->statusBar->showMessage(QString::asprintf("%i linked images",out.count()));
-    resultsPresentation(out,ui->listView_3,MVTAB_LINKS);
-    connect(ui->listView_3->selectionModel(),&QItemSelectionModel::selectionChanged,[this] {
-        current_r = ui->listView_3->selectionModel()->selectedIndexes().first().data(MImageListModel::FullDataRole).value<MImageListRecord>();
+    resultsPresentation(out,ui->linkList,MVTAB_LINKS);
+    connect(ui->linkList->selectionModel(),&QItemSelectionModel::selectionChanged,[this] {
+        current_r = ui->linkList->selectionModel()->selectedIndexes().first().data(MImageListModel::FullDataRole).value<MImageListRecord>();
         scaleImage(current_r,ui->scrollArea_2,ui->label_2,ui->label_4,1);
         incViews(false);
     });
@@ -992,7 +992,7 @@ void MViewer::selectIEFileDialog(bool import)
     ui->pushButton->setEnabled(false);
 
     //create importer
-    MImpExpModule mod(&tags_cache,(ptm? &(ptm->GetAllImages()) : nullptr));
+    MImpExpModule mod(&tags_cache,(ptm? &(ptm->getAllImages()) : nullptr));
     mod.setProgressBar(prog_callback);
 
     //and start the process
@@ -1033,7 +1033,7 @@ void MViewer::on_actionUpdate_thumbnails_triggered()
 
     prepareLongProcessing();
 
-    int m = ptm->GetAllImages().size();
+    int m = ptm->getAllImages().size();
     for (int i = 0; i < m && !stop_flag; i++) {
         progressBar->setValue(floor((double)i / (double)m * 100.f));
         ptm->LoadUp(i,true);
@@ -1115,8 +1115,8 @@ void MViewer::on_actionReload_metadata_triggered()
     if (!ptm) return;
 
     prepareLongProcessing();
-    double prg = 0, dp = 100.f / (double)(ptm->GetAllImages().size());
-    for (auto &i: ptm->GetAllImages()) {
+    double prg = 0, dp = 100.f / (double)(ptm->getAllImages().size());
+    for (auto &i: ptm->getAllImages()) {
         prg += dp;
         progressBar->setValue(floor(prg));
         QCoreApplication::processEvents();
@@ -1196,7 +1196,7 @@ void MViewer::on_actionNext_triggered()
     MImageListModel* ptr = dynamic_cast<MImageListModel*>(ui->listView->model());
     if (!ptr) return;
 
-    if (ui->listView->currentIndex().row() + 1 >= ptr->GetAllImages().size()) return;
+    if (ui->listView->currentIndex().row() + 1 >= ptr->getAllImages().size()) return;
 
     ui->listView->setCurrentIndex(ptr->getRecordIndex(ui->listView->currentIndex().row() + 1));
 }
@@ -1236,8 +1236,8 @@ void MViewer::historyShowCurrent()
 void MViewer::on_actionRandom_image_triggered()
 {
     ThumbnailModel* ptm = dynamic_cast<ThumbnailModel*>(ui->listView->model());
-    if (!ptm || ptm->GetAllImages().empty()) return;
-    double idx = (double)random() / (double)RAND_MAX * (double)(ptm->GetAllImages().size());
+    if (!ptm || ptm->getAllImages().empty()) return;
+    double idx = (double)random() / (double)RAND_MAX * (double)(ptm->getAllImages().size());
     ui->listView->setCurrentIndex(ptm->getRecordIndex(floor(idx)));
 }
 
@@ -1419,9 +1419,9 @@ void MViewer::on_actionClear_all_triggered()
     if (mmm) mmm->clear(true);
 }
 
-void MViewer::on_lineEdit_2_textChanged(const QString &arg1)
+void MViewer::on_tagQSearch_textChanged(const QString &arg1)
 {
-    if (current_l.valid) updateTags(current_l.filename);
+    if (current_l.valid && ui->radio_settags->isChecked()) updateTags(current_l.filename);
     else updateTags();
 
     for (int i = 0; i < ui->listWidget->count(); i++) {
@@ -1458,10 +1458,10 @@ void MViewer::on_actionApply_tagset_triggered()
     ThumbnailModel* ptm = dynamic_cast<ThumbnailModel*>(ui->listView->model());
     if (!current_l.valid || current_l.generated || !ptm) return;
 
-    double prg = 0, dp = 100.f / (double)(ptm->GetAllImages().size());
+    double prg = 0, dp = 100.f / (double)(ptm->getAllImages().size());
 
     prepareLongProcessing();
-    for (auto &i : ptm->GetAllImages()) {
+    for (auto &i : ptm->getAllImages()) {
         copyTagsetTo(i.filename);
         prg += dp;
         progressBar->setValue(floor(prg));
@@ -1805,7 +1805,7 @@ void MViewer::on_actionPrevious_face_triggered()
 
 void MViewer::on_actionExport_found_triggered()
 {
-    SResultModel* ptm = dynamic_cast<SResultModel*>(ui->listView_2->model());
+    SResultModel* ptm = dynamic_cast<SResultModel*>(ui->resList->model());
     if (!ptm) return;
 
     QString fn = QFileDialog::getSaveFileName(this,tr("Save as"),"","Text files (*.txt, *.lst)");
@@ -1821,7 +1821,7 @@ void MViewer::on_actionExport_found_triggered()
     }
 
     QString s;
-    for (auto &i : ptm->GetAllImages()) {
+    for (auto &i : ptm->getAllImages()) {
         s = i.filename + '\n';
         olst.write(s.toStdString().c_str());
     }
@@ -2002,4 +2002,28 @@ void MViewer::on_actionOpen_dir_triggered()
     QString dir = ui->dirList->selectionModel()->currentIndex().data(Qt::DisplayRole).toString();
     if (dir.isEmpty()) return;
     showImageList(loader->open(dir));
+}
+
+void MViewer::on_actionMove_to_found_triggered()
+{
+    MImageListModel* mdl = dynamic_cast<MImageListModel*>(ui->memList->model());
+    if (!mdl) return;
+    QStringList lst = mdl->getAllFileNames();
+    if (!lst.isEmpty()) searchResults(lst);
+}
+
+void MViewer::on_actionMove_to_memory_triggered()
+{
+    MImageListModel* mdl = dynamic_cast<MImageListModel*>(ui->resList->model());
+    if (!mdl) return;
+    QStringList lst = mdl->getAllFileNames();
+    if (lst.isEmpty() || QMessageBox::question(this, tr("Confirmation"), tr("Are you sure? This will overwrite current memory items."), QMessageBox::Yes | QMessageBox::No) != QMessageBox::Yes)
+        return;
+    MMemoryModel* mem = dynamic_cast<MMemoryModel*>(ui->memList->model());
+    if (mem) mem->assignFirst(lst);
+}
+
+void MViewer::on_actionStop_all_triggered()
+{
+    plugins.stopAllPlugins();
 }

@@ -51,6 +51,8 @@ public:
 
     void repeatLastPlugin();
 
+    void stopAllPlugins();
+
 private:
     MillaPluginContext context;
     std::pair<QString,QAction*> last_plugin;
@@ -61,6 +63,9 @@ private:
     std::map<MillaGenericPlugin*,QTimer> timers;
     std::map<MillaGenericPlugin*,std::pair<QObjectPtr,QObjectPtr>> filters;
     std::map<MillaGenericPlugin*,QStringList> formats;
+
+    bool startPlugin(MillaGenericPlugin* plug, QAction* sender);
+    bool stopPlugin(MillaGenericPlugin* plug, QAction* sender);
 
     void pluginAction(QString name, QAction* sender);
     void pluginTimedOut(MillaGenericPlugin* plug);

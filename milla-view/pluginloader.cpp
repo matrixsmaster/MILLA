@@ -160,45 +160,12 @@ void MillaPluginLoader::pluginAction(QString name, QAction* sender)
 
         //if generator is continous, check if it is already enabled
         if (plug->isContinous()) {
-            if (!sender->isChecked()) { //since check was toggled before this call, check is inverted
-                //stop it
-                if (timers.count(plug)) {
-                    plug->setParam("process_started",false); //ignore result
-                    timers[plug].stop();
-                    disconnect(&(timers[plug]),&QTimer::timeout,nullptr,nullptr);
-                    timers.erase(plug);
-                }
-                //remove filter (if any)
-                if (filters.count(plug)) {
-                    filters.at(plug).first->removeEventFilter(filters.at(plug).second);
-                    filters.erase(plug);
-                    qDebug() << "[PLUGINS] Event filter removed for " << plug->getPluginName();
-                }
-                qDebug() << "[PLUGINS] " << plug->getPluginName() << " stopped";
-
-            } else { //startup sequence should NOT be changed in future
-                //start it
-                QVariant d(plug->getParam("update_delay"));
-                int di = (d.canConvert<int>())? d.value<int>() : 0;
-                if (di > 0) {
-                    if (plug->setParam("process_started",true)) {
-                        qDebug() << "[PLUGINS] Starting timer with interval " << di;
-                        timers[plug].start(di); //timer created automatically by std::map
-                        connect(&(timers[plug]),&QTimer::timeout,this,[this,plug] { this->pluginTimedOut(plug); });
-                    } else {
-                        qDebug() << "[PLUGINS] Failed to start plugin " << plug->getPluginName();
-                        sender->setChecked(false);
-                    }
-
-                    //if plugin is timed, don't convert anything yet
-                    skip_convert = true;
-                    break;
-
-                } else
-                    qDebug() << "[PLUGINS] No update interval defined for " << plug->getPluginName();
-
-                qDebug() << "[PLUGINS] " << plug->getPluginName() << " started";
-            }
+            //if plugin is auto-firing, don't convert anything yet
+            skip_convert = true;
+            if (sender->isChecked()) //check was already toggled before this call
+                startPlugin(plug,sender);
+            else
+                stopPlugin(plug,sender);
         }
 
         //fire up the generation process
@@ -228,6 +195,53 @@ void MillaPluginLoader::pluginAction(QString name, QAction* sender)
 
     wnd->prepareLongProcessing(true);
     if (!out.isNull()) wnd->showGeneratedPicture(out);
+}
+
+bool MillaPluginLoader::startPlugin(MillaGenericPlugin* plug, QAction* sender)
+{
+    //startup sequence should NOT be changed in future
+    QVariant d(plug->getParam("update_delay"));
+    int di = (d.canConvert<int>())? d.value<int>() : 0;
+    if (di > 0) {
+        if (plug->setParam("process_started",true)) {
+            qDebug() << "[PLUGINS] Starting timer with interval " << di;
+            timers[plug].start(di); //timer created automatically by std::map
+            connect(&(timers[plug]),&QTimer::timeout,this,[this,plug] { this->pluginTimedOut(plug); });
+        } else {
+            qDebug() << "[PLUGINS] Failed to start plugin " << plug->getPluginName();
+            sender->setChecked(false);
+            return false;
+        }
+
+    } else {
+        qDebug() << "[PLUGINS] No update interval defined for " << plug->getPluginName();
+        return false;
+    }
+
+    qDebug() << "[PLUGINS] " << plug->getPluginName() << " started";
+    return true;
+}
+
+bool MillaPluginLoader::stopPlugin(MillaGenericPlugin* plug, QAction* /*sender*/)
+{
+    plug->setParam("process_started",false); //ignore result
+
+    //stop timer
+    if (timers.count(plug)) {
+        timers[plug].stop();
+        disconnect(&(timers[plug]),&QTimer::timeout,nullptr,nullptr);
+        timers.erase(plug);
+    }
+
+    //remove filter (if any)
+    if (filters.count(plug)) {
+        filters.at(plug).first->removeEventFilter(filters.at(plug).second);
+        filters.erase(plug);
+        qDebug() << "[PLUGINS] Event filter removed for " << plug->getPluginName();
+    }
+
+    qDebug() << "[PLUGINS] " << plug->getPluginName() << " stopped";
+    return true;
 }
 
 void MillaPluginLoader::pluginTimedOut(MillaGenericPlugin* plug)
@@ -279,4 +293,15 @@ void MillaPluginLoader::repeatLastPlugin()
 
     //now call main method
     pluginAction(last_plugin.first,last_plugin.second);
+}
+
+void MillaPluginLoader::stopAllPlugins()
+{
+    for (auto &i : plugins) {
+        if (!i.second->isContinous()) continue;
+        if (!stopPlugin(i.second,nullptr)) continue;
+
+        QAction* a = actions[i.second->getPluginName()];
+        if (a && a->isCheckable()) a->setChecked(false);
+    }
 }

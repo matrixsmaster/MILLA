@@ -18,6 +18,8 @@ public:
     void eraseSlot(int n);
 
     void clear(bool full = false);
+
+    void assignFirst(QStringList const &lst);
 };
 
 #endif // MMEMORYMODEL_H

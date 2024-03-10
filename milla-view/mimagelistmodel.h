@@ -38,7 +38,9 @@ public:
 
     virtual QVariant data(const QModelIndex &index, int role) const;
 
-    virtual QList<MImageListRecord>& GetAllImages() { return images; }
+    virtual QList<MImageListRecord>& getAllImages() { return images; }
+
+    virtual QStringList getAllFileNames();
 
     virtual void setShortenFilenames(bool en) { do_shorten = en; }
 
