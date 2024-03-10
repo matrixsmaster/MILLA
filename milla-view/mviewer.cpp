@@ -1960,7 +1960,7 @@ void MViewer::attemptCopyMoveToDir(bool move)
     QFileInfo inf(current_l.filename);
     QString fn = dst + "/" + inf.fileName();
     bool ok = src.copy(fn);
-    qDebug() << "Copying " << current_l.filename << " to " << fn << ": " << ok << endl;
+    qDebug() << "Copying " << current_l.filename << " to " << fn << ": " << ok;
     if (!ok) return;
 
     MDirectoryModel* mdm = dynamic_cast<MDirectoryModel*>(ui->dirList->model());
@@ -1970,10 +1970,10 @@ void MViewer::attemptCopyMoveToDir(bool move)
 
     if (ui->actionMove_files_to_trash_instead_deleting->isChecked()) {
         ok = src.moveToTrash();
-        qDebug() << "Moving " << current_l.filename << " to trash: " << ok << endl;
+        qDebug() << "Moving " << current_l.filename << " to trash: " << ok;
     } else {
         ok = src.remove();
-        qDebug() << "Deleting " << current_l.filename << ": " << ok << endl;
+        qDebug() << "Deleting " << current_l.filename << ": " << ok;
     }
     if (!ok) return;
 

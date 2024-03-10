@@ -9,6 +9,10 @@ AnnaPlugin::AnnaPlugin() :
 {
 }
 
+AnnaPlugin::~AnnaPlugin()
+{
+}
+
 bool AnnaPlugin::init()
 {
     qDebug() << "[ANNA] Init OK";
@@ -31,7 +35,9 @@ void AnnaPlugin::showUI()
 QVariant AnnaPlugin::getParam(QString key)
 {
     qDebug() << "[ANNA] requested parameter " << key;
-    //TODO
+    if (key == "show_ui") {
+        return true;
+    }
     return QVariant();
 }
 

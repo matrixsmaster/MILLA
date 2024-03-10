@@ -72,7 +72,7 @@ QString MillaPluginLoader::listPlugins()
 void MillaPluginLoader::updateSupportedFileFormats(QStringList &lst)
 {
     for (auto &i : plugins)
-        if (i.second->isFileFormat()) {
+        if (i.second->inputContent() == MILLA_CONTENT_FILE) {
             QVariant d(i.second->getParam("supported_formats"));
             if (!d.canConvert<QStringList>()) continue;
             for (auto &j : d.value<QStringList>()) {
@@ -109,7 +109,7 @@ void MillaPluginLoader::pluginAction(QString name, QAction* sender)
     if (!plugins.count(name) || !sender || !context.valid()) return;
 
     MillaGenericPlugin* plug = plugins.at(name);
-    if (!context.current->valid && plug->isFilter()) return; //don't waste our time
+    if (!context.current->valid && plug->inputContent() == MILLA_CONTENT_IMAGE) return; //don't waste our time
 
     MViewer* wnd = dynamic_cast<MViewer*>(context.window);
     if (!wnd) return;
@@ -133,18 +133,30 @@ void MillaPluginLoader::pluginAction(QString name, QAction* sender)
     last_plugin = std::pair<QString,QAction*>(name,sender);
     QSize sz(context.area->width(),context.area->height());
 
+    //show UI if needed
+    if (showui) {
+        if (sender->isCheckable())  {
+            if (sender->isChecked()) plug->showUI();
+        } else
+            plug->showUI();
+    }
+
     //process
+    QVariant res;
     QPixmap out;
-    if (plug->isFilter() && context.current->valid) { //Filter plugin
+    bool skip_convert = false;
 
-        //show UI if needed
-        if (showui) plug->showUI();
-        //ok, let's fire up some action
-        QVariant r(plug->action(context.current->picture));
-        //and present the result to the user
-        if (r.canConvert<QPixmap>()) out = r.value<QPixmap>();
+    switch (plug->inputContent()) {
+    case MILLA_CONTENT_IMAGE: // Filters or image processors
 
-    } else if (!plug->isFilter()) { //Generator plugin
+        if (context.current->valid) {
+            //ok, let's fire up some action
+            res = plug->action(context.current->picture);
+        }
+        break;
+
+    case MILLA_CONTENT_NONE: // Pure generators
+    case MILLA_CONTENT_FILE: // File processors
 
         //if generator is continous, check if it is already enabled
         if (plug->isContinous()) {
@@ -165,20 +177,22 @@ void MillaPluginLoader::pluginAction(QString name, QAction* sender)
                 qDebug() << "[PLUGINS] " << plug->getPluginName() << " stopped";
 
             } else { //startup sequence should NOT be changed in future
-                //show UI if needed
-                if (showui) plug->showUI();
                 //start it
                 QVariant d(plug->getParam("update_delay"));
                 int di = (d.canConvert<int>())? d.value<int>() : 0;
                 if (di > 0) {
-                    plug->setParam("process_started",true); //ignore result
-                    qDebug() << "[PLUGINS] Starting timer with interval " << di;
-                    timers[plug].start(di); //timer created automatically by std::map
-                    connect(&(timers[plug]),&QTimer::timeout,this,[this,plug] { this->pluginTimedOut(plug); });
+                    if (plug->setParam("process_started",true)) {
+                        qDebug() << "[PLUGINS] Starting timer with interval " << di;
+                        timers[plug].start(di); //timer created automatically by std::map
+                        connect(&(timers[plug]),&QTimer::timeout,this,[this,plug] { this->pluginTimedOut(plug); });
+                    } else {
+                        qDebug() << "[PLUGINS] Failed to start plugin " << plug->getPluginName();
+                        sender->setChecked(false);
+                    }
 
-                    //if plugin is timed, skip everything down there
-                    wnd->prepareLongProcessing(true);
-                    return;
+                    //if plugin is timed, don't convert anything yet
+                    skip_convert = true;
+                    break;
 
                 } else
                     qDebug() << "[PLUGINS] No update interval defined for " << plug->getPluginName();
@@ -188,10 +202,28 @@ void MillaPluginLoader::pluginAction(QString name, QAction* sender)
         }
 
         //fire up the generation process
-        QVariant r(plug->action(sz));
+        res = plug->action(sz);
+        break;
 
-        //grab the result if it's available and valid
-        if (r.canConvert<QPixmap>()) out = r.value<QPixmap>();
+    default:
+        qDebug() << "[PLUGINS] Invalid input data type " << plug->inputContent() << " wanted by " << plug->getPluginName();
+        skip_convert = true;
+    }
+
+    if (!skip_convert) {
+        switch (plug->outputContent()) {
+        case MILLA_CONTENT_IMAGE:
+            //present the result to the user
+            if (res.canConvert<QPixmap>()) out = res.value<QPixmap>();
+            break;
+
+        case MILLA_CONTENT_TEXT_NOTES:
+            //TODO
+            break;
+
+        default:
+            qDebug() << "[PLUGINS] Invalid output data type " << plug->outputContent() << " wanted by " << plug->getPluginName();
+        }
     }
 
     wnd->prepareLongProcessing(true);
@@ -210,8 +242,6 @@ void MillaPluginLoader::pluginTimedOut(MillaGenericPlugin* plug)
 
 QVariant MillaPluginLoader::pluginConfigCallback(MillaGenericPlugin* plug, QString const &key, QVariant const &val)
 {
-    if (plug->isFilter()) return QVariant(); //for now, filter plugins doesn't support configuration callbacks
-
     MViewer* wnd = dynamic_cast<MViewer*>(context.window);
     if (!wnd) return QVariant();
 

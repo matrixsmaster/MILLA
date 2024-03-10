@@ -85,9 +85,11 @@ bool MovPlugin::setParam(QString key, QVariant val)
                 return false;
             }
 
-        } else if (!val.value<bool>() && clip->state() == QMovie::Running) {
-            clip->stop();
-            qDebug() << "[MovPlugin] Clip stopped";
+        } else if (!val.value<bool>()) {
+            if (clip && clip->state() == QMovie::Running) {
+                clip->stop();
+                qDebug() << "[MovPlugin] Clip stopped";
+            }
             return true;
         }
 
@@ -101,7 +103,7 @@ bool MovPlugin::setParam(QString key, QVariant val)
 
 QVariant MovPlugin::action(QVariant in)
 {
-    if (in.isValid() && clip->isValid()) return clip->currentPixmap();
+    if (in.isValid() && clip && clip->isValid()) return clip->currentPixmap();
     return QVariant();
 }
 

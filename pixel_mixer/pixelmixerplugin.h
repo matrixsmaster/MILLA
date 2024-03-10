@@ -13,13 +13,13 @@ public:
     PixelMixerPlugin();
     virtual ~PixelMixerPlugin() {}
 
-    QString getPluginName() { return "PixelMixer"; }
-    QString getPluginDesc() { return "A simple plugin mostly for testing purpose."; }
+    QString getPluginName()  { return "PixelMixer"; }
+    QString getPluginDesc()  { return "A simple plugin mostly for testing purpose."; }
 
-    bool isFilter()         { return true; }
-    bool isContinous()      { return false; }
-    bool isFileFormat()     { return false; }
-    bool isContainer()      { return false; }
+    bool isContinous() const { return false; }
+
+    MillaPluginContentType inputContent() const  { return MILLA_CONTENT_IMAGE; }
+    MillaPluginContentType outputContent() const { return MILLA_CONTENT_IMAGE; }
 
     bool init();
     bool finalize();

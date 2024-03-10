@@ -6,6 +6,16 @@
 #define MILLA_PLUGIN_RELPATH "../share/plugins"
 #define MILLA_PLUGIN_LID "org.MatrixS_Master.MILLA.Plugins.Generic"
 
+enum MillaPluginContentType {
+    MILLA_CONTENT_NONE = 0,
+    MILLA_CONTENT_IMAGE,
+    MILLA_CONTENT_IMAGESET,
+    MILLA_CONTENT_FILE,
+    MILLA_CONTENT_TEXT_NOTES,
+    MILLA_CONTENT_TEXT_STORY,
+    MILLA_CONTENT_NUMTYPES
+};
+
 class MillaGenericPlugin
 {
 public:
@@ -14,10 +24,10 @@ public:
     virtual QString getPluginName() = 0;
     virtual QString getPluginDesc() = 0;
 
-    virtual bool isFilter() = 0;
-    virtual bool isContinous() = 0;
-    virtual bool isFileFormat() = 0;
-    virtual bool isContainer() = 0;
+    virtual bool isContinous() const = 0;
+
+    virtual MillaPluginContentType inputContent() const = 0;
+    virtual MillaPluginContentType outputContent() const = 0;
 
     virtual bool init() = 0;
     virtual bool finalize() = 0;

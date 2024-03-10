@@ -21,13 +21,13 @@ public:
     MovPlugin(QObject *parent = nullptr);
     virtual ~MovPlugin();
 
-    QString getPluginName() { return "SilentMovie"; }
-    QString getPluginDesc() { return "A silent animated clip player."; }
+    QString getPluginName()  { return "SilentMovie"; }
+    QString getPluginDesc()  { return "A silent animated clip player."; }
 
-    bool isFilter()         { return false; }
-    bool isContinous()      { return true; }
-    bool isFileFormat()     { return true; }
-    bool isContainer()      { return false; }
+    bool isContinous() const { return true; }
+
+    MillaPluginContentType inputContent() const  { return MILLA_CONTENT_FILE; }
+    MillaPluginContentType outputContent() const { return MILLA_CONTENT_IMAGE; }
 
     bool init();
     bool finalize();

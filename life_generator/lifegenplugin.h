@@ -18,13 +18,13 @@ public:
     LifeGenPlugin(QObject *parent = nullptr);
     virtual ~LifeGenPlugin() {}
 
-    QString getPluginName() { return "LifeGen"; }
-    QString getPluginDesc() { return "A plugin showing Conway's Game Of Life."; }
+    QString getPluginName()  { return "LifeGen"; }
+    QString getPluginDesc()  { return "A plugin showing Conway's Game Of Life."; }
 
-    bool isFilter()         { return false; }
-    bool isContinous()      { return true; }
-    bool isFileFormat()     { return false; }
-    bool isContainer()      { return false; }
+    bool isContinous() const { return true; }
+
+    MillaPluginContentType inputContent() const  { return MILLA_CONTENT_NONE; }
+    MillaPluginContentType outputContent() const { return MILLA_CONTENT_IMAGE; }
 
     bool init();
     bool finalize();

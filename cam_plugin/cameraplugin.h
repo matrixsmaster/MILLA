@@ -18,13 +18,13 @@ public:
     CameraPlugin(QObject *parent = nullptr);
     virtual ~CameraPlugin();
 
-    QString getPluginName() { return "WebCamera"; }
-    QString getPluginDesc() { return "A simple plugin to capture web camera video stream."; }
+    QString getPluginName()  { return "WebCamera"; }
+    QString getPluginDesc()  { return "A simple plugin to capture web camera video stream."; }
 
-    bool isFilter()         { return false; }
-    bool isContinous()      { return true; }
-    bool isFileFormat()     { return false; }
-    bool isContainer()      { return false; }
+    bool isContinous() const { return true; }
+
+    MillaPluginContentType inputContent() const  { return MILLA_CONTENT_NONE; }
+    MillaPluginContentType outputContent() const { return MILLA_CONTENT_IMAGE; }
 
     bool init();
     bool finalize();

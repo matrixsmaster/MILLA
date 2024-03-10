@@ -10,7 +10,7 @@
 #include <functional>
 
 
-#define MILLA_VERSION           "0.5.5.0"
+#define MILLA_VERSION           "0.5.6"
 #define MILLA_CLI_BANNER        "MILLA:  Qt5-based, AI-enhanced image viewer ver."
 #define MILLA_CLI_COPYRIGHT     "(C) Dmitry 'MatrixS_Master' Solovyev, 2018-2024. All rights reserved."
 #define MILLA_CONFIG_PATH       "/.milla/"

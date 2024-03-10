@@ -15,7 +15,7 @@ CameraPlugin::CameraPlugin(QObject *parent) :
 
 CameraPlugin::~CameraPlugin()
 {
-    if (camera) finalize();
+    if (camera) CameraPlugin::finalize();
 }
 
 bool CameraPlugin::init()

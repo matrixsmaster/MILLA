@@ -11,28 +11,32 @@ class AnnaPlugin : public QObject, public MillaGenericPlugin
 
 public:
     AnnaPlugin();
-    virtual ~AnnaPlugin()   {}
+    virtual ~AnnaPlugin();
 
-    QString getPluginName() { return "ANNA"; }
-    QString getPluginDesc() { return "Integration plugin for ANNA project. Run LLMs and VLMs inside MILLA."; }
+    QString getPluginName()  { return "ANNA"; }
+    QString getPluginDesc()  { return "Integration plugin for ANNA project. Run LLMs and VLMs inside MILLA."; }
 
-    bool isFilter()         { return true; }
-    bool isContinous()      { return false; }
-    bool isFileFormat()     { return false; }
-    bool isContainer()      { return false; }
+    bool isContinous() const                      { return false; }
+
+    MillaPluginContentType inputContent() const   { return cin; }
+    MillaPluginContentType outputContent() const  { return cout; }
 
     bool init();
     bool finalize();
 
     void showUI();
-    void setConfigCB(PlugConfCB cb)     {}
-    void setProgressCB(ProgressCB cb)   {}
+    void setConfigCB(PlugConfCB cb)               {}
+    void setProgressCB(ProgressCB cb)             { progress_cb = cb; }
 
     QVariant getParam(QString key);
     bool setParam(QString key, QVariant val);
 
     QVariant action(QVariant in);
 
+private:
+    MillaPluginContentType cin = MILLA_CONTENT_IMAGE;
+    MillaPluginContentType cout = MILLA_CONTENT_TEXT_NOTES;
+    ProgressCB progress_cb = nullptr;
 };
 
 #endif // ANNAPLUGIN_H
