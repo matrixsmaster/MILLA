@@ -10,7 +10,7 @@
 #include <functional>
 
 
-#define MILLA_VERSION           "0.5.7"
+#define MILLA_VERSION           "0.5.8"
 #define MILLA_CLI_BANNER        "MILLA:  Qt5-based, AI-enhanced image viewer ver."
 #define MILLA_CLI_COPYRIGHT     "(C) Dmitry 'MatrixS_Master' Solovyev, 2018-2024. All rights reserved."
 #define MILLA_CONFIG_PATH       "/.milla/"
@@ -38,8 +38,6 @@
 #define FACE_CASCADE_FILE       "/../share/face_cascade.xml"
 #define COLORIZATION_NET_FILE   "/../share/colors.prototxt"
 #define COLORIZATION_NET_WEIGHT "/../share/colors.caffemodel"
-#define POSDETECTOR_NET_FILE    "/../share/poses.prototxt"
-#define POSDETECTOR_NET_WEIGHT  "/../share/poses.caffemodel"
 
 
 typedef std::map<QString,std::pair<unsigned,Qt::CheckState>> MTagCache;
