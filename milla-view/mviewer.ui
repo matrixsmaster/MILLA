@@ -2877,6 +2877,7 @@
      </property>
      <addaction name="actionLeft_image"/>
      <addaction name="actionRight_image"/>
+     <addaction name="separator"/>
      <addaction name="actionMove_to_memory"/>
     </widget>
     <addaction name="actionGlobal_search"/>

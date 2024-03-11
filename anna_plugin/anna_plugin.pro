@@ -12,7 +12,7 @@ INCLUDEPATH += ../milla-view
 DESTDIR = ../share/plugins
 
 SOURCES += \
-    $$ANNA_PATH/netclient.cpp \
+#    $$ANNA_PATH/netclient.cpp \
     annacfgdialog.cpp \
     annaplugin.cpp \
     main.cpp
@@ -21,9 +21,10 @@ FORMS += \
     annacfgdialog.ui
 
 HEADERS += \
+    $$ANNA_PATH/brain.h \
     $$ANNA_PATH/lfs.h \
     $$ANNA_PATH/md5calc.h \
-    $$ANNA_PATH/netclient.h \
+#    $$ANNA_PATH/netclient.h \
     $$ANNA_PATH/server/base64m.h \
     $$ANNA_PATH/server/codec.h \
     $$ANNA_PATH/vecstore.h \

@@ -28,7 +28,9 @@ public:
     DBHelper();
     virtual ~DBHelper();
 
-    bool initDatabase(ProgressCB progress_cb);
+    bool initDatabase(ProgressCB progress_cb, UserActionCB uaction_cb);
+
+    bool updateDatabase(int ver);
 
     static QString timePrinter(double sec);
 

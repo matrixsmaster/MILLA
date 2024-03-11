@@ -59,7 +59,7 @@ public:
     explicit MViewer(QWidget *parent = 0);
     ~MViewer();
 
-    void processArguments();
+    void processArguments(int start);
 
     void prepareLongProcessing(bool finish = false);
 
@@ -282,6 +282,7 @@ private:
     QLabel* loadingLabel = nullptr;
 
     bool stop_flag = false;
+    bool block_events = false;
     ProgressCB prog_callback;
     double scaleFactor = 1;
     MImageListRecord current_l, current_r;

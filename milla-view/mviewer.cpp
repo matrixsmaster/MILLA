@@ -15,13 +15,16 @@ MViewer::MViewer(QWidget *parent) : QMainWindow(parent)
     sscp->postShow();
 
     //Load the database
-    if (!db.initDatabase([sscp] (double p) { return sscp->setProgress(p); } )) {
-        QMessageBox::critical(this, tr("Fatal error"), tr("Unable to initialize database"));
+    if (!db.initDatabase([sscp] (double p) { return sscp->setProgress(p); }, [this] (QString msg) -> int {
+        return (QMessageBox::warning(this,"Warning",msg,QMessageBox::Yes | QMessageBox::No) == QMessageBox::Yes);
+    })) {
+        QMessageBox::critical(this,"Fatal error","Unable to initialize database");
         qDebug() << "FATAL: Unable to initialize database " DB_FILEPATH;
 
         //in case of failure, we can't proceed, so we use the view timer as auto-close event generator
         connect(&view_timer,&QTimer::timeout,this,[] { QApplication::exit(1); });
         view_timer.start(2);
+        block_events = true;
 
         //remove splash screen
         sscp->hide();
@@ -42,6 +45,8 @@ MViewer::MViewer(QWidget *parent) : QMainWindow(parent)
     stopButton->setText("stop");
     stopButton->setEnabled(false);
     ui->statusBar->addPermanentWidget(stopButton);
+
+    ui->menuBar->installEventFilter(this);
 
     //Callback function for normal view timer
     connect(&view_timer,&QTimer::timeout,this,[this] {
@@ -523,18 +528,20 @@ void MViewer::leftImageMetaUpdate()
     ui->radio_settags->setChecked(true);
 }
 
-void MViewer::processArguments()
+void MViewer::processArguments(int start)
 {
+    if (block_events) return;
+
     QStringList args = QApplication::arguments();
-    if (args.size() < 2) {
+    args.erase(args.begin(),args.begin()+start);
+    if (args.empty()) {
         qDebug() << "[DEBUG] Loading most recent dir " << db.getMostRecentDir();
         showImageList(loader->open(db.getMostRecentDir()));
         return;
     }
-    args.erase(args.begin());
 
     loader->clearList();
-    for (auto &i : args) loader->append(i,(args.size() > 1));
+    for (auto &i : args) loader->append(i,(args.size() > 1)); // load strictly mentioned images if multiple images are given
     showImageList(loader->getList());
 
     ThumbnailModel* ptm = dynamic_cast<ThumbnailModel*>(ui->listView->model());
@@ -552,7 +559,7 @@ void MViewer::on_actionOpen_triggered()
     QString flt(MILLA_OPEN_FILE);
     flt += " (*." + loader->getSupported().join(" *.") + ")";
 
-    QString fn = QFileDialog::getOpenFileName(this,tr("Open image and directory"),"",flt);
+    QString fn = QFileDialog::getOpenFileName(this,"Open image and directory","",flt);
     if (fn.isEmpty()) return;
     showImageList(loader->open(fn));
 
@@ -567,7 +574,7 @@ void MViewer::on_actionOpen_list_triggered()
     QStringList _l = MILLA_LIST_FORMATS;
     flt += " (*." + _l.join(" *.") + ")";
 
-    showImageList(loader->open(QFileDialog::getOpenFileName(this,tr("Open list of images"),"",flt)));
+    showImageList(loader->open(QFileDialog::getOpenFileName(this,"Open list of images","",flt)));
 }
 
 void MViewer::on_actionFit_triggered()
@@ -754,7 +761,7 @@ void MViewer::on_actionJump_to_triggered()
     if (!ptm) return;
 
     bool ok;
-    QString fn = QInputDialog::getText(this,tr("Jump to file"),tr("File name or full path"),QLineEdit::Normal,QString(),&ok);
+    QString fn = QInputDialog::getText(this,"Jump to file","File name or full path",QLineEdit::Normal,QString(),&ok);
 
     if (ok) {
         jump_buf = fn;
@@ -827,7 +834,7 @@ void MViewer::on_actionRefine_search_triggered()
     prepareLongProcessing(true);
 
     if (res.empty())
-        QMessageBox::information(this,tr("Search"),tr("Nothing found. Try to relax the search parameters."));
+        QMessageBox::information(this,"Search","Nothing found. Try to relax the search parameters.");
     else
         searchResults(res);
     ui->actionContinue_search->setEnabled(!res.empty());
@@ -968,8 +975,8 @@ void MViewer::selectIEFileDialog(bool import)
 
     //request filename to save or load from
     QString fileName = import?
-                QFileDialog::getOpenFileName(this, tr("Import from"), "", tr("Text Files [txt,csv] (*.txt *.csv)")) :
-                QFileDialog::getSaveFileName(this, tr("Export to"), "", tr("Text Files [txt,csv] (*.txt *.csv)"));
+                QFileDialog::getOpenFileName(this,"Import from", "","Text Files [txt,csv] (*.txt *.csv)") :
+                QFileDialog::getSaveFileName(this,"Export to", "","Text Files [txt,csv] (*.txt *.csv)");
     if (fileName.isEmpty()) return;
 
     //auto-complete file extension in case of exporting table sheet
@@ -1012,7 +1019,7 @@ void MViewer::selectIEFileDialog(bool import)
     fl.close();
     qDebug() << "[db] " << (import? "Import":"Export") << " data: " << ok;
 
-    if (!ok) QMessageBox::critical(this, tr("Import/Export error"), tr("Unable to finish operation"));
+    if (!ok) QMessageBox::critical(this,"Import/Export error","Unable to finish operation");
     else ui->statusBar->showMessage("Import/export operation finished");
 }
 
@@ -1106,7 +1113,7 @@ void MViewer::on_actionDescending_triggered()
 
 void MViewer::on_actionList_all_triggered()
 {
-    QMessageBox::information(this,tr("Plugins list"),plugins.listPlugins());
+    QMessageBox::information(this,"Plugins list",plugins.listPlugins());
 }
 
 void MViewer::on_actionReload_metadata_triggered()
@@ -1258,7 +1265,7 @@ void MViewer::on_actionFind_duplicates_triggered()
     ui->statusBar->showMessage(abrt? "Aborted":"Done");
     if (abrt || report.isEmpty()) return;
 
-    QString fn = QFileDialog::getSaveFileName(this, tr("Save report to"), "", tr("Text Files (*.txt)"));
+    QString fn = QFileDialog::getSaveFileName(this,"Save report to", "","Text Files (*.txt)");
     if (fn.isEmpty()) return;
     if (fn.right(4).toUpper() != ".TXT") fn += ".txt";
 
@@ -1538,7 +1545,7 @@ void MViewer::on_pushButton_7_clicked()
 void MViewer::on_actionPick_a_story_triggered()
 {
     if (a_story->isDirty()) {
-        if (QMessageBox::question(this, tr("Question"), tr("Do you want to save current story?"), QMessageBox::Yes | QMessageBox::No) == QMessageBox::Yes)
+        if (QMessageBox::question(this,"Question","Do you want to save current story?", QMessageBox::Yes | QMessageBox::No) == QMessageBox::Yes)
             on_pushButton_8_clicked();
     }
 
@@ -1567,6 +1574,8 @@ void MViewer::on_actionCrop_triggered()
 
 bool MViewer::eventFilter(QObject *obj, QEvent *event)
 {
+    if (block_events) return true;
+
     QMouseEvent* mev;
     switch (event->type()) {
     case QEvent::MouseButtonPress:
@@ -1574,7 +1583,10 @@ bool MViewer::eventFilter(QObject *obj, QEvent *event)
     case QEvent::MouseMove:
         mev = static_cast<QMouseEvent*>(event);
         break;
-
+    case QEvent::StatusTip:
+        if (static_cast<QStatusTipEvent*>(event)->tip().isEmpty())
+            return true;
+        return false;
     default:
         return QObject::eventFilter(obj,event);
     }
@@ -1589,7 +1601,9 @@ bool MViewer::eventFilter(QObject *obj, QEvent *event)
         return true;
     }
 
-    //evrything down here is related to left ScrollArea
+    //everything down here is related to left ScrollArea
+    if (obj != ui->scrollArea) return QObject::eventFilter(obj,event);
+
     QRect aligned = QStyle::alignedRect(QApplication::layoutDirection(),QFlag(ui->label->alignment()),ui->label->pixmap()->size(),ui->label->rect());
     QRect inter = aligned.intersected(ui->label->rect());
     QPoint scrl_delta(0,0);
@@ -1665,7 +1679,7 @@ void MViewer::on_actionInfo_triggered()
     QString inf = printInfo("Left",current_l);
     if (current_l.valid && current_r.valid) inf += '\n';
     inf += printInfo("Right",current_r);
-    if (!inf.isEmpty()) QMessageBox::information(this,tr("Info"),inf);
+    if (!inf.isEmpty()) QMessageBox::information(this,"Info",inf);
 }
 
 void MViewer::on_actionOpen_with_triggered()
@@ -1676,7 +1690,7 @@ void MViewer::on_actionOpen_with_triggered()
     QString orig = DBHelper::getExtraStringVal(DBF_EXTRA_EXTERNAL_EDITOR);
     QStringList lst = orig.split('\n',Qt::SkipEmptyParts);
     int def = DBHelper::getExtraInt(DBF_EXTRA_EXTERNAL_EDITOR);
-    QString cmd = QInputDialog::getItem(this,tr("Open with external program"),tr("Select or enter command"),lst,def,true,&ok);
+    QString cmd = QInputDialog::getItem(this,"Open with external program","Select or enter command",lst,def,true,&ok);
 
     if (ok && !cmd.isEmpty()) {
         if (lst.contains(cmd)) {
@@ -1713,7 +1727,7 @@ void MViewer::on_actionOpen_with_triggered()
 void MViewer::on_actionEdit_exclusion_list_triggered()
 {
     ListEditor dlg;
-    dlg.setTextLabel(tr("Add or remove text fragments, which will exclude particular paths from search list once they're found in that paths."));
+    dlg.setTextLabel("Add or remove text fragments, which will exclude particular paths from search list once they're found in that paths.");
     dlg.setList(DBHelper::getExtraStringVal(DBF_EXTRA_EXCLUSION_LIST).split(';',QString::SkipEmptyParts));
 
     if (dlg.exec())
@@ -1725,7 +1739,7 @@ void MViewer::on_actionSave_right_image_as_triggered()
     if (!current_r.valid || current_r.picture.isNull()) return;
 
     QString flt(MILLA_SAVE_FILE);
-    QString fn = QFileDialog::getSaveFileName(this,tr("Save as"),"",flt);
+    QString fn = QFileDialog::getSaveFileName(this,"Save as","",flt);
     if (fn.isEmpty()) return;
 
     bool ok = current_r.picture.save(fn);
@@ -1814,7 +1828,7 @@ void MViewer::on_actionExport_found_triggered()
     SResultModel* ptm = dynamic_cast<SResultModel*>(ui->resList->model());
     if (!ptm) return;
 
-    QString fn = QFileDialog::getSaveFileName(this,tr("Save as"),"","Text files (*.txt, *.lst)");
+    QString fn = QFileDialog::getSaveFileName(this,"Save as","","Text files (*.txt, *.lst)");
     if (fn.isEmpty()) return;
 
     if (fn.right(4).toUpper() != ".LST" && fn.right(4).toUpper() != ".TXT")
@@ -1899,7 +1913,7 @@ void MViewer::on_actionContinue_search_triggered()
     QStringList res = db.doParametricSearch(last_search,prog_callback);
     prepareLongProcessing(true);
     if (res.empty())
-        QMessageBox::information(this,tr("Search"),tr("Nothing found. Try to relax the search parameters."));
+        QMessageBox::information(this,"Search","Nothing found. Try to relax the search parameters.");
     else
         searchResults(res);
     ui->actionContinue_search->setEnabled(!res.empty());
@@ -1915,7 +1929,7 @@ void MViewer::on_listWidget_2_itemDoubleClicked(QListWidgetItem *item)
 
 void MViewer::on_actionClear_story_triggered()
 {
-    if (QMessageBox::question(this, tr("Confirmation"), tr("Do you want to erase all steps in the current story?"), QMessageBox::Yes | QMessageBox::No) != QMessageBox::Yes)
+    if (QMessageBox::question(this,"Confirmation","Do you want to erase all steps in the current story?",QMessageBox::Yes | QMessageBox::No) != QMessageBox::Yes)
         return;
 
     a_story->clear();
@@ -1937,7 +1951,7 @@ void MViewer::on_actionPlay_special_file_triggered()
 
 void MViewer::on_actionAdd_directory_triggered()
 {
-    QString dir = QFileDialog::getExistingDirectory(this, tr("Open Directory"), "", QFileDialog::ShowDirsOnly | QFileDialog::DontResolveSymlinks);
+    QString dir = QFileDialog::getExistingDirectory(this,"Open Directory","",QFileDialog::ShowDirsOnly | QFileDialog::DontResolveSymlinks);
     if (dir.isEmpty()) return;
 
     MDirectoryModel* mdm = dynamic_cast<MDirectoryModel*>(ui->dirList->model());
@@ -1953,7 +1967,7 @@ void MViewer::on_actionRemove_directory_triggered()
 void MViewer::on_actionClear_dirs_triggered()
 {
     MDirectoryModel* mdm = dynamic_cast<MDirectoryModel*>(ui->dirList->model());
-    if (mdm && QMessageBox::question(this, tr("Confirmation"), tr("Do you want to remove all directories from the list?"), QMessageBox::Yes | QMessageBox::No) == QMessageBox::Yes)
+    if (mdm && QMessageBox::question(this,"Confirmation","Do you want to remove all directories from the list?",QMessageBox::Yes | QMessageBox::No) == QMessageBox::Yes)
         mdm->delAll();
 }
 
@@ -2023,7 +2037,7 @@ void MViewer::on_actionMove_to_memory_triggered()
     MImageListModel* mdl = dynamic_cast<MImageListModel*>(ui->resList->model());
     if (!mdl) return;
     QStringList lst = mdl->getAllFileNames();
-    if (lst.isEmpty() || QMessageBox::question(this, tr("Confirmation"), tr("Are you sure? This will overwrite current memory items."), QMessageBox::Yes | QMessageBox::No) != QMessageBox::Yes)
+    if (lst.isEmpty() || QMessageBox::question(this,"Confirmation","Are you sure? This will overwrite current memory items.",QMessageBox::Yes | QMessageBox::No) != QMessageBox::Yes)
         return;
     MMemoryModel* mem = dynamic_cast<MMemoryModel*>(ui->memList->model());
     if (mem) mem->assignFirst(lst);

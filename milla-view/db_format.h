@@ -14,6 +14,8 @@
 
 #define DB_VERSION 5
 
+#define DB_VER_SUPPORTED { 3, 4 }
+
 #define DB_CONTENTS {   {"stats",   DBF_STATS}, \
                         {"tags",    DBF_TAGS}, \
                         {"links",   DBF_LINKS}, \

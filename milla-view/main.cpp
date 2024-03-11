@@ -22,7 +22,7 @@ int main(int argc, char *argv[])
 
     MViewer w;
     w.show();
-    w.processArguments();
+    w.processArguments(1);
 
     return a.exec();
 }

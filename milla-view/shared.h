@@ -10,7 +10,7 @@
 #include <functional>
 
 
-#define MILLA_VERSION           "0.5.8"
+#define MILLA_VERSION           "0.5.9"
 #define MILLA_CLI_BANNER        "MILLA:  Qt5-based, AI-enhanced image viewer ver."
 #define MILLA_CLI_COPYRIGHT     "(C) Dmitry 'MatrixS_Master' Solovyev, 2018-2024. All rights reserved."
 #define MILLA_CONFIG_PATH       "/.milla/"
@@ -46,6 +46,7 @@ typedef std::function<bool(QString)> InitRecCB;
 typedef std::function<bool(double)> ProgressCB;
 typedef std::function<QVariant(QString,QVariant)> PlugConfCB;
 typedef std::function<void(QString)> LoadFileCB;
+typedef std::function<int(QString)> UserActionCB;
 
 struct MImageListRecord {
     QString filename, fnshort;

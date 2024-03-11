@@ -88,7 +88,7 @@ QStringList MImageLoader::_open(QString const &filename, bool strict)
 
         } else {
             if (recursive < 0) {
-                recursive = (QMessageBox::question(nullptr, tr("Type of scan"), tr("Do recursive scan?"), QMessageBox::Yes | QMessageBox::No) == QMessageBox::Yes);
+                recursive = (QMessageBox::question(nullptr,"Type of scan","Do recursive scan?", QMessageBox::Yes | QMessageBox::No) == QMessageBox::Yes);
             }
             accum += openDirByFile(filename,(recursive > 0));
         }

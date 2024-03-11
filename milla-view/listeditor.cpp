@@ -54,6 +54,6 @@ void ListEditor::on_pushButton_2_clicked()
 void ListEditor::on_pushButton_3_clicked()
 {
     if (ui->listWidget->count() < 1) return;
-    if (QMessageBox::question(this, tr("Question"), tr("Are you sure you want to erase the whole list?"), QMessageBox::Yes | QMessageBox::No) == QMessageBox::Yes)
+    if (QMessageBox::question(this,"Question","Are you sure you want to erase the whole list?", QMessageBox::Yes | QMessageBox::No) == QMessageBox::Yes)
         ui->listWidget->clear();
 }

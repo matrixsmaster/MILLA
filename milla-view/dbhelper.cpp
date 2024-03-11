@@ -20,7 +20,7 @@ DBHelper::~DBHelper()
     }
 }
 
-bool DBHelper::initDatabase(ProgressCB progress_cb)
+bool DBHelper::initDatabase(ProgressCB progress_cb, UserActionCB uaction_cb)
 {
     QSqlDatabase db = QSqlDatabase::addDatabase("QSQLITE");
 
@@ -49,9 +49,15 @@ bool DBHelper::initDatabase(ProgressCB progress_cb)
 
     } else {
         qDebug() << "[db] version: " << q.value(0).toInt();
-        if (DB_VERSION != q.value(0).toInt()) {
-            qDebug() << "FATAL: DB version mismatch";
-            return false;
+        int ver = q.value(0).toInt();
+        if (DB_VERSION != ver) {
+            qDebug() << "[db] Version mismatch!";
+            QList<int> vsupp = DB_VER_SUPPORTED;
+            if (uaction_cb && vsupp.contains(ver) && uaction_cb(QString::asprintf("DB version is obsolete. Verion %d was found, but current version is %d.\n"
+                                                                                  "Do you want to update? Please do backup the DB before updating!",ver,DB_VERSION))) {
+                if (!updateDatabase(ver)) return false;
+            } else
+                return false;
         }
     }
 
@@ -63,6 +69,23 @@ bool DBHelper::initDatabase(ProgressCB progress_cb)
     cache.reset(new DBCache(progress_cb));
     m_cache = cache;
 
+    return ok;
+}
+
+bool DBHelper::updateDatabase(int ver)
+{
+    QSqlQuery q;
+    bool ok = false;
+
+    //update version
+    switch (ver) {
+    case 3:
+    case 4:
+        q.prepare("UPDATE meta SET version = :v");
+        q.bindValue(":v",DB_VERSION);
+        ok = q.exec();
+    }
+    qDebug() << "[db] Updating version from " << ver << " to " << DB_VERSION << ": " << ok;
     return ok;
 }
 

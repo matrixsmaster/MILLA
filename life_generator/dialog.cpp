@@ -26,10 +26,10 @@ void LifeCfgDialog::on_buttonBox_accepted()
     f.close();
 
     d.remove(QChar('\r'));
-    dat = d.split(QChar('\n'),QString::SkipEmptyParts);
+    dat = d.split(QChar('\n'),Qt::SkipEmptyParts);
 }
 
 void LifeCfgDialog::on_pushButton_clicked()
 {
-    ui->lineEdit->setText(QFileDialog::getOpenFileName(this, tr("Import from"), "", tr("Life 1.05 Files [txt,lif,life] (*.txt *.lif *.life)")));
+    ui->lineEdit->setText(QFileDialog::getOpenFileName(this,"Import from", "","Life 1.05 Files [txt,lif,life] (*.txt *.lif *.life)"));
 }
