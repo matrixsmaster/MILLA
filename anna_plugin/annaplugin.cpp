@@ -110,6 +110,10 @@ bool AnnaPlugin::setParam(QString key, QVariant val)
 
 QVariant AnnaPlugin::action(QVariant in)
 {
+    //sanity check
+    if (!config.params.model[0] || !config.params.prompt[0] || cfg_extra.vision_file.empty())
+        return QVariant();
+
     //create or reset brain first
     if (brain) {
         brain->Reset();

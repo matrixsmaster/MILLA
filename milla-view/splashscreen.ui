@@ -565,7 +565,7 @@
     </font>
    </property>
    <property name="text">
-    <string>(C) Dmitry 'MatrixS_Master' Solovyev, 2018-2020. All rights reserved.</string>
+    <string>(C) Dmitry 'MatrixS_Master/sciloaf' Solovyev, 2018-2024. All rights reserved.</string>
    </property>
    <property name="textFormat">
     <enum>Qt::PlainText</enum>
