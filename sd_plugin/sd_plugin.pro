@@ -17,8 +17,13 @@ SOURCES += \
     ggml-quants.c \
     ggml.c \
     main.cpp \
+    model.cpp \
     sdcfgdialog.cpp \
-    sdplugin.cpp
+    sdplugin.cpp \
+    stable-diffusion.cpp \
+    upscaler.cpp \
+    util.cpp \
+    zip.c
 
 HEADERS += \
     ggml-alloc.h \
@@ -28,8 +33,16 @@ HEADERS += \
     ggml-impl.h \
     ggml-quants.h \
     ggml.h \
+    json.hpp \
+    miniz.h \
+    model.h \
     sdcfgdialog.h \
-    sdplugin.h
+    sdplugin.h \
+    stable-diffusion.h \
+    stb_image.h \
+    stb_image_resize.h \
+    util.h \
+    zip.h
 
 FORMS += \
     sdcfgdialog.ui
