@@ -1,9 +1,11 @@
+#include <unistd.h>
 #include <QDebug>
 #include <QStyle>
 #include <QFile>
 #include <QTextStream>
 #include <QApplication>
 #include <QDesktopWidget>
+#include "shared.h"
 #include "splashscreen.h"
 #include "ui_splashscreen.h"
 
@@ -43,6 +45,7 @@ static void interpolateImages(QImage &a, QImage &b, QImage &r, double by)
 
 void SplashScreen::showEvent(QShowEvent* /*ev*/)
 {
+    ui->label_4->setText("Ver. " MILLA_VERSION);
     n_frame = 0;
     frame_dir = true;
     timer = steady_clock::now();
@@ -115,5 +118,29 @@ bool SplashScreen::setProgress(double prg)
         QCoreApplication::processEvents();
     }
 
+    return true;
+}
+
+void SplashScreen::simpleShow()
+{
+    ui->label_3->setText("");
+    ui->label->installEventFilter(this);
+    clicked = false;
+
+    while (!clicked) {
+        QCoreApplication::processEvents();
+        usleep(1000UL * MILLA_SPLASH_CYCLE_MS);
+    }
+}
+
+bool SplashScreen::eventFilter(QObject*, QEvent *event)
+{
+    switch (event->type()) {
+    case QEvent::MouseButtonPress:
+        clicked = true;
+        break;
+    default:
+        break;
+    }
     return true;
 }

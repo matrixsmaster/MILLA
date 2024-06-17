@@ -268,6 +268,8 @@ private slots:
 
     void on_actionStop_all_triggered();
 
+    void on_actionSplash_screen_triggered();
+
 private:
     Ui::MViewer *ui;
     DBHelper db;

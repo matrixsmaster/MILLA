@@ -1281,7 +1281,7 @@ void MViewer::on_actionFind_duplicates_triggered()
 
 void MViewer::showGeneratedPicture(QPixmap const &in)
 {
-    if (in.isNull()) return; //skip if no input were given
+    if (in.isNull()) return; //skip if no input was given
 
     //get the previous frame offsets
     int pv = 0, ph = 0;
@@ -1316,6 +1316,7 @@ void MViewer::showGeneratedPicture(QPixmap const &in)
 void MViewer::appendNotes(const QString &str)
 {
     ui->notes->appendPlainText(str);
+    ui->tabWidget->setCurrentIndex(MVTAB_NOTES);
     on_pushButton_2_clicked();
 }
 
@@ -2046,4 +2047,14 @@ void MViewer::on_actionMove_to_memory_triggered()
 void MViewer::on_actionStop_all_triggered()
 {
     plugins.stopAllPlugins();
+}
+
+void MViewer::on_actionSplash_screen_triggered()
+{
+    SplashScreen* sscp = new SplashScreen();
+    sscp->show();
+    sscp->postShow();
+    sscp->simpleShow();
+    sscp->hide();
+    delete sscp;
 }

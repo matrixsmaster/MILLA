@@ -7,6 +7,7 @@
 
 #define MILLA_SPLASH_FRAMETIME 0.04
 #define MILLA_SPLASH_NUMFRAMES 30
+#define MILLA_SPLASH_CYCLE_MS 50
 
 namespace Ui {
 class SplashScreen;
@@ -21,11 +22,12 @@ public:
     ~SplashScreen();
 
     void postShow();
-
     bool setProgress(double prg);
+    void simpleShow();
 
 protected:
     void showEvent(QShowEvent*);
+    bool eventFilter(QObject*, QEvent *event);
 
 private:
     Ui::SplashScreen *ui;
@@ -34,6 +36,7 @@ private:
     std::chrono::steady_clock::time_point timer;
     std::vector<QPixmap> frames;
     std::vector<QString> license;
+    bool clicked;
 };
 
 #endif // SPLASHSCREEN_H
