@@ -26,6 +26,11 @@ SOURCES += \
     zip.c
 
 HEADERS += \
+    clip.hpp \
+    common.hpp \
+    control.hpp \
+    denoiser.hpp \
+    esrgan.hpp \
     ggml-alloc.h \
     ggml-backend-impl.h \
     ggml-backend.h \
@@ -33,15 +38,25 @@ HEADERS += \
     ggml-impl.h \
     ggml-quants.h \
     ggml.h \
+    ggml_extend.hpp \
     json.hpp \
+    lora.hpp \
     miniz.h \
     model.h \
+    pmid.hpp \
+    preprocessing.hpp \
+    rng.hpp \
+    rng_philox.hpp \
     sdcfgdialog.h \
     sdplugin.h \
     stable-diffusion.h \
     stb_image.h \
     stb_image_resize.h \
+    tae.hpp \
+    unet.hpp \
     util.h \
+    vae.hpp \
+    vocab.hpp \
     zip.h
 
 FORMS += \
