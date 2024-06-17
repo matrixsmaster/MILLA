@@ -1,0 +1,13 @@
+This Plugin uses parts and libraries from:
+
+SD.cpp project - https://github.com/leejet/stable-diffusion.cpp
+GGML library - https://github.com/ggerganov/ggml
+STB_image library - https://github.com/nothings/stb
+JSON library - https://github.com/nlohmann/json
+ZIP library - https://github.com/kuba--/zip
+
+Copyrights of the aforementioned parts belong to their respective authors and contributors. Please check the README/AUTHORS/CONTRIBUTORS files inside the repos listed above for more information.
+
+Many more other pieces of code from different sources are used in this Plugin. Please see comment messages in the source files of the Plugin to determine the authorship of particular parts of this Plugin.
+
+The top level Plugin code and Plugin UI is (C) Dmitry 'sciloaf' Solovyev, 2024

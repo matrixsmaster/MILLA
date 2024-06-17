@@ -15,7 +15,6 @@ public:
     SDCfgDialog(QWidget *parent = nullptr);
     ~SDCfgDialog();
 
-private:
     Ui::SDCfgDialog *ui;
 };
 #endif // SDCFGDIALOG_H

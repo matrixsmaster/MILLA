@@ -26,8 +26,8 @@ public:
     bool finalize();
 
     void showUI();
-    void setConfigCB(PlugConfCB)        {}
-    void setProgressCB(ProgressCB)      {}
+    void setConfigCB(PlugConfCB cb);
+    void setProgressCB(ProgressCB cb)            { progress_cb = cb; }
 
     QVariant getParam(QString key);
     bool setParam(QString key, QVariant val);
@@ -35,7 +35,16 @@ public:
     QVariant action(QVariant in);
 
 private:
+    PlugConfCB config_cb = nullptr;
+    ProgressCB progress_cb = nullptr;
     bool skip_gen = false;
+    std::string model, vaemodel, cnmodel, prompt, nprompt; // TODO: make use of negprompt and add controlnet image input
+    int steps = 2;
+    int batch = 1;
+    int seed = -1;
+    QList<QPixmap> outputs;
+
+    bool GenerateBatch();
 };
 
 #endif // SDPLUGIN_H

@@ -12,4 +12,3 @@ SDCfgDialog::~SDCfgDialog()
 {
     delete ui;
 }
-

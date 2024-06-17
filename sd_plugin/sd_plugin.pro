@@ -1,13 +1,19 @@
-QT     += core gui
+ARCH_CONFIG = -mavx -mavx2 -mfma -mf16c -msse3
 
+QT += core gui
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
 TARGET = sd_plugin
-
 TEMPLATE = lib
-
 CONFIG += c++20 plugin
 INCLUDEPATH += ../milla-view
+
+QMAKE_CFLAGS += $$ARCH_CONFIG
+QMAKE_CXXFLAGS += $$ARCH_CONFIG
+QMAKE_CFLAGS_DEBUG += -O0 -g
+QMAKE_CFLAGS_RELEASE += -DNDEBUG -Ofast
+QMAKE_CXXFLAGS_DEBUG += -O0 -g
+QMAKE_CXXFLAGS_RELEASE += -DNDEBUG -Ofast
 
 DESTDIR = ../share/plugins
 
