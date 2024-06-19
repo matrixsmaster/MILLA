@@ -10,7 +10,7 @@
 #include <functional>
 
 
-#define MILLA_VERSION           "0.5.12"
+#define MILLA_VERSION           "0.5.14"
 #define MILLA_CLI_BANNER        "MILLA:  Qt5-based, AI-enhanced image viewer ver."
 #define MILLA_CLI_COPYRIGHT     "(C) Dmitry 'MatrixS_Master' Solovyev, 2018-2024. All rights reserved."
 #define MILLA_CONFIG_PATH       "/.milla/"
@@ -33,7 +33,7 @@
 #define MILLA_LIST_FORMATS      { "txt", "lst" }
 #define MILLA_OPEN_FILE         "All supported files"
 #define MILLA_OPEN_LIST         "Text list files"
-#define MILLA_SAVE_FILE         "Supported formats (*.png, *.jpg, *.bmp)"
+#define MILLA_SAVE_FILE         "Supported formats (*.png *.jpg *.bmp)"
 
 #define FACE_CASCADE_FILE       "/../share/face_cascade.xml"
 #define COLORIZATION_NET_FILE   "/../share/colors.prototxt"

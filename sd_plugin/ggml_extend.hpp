@@ -476,7 +476,10 @@ __STATIC_INLINE__ void sd_tiling(ggml_tensor* input, ggml_tensor* output, const 
             ggml_merge_tensor_2d(output_tile, output, x * scale, y * scale, tile_overlap * scale);
             int64_t t2 = ggml_time_ms();
             last_time  = (t2 - t1) / 1000.0f;
-            pretty_progress(tile_count, num_tiles, last_time);
+            if (!pretty_progress(tile_count, num_tiles, last_time)) {
+                last_y = true;
+                break;
+            }
             tile_count++;
         }
         last_x = false;

@@ -309,13 +309,13 @@ sd_image_t* preprocess_id_image(sd_image_t* img) {
     return resized;
 }
 
-void pretty_progress(int step, int steps, float time) {
-    if (sd_progress_cb) {
-        sd_progress_cb(step, steps, time, sd_progress_cb_data);
-        return;
-    }
+bool pretty_progress(int step, int steps, float time)
+{
+    if (sd_progress_cb)
+        return sd_progress_cb(step, steps, time, sd_progress_cb_data);
+
     if (step == 0) {
-        return;
+        return true;
     }
     std::string progress = "  |";
     int max_progress     = 50;
@@ -337,6 +337,7 @@ void pretty_progress(int step, int steps, float time) {
     if (step == steps) {
         printf("\n");
     }
+    return true;
 }
 
 std::string ltrim(const std::string& s) {

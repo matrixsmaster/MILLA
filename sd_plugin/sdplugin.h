@@ -34,9 +34,12 @@ public:
 
     QVariant action(QVariant in);
 
+    void progress(double val);
+
 private:
     PlugConfCB config_cb = nullptr;
     ProgressCB progress_cb = nullptr;
+    bool load_once = false;
     bool skip_gen = false;
     std::string model, vaemodel, cnmodel, prompt, nprompt; // TODO: make use of negprompt and add controlnet image input
     int steps = 2;

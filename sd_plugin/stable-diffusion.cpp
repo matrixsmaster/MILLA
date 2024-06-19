@@ -879,7 +879,8 @@ public:
 
         auto denoise = [&](ggml_tensor* input, float sigma, int step) -> ggml_tensor* {
             if (step == 1) {
-                pretty_progress(0, (int)steps, 0);
+                if (!pretty_progress(0, (int)steps, 0))
+                    return denoised;
             }
             int64_t t0 = ggml_time_us();
 

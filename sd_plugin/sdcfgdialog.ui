@@ -13,6 +13,10 @@
   <property name="windowTitle">
    <string>Stable Diffusion</string>
   </property>
+  <property name="windowIcon">
+   <iconset>
+    <normaloff>:/milla-icon.png</normaloff>:/milla-icon.png</iconset>
+  </property>
   <layout class="QVBoxLayout" name="verticalLayout">
    <item>
     <layout class="QGridLayout" name="gridLayout">
@@ -126,6 +130,12 @@
          <width>16777215</width>
          <height>28</height>
         </size>
+       </property>
+       <property name="minimum">
+        <number>1</number>
+       </property>
+       <property name="maximum">
+        <number>1000</number>
        </property>
       </widget>
      </item>
