@@ -4,6 +4,8 @@
 #include <QObject>
 #include "plugins.h"
 
+#define SDPLUGIN_IMGSIZE 512
+
 class SDPlugin : public QObject, public MillaGenericPlugin
 {
     Q_OBJECT
@@ -34,7 +36,10 @@ public:
 
     QVariant action(QVariant in);
 
-    void progress(double val);
+    bool progress(double val);
+
+protected:
+    bool eventFilter(QObject *obj, QEvent *event);
 
 private:
     PlugConfCB config_cb = nullptr;
@@ -42,9 +47,12 @@ private:
     bool load_once = false;
     bool skip_gen = false;
     std::string model, vaemodel, cnmodel, prompt, nprompt; // TODO: make use of negprompt and add controlnet image input
+    float cfg_scale = 1;
+    float style_ratio = 1;
     int steps = 2;
     int batch = 1;
     int seed = -1;
+    int curout = 0;
     QList<QPixmap> outputs;
 
     bool GenerateBatch();
