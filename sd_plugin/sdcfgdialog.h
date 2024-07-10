@@ -3,6 +3,8 @@
 
 #include <QDialog>
 
+#define SDPLUGIN_MODEL_FILTER "All files (*.*)"
+
 QT_BEGIN_NAMESPACE
 namespace Ui { class SDCfgDialog; }
 QT_END_NAMESPACE
@@ -16,5 +18,8 @@ public:
     ~SDCfgDialog();
 
     Ui::SDCfgDialog *ui;
+private slots:
+    void on_pushButton_clicked();
+    void on_pushButton_2_clicked();
 };
 #endif // SDCFGDIALOG_H
