@@ -1,0 +1,30 @@
+CC = nvcc
+AR = ar
+
+LIB = libsdcuda.a
+SRCS = $(shell find ggml-cuda -name '*.cu' -type f)
+SRCS += ggml-cuda.cu
+
+OBJS = $(SRCS:.cu=.o)
+
+DEFS = -DSD_USE_CUBLAS -DGGML_MAX_NAME=128 -DGGML_USE_CUDA
+DEFS += -DNDEBUG
+DEFS += -D_GNU_SOURCE -D_XOPEN_SOURCE=600
+
+OPT = -O3
+ARCH = --generate-code=arch=compute_80,code=[compute_80,sm_80]
+FLAGS = -std=c++11 -fPIC -forward-unknown-to-host-compiler -Wno-deprecated-gpu-targets
+INCLS = -I. -Iggml-cuda
+
+all: $(LIB)
+.PHONY: all
+
+$(LIB): $(OBJS)
+	ar cru $@ $^
+
+clean:
+	rm -vf $(OBJS)
+.PHONY: clean
+
+%.o: %.cu
+	$(CC) $(FLAGS) $(OPT) $(ARCH) $(DEFS) $(INCLS) -x cu -c $< -o $@

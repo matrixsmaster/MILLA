@@ -1,15 +1,14 @@
-ARCH_CONFIG = -mavx -mavx2 -mfma -mf16c -msse3
-
 QT += core gui
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
+include(../cfg/cfg_sd.pri)
 
 TARGET = sd_plugin
 TEMPLATE = lib
 CONFIG += c++20 plugin
 INCLUDEPATH += ../milla-view
 
-QMAKE_CFLAGS += $$ARCH_CONFIG
-QMAKE_CXXFLAGS += $$ARCH_CONFIG
+QMAKE_CFLAGS += $$ARCH_CONFIG -fPIC
+QMAKE_CXXFLAGS += $$ARCH_CONFIG -fPIC
 QMAKE_CFLAGS_DEBUG += -O0 -g
 QMAKE_CFLAGS_RELEASE += -DNDEBUG -O3
 QMAKE_CXXFLAGS_DEBUG += -O0 -g
@@ -70,3 +69,10 @@ FORMS += \
 
 DISTFILES += \
     sd_plugin.json
+
+DEFINES += GGML_MAX_NAME=128
+
+equals(USE_CUBLAS,1) {
+    DEFINES += GGML_USE_CUDA GGML_USE_CUBLAS SD_USE_CUBLAS
+    LIBS += -L$$PWD -lsdcuda $$CUBLAS_PATH -lcuda -lcublas -lculibos -lcudart -lcublasLt
+}
