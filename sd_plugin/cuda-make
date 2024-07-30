@@ -24,6 +24,7 @@ $(LIB): $(OBJS)
 
 clean:
 	rm -vf $(OBJS)
+	rm -vf $(LIB)
 .PHONY: clean
 
 %.o: %.cu

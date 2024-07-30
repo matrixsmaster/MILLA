@@ -73,6 +73,11 @@ DISTFILES += \
 DEFINES += GGML_MAX_NAME=128
 
 equals(USE_CUBLAS,1) {
+    QMAKE_PRE_LINK = cd $$PWD && $(MAKE) -f cuda-make
     DEFINES += GGML_USE_CUDA GGML_USE_CUBLAS SD_USE_CUBLAS
     LIBS += -L$$PWD -lsdcuda $$CUBLAS_PATH -lcuda -lcublas -lculibos -lcudart -lcublasLt
+
+    extraclean.commands = cd $$PWD && $(MAKE) -f cuda-make clean;
+    clean.depends = extraclean
+    QMAKE_EXTRA_TARGETS += clean extraclean
 }
