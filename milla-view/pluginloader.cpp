@@ -225,6 +225,8 @@ bool MillaPluginLoader::startPlugin(MillaGenericPlugin* plug, QAction* sender)
 
 bool MillaPluginLoader::stopPlugin(MillaGenericPlugin* plug, QAction* /*sender*/)
 {
+    qDebug() << "[PLUGINS] Stopping plugin " << plug->getPluginName() << "...";
+
     plug->setParam("process_started",false); //ignore result
 
     //stop timer
@@ -232,6 +234,7 @@ bool MillaPluginLoader::stopPlugin(MillaGenericPlugin* plug, QAction* /*sender*/
         timers[plug].stop();
         disconnect(&(timers[plug]),&QTimer::timeout,nullptr,nullptr);
         timers.erase(plug);
+        qDebug() << "[PLUGINS] Timer removed for " << plug->getPluginName();
     }
 
     //remove filter (if any)
@@ -299,7 +302,7 @@ void MillaPluginLoader::repeatLastPlugin()
 void MillaPluginLoader::stopAllPlugins()
 {
     for (auto &i : plugins) {
-        if (!i.second->isContinous()) continue;
+        //if (!i.second->isContinous()) continue;
         if (!stopPlugin(i.second,nullptr)) continue;
 
         QAction* a = actions[i.second->getPluginName()];

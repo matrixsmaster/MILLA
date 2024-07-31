@@ -29,11 +29,12 @@ bool AnnaPlugin::init()
 
 bool AnnaPlugin::finalize()
 {
-    qDebug() << "[ANNA] Finalize OK";
+    qDebug() << "[ANNA] Finalizing...";
     if (brain) {
         delete brain;
         brain = nullptr;
     }
+    qDebug() << "[ANNA] Finalized";
     return true;
 }
 
@@ -104,7 +105,15 @@ QVariant AnnaPlugin::getParam(QString key)
 bool AnnaPlugin::setParam(QString key, QVariant val)
 {
     qDebug() << "[ANNA] parameter " << key << " received";
-    //TODO
+    if (key == "process_started") {
+        if (val.canConvert(QMetaType::Bool) && !val.toBool()) {
+            qDebug() << "[ANNA] Stopping plugin by UI request, deleting brain";
+            if (brain) {
+                delete brain;
+                brain = nullptr;
+            }
+        }
+    }
     return false;
 }
 
