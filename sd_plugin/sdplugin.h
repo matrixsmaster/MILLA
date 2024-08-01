@@ -5,6 +5,7 @@
 #include "plugins.h"
 
 #define SDPLUGIN_IMGSIZE 512
+#define SDPLUGIN_DEF_DELAY 50
 
 class SDPlugin : public QObject, public MillaGenericPlugin
 {
@@ -19,7 +20,7 @@ public:
     QString getPluginName()  { return "SDPlugin"; }
     QString getPluginDesc()  { return "Stable Diffusion plugin for all your image generation needs."; }
 
-    bool isContinous() const { return false; }
+    bool isContinous() const { return true; }
 
     MillaPluginContentType inputContent() const  { return MILLA_CONTENT_NONE; }
     MillaPluginContentType outputContent() const { return MILLA_CONTENT_IMAGE; }
@@ -54,6 +55,7 @@ private:
     int seed = -1;
     int curout = 0;
     QList<QPixmap> outputs;
+    int delay = SDPLUGIN_DEF_DELAY;
 
     bool GenerateBatch();
 };

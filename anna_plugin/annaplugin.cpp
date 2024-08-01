@@ -113,6 +113,7 @@ bool AnnaPlugin::setParam(QString key, QVariant val)
                 brain = nullptr;
             }
         }
+        return true;
     }
     return false;
 }

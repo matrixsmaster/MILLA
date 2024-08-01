@@ -66,6 +66,9 @@ void SDPlugin::showUI()
     style_ratio = dlg.ui->styleRatio->value();
     steps = dlg.ui->stepsCnt->value();
     batch = dlg.ui->batchCnt->value();
+
+    outputs.clear();
+    curout = 0;
 }
 
 QVariant SDPlugin::getParam(QString key)
@@ -73,6 +76,8 @@ QVariant SDPlugin::getParam(QString key)
     qDebug() << "[SD] requested parameter " << key;
     if (key == "show_ui") {
         return true;
+    } else if (key == "update_delay") {
+        return delay;
     } else if (key == "use_config_cb") {
         return true;
     }
@@ -82,6 +87,13 @@ QVariant SDPlugin::getParam(QString key)
 bool SDPlugin::setParam(QString key, QVariant val)
 {
     qDebug() << "[SD] parameter " << key << " sent";
+    if (key == "process_started") {
+        if (val.canConvert(QMetaType::Bool) && val.toBool()) {
+            qDebug() << "[SD] Run request received";
+            // nothing to do now, but hopefully we'll add SVD support later
+            return true;
+        }
+    }
     return false;
 }
 
@@ -138,12 +150,16 @@ QVariant SDPlugin::action(QVariant in)
         return QVariant();
     }
 
-    //TODO: navigate through the batch
-    outputs.clear();
-    if (GenerateBatch())
-        return QVariant(outputs.at(0));
-    else
-        return QVariant();
+    if (outputs.isEmpty()) {
+        // make a new batch
+        curout = 0;
+        if (!GenerateBatch()) return QVariant();
+
+    } else if (curout < 0 || curout >= outputs.count())
+        // something went wrong, let's reset
+        curout = 0;
+
+    return QVariant(outputs.at(curout));
 }
 
 bool SDPlugin::eventFilter(QObject *obj, QEvent *event)
@@ -157,7 +173,6 @@ bool SDPlugin::eventFilter(QObject *obj, QEvent *event)
             } else {
                 if (--curout < 0) curout = outputs.size() - 1;
             }
-            // TODO: send signal to viewer to force showing new picture
             qDebug() << "[SDPlugin] Selecting image " << curout;
         }
         break;
