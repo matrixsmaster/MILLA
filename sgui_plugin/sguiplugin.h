@@ -20,7 +20,7 @@ public:
 
     QString getPluginName() { return "SGUI"; }
     QString getPluginDesc() { return "A scriptable GUI add-on + VFS driver."; }
-
+#error "Update plugin interface!"
     bool isFilter()         { return false; }
     bool isContinous()      { return true; }
     bool isFileFormat()     { return true; }

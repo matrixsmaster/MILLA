@@ -17,7 +17,7 @@ public:
 
     QString getPluginName() { return "ZipReader"; }
     QString getPluginDesc() { return "A ZIP files indexing plugin."; }
-
+#error "Update plugin interface!"
     bool isFilter()         { return false; }
     bool isContinous()      { return false; }
     bool isFileFormat()     { return true; }
