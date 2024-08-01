@@ -2,6 +2,8 @@
 #define SDPLUGIN_H
 
 #include <QObject>
+#include <thread>
+#include <mutex>
 #include "plugins.h"
 
 #define SDPLUGIN_IMGSIZE 512
@@ -56,6 +58,7 @@ private:
     int curout = 0;
     QList<QPixmap> outputs;
     int delay = SDPLUGIN_DEF_DELAY;
+    std::mutex out_mutex;
 
     bool GenerateBatch();
 };

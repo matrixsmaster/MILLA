@@ -69,6 +69,12 @@ void SDPlugin::showUI()
 
     outputs.clear();
     curout = 0;
+
+    if (config_cb) {
+        QVariant i;
+        i.setValue(QObjectPtr(this));
+        config_cb("set_event_filter",i); //insert event filter into main window
+    }
 }
 
 QVariant SDPlugin::getParam(QString key)
@@ -90,7 +96,8 @@ bool SDPlugin::setParam(QString key, QVariant val)
     if (key == "process_started") {
         if (val.canConvert(QMetaType::Bool) && val.toBool()) {
             qDebug() << "[SD] Run request received";
-            // nothing to do now, but hopefully we'll add SVD support later
+            if (skip_gen || !GenerateBatch()) return false;
+            skip_gen = true; // requires reset via showUI()
             return true;
         }
     }
@@ -142,24 +149,16 @@ void SDPlugin::setConfigCB(PlugConfCB cb)
     qDebug() << "[SD] Config preloaded";
 }
 
-QVariant SDPlugin::action(QVariant in)
+QVariant SDPlugin::action(QVariant /*in*/)
 {
-    qDebug() << "[SD] Action()";
-    if (skip_gen) {
-        qDebug() << "[SD] skipped";
-        return QVariant();
-    }
+    QPixmap px;
+    out_mutex.lock();
+    if (curout >= 0 && curout < outputs.count())
+        px = outputs.at(curout);
+    out_mutex.unlock();
 
-    if (outputs.isEmpty()) {
-        // make a new batch
-        curout = 0;
-        if (!GenerateBatch()) return QVariant();
-
-    } else if (curout < 0 || curout >= outputs.count())
-        // something went wrong, let's reset
-        curout = 0;
-
-    return QVariant(outputs.at(curout));
+    if (px.isNull()) return QVariant();
+    return QVariant(px);
 }
 
 bool SDPlugin::eventFilter(QObject *obj, QEvent *event)
@@ -223,7 +222,9 @@ bool SDPlugin::GenerateBatch()
             if (!out[i].data) continue;
 
             QImage img(out[i].data,out[i].width,out[i].height,((out[i].channel == 4)? QImage::Format_ARGB32 : QImage::Format_RGB888));
+            out_mutex.lock();
             outputs.push_back(QPixmap::fromImage(img));
+            out_mutex.unlock();
 
             free(out[i].data);
             out[i].data = NULL;

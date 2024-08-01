@@ -267,10 +267,12 @@ QVariant MillaPluginLoader::pluginConfigCallback(MillaGenericPlugin* plug, QStri
         return (context.current->valid)? context.current->picture : QPixmap();
 
     } else if (key == "set_event_filter" && val.canConvert<QObjectPtr>()) {
-        filters[plug] = std::pair<QObjectPtr,QObjectPtr>(context.area,val.value<QObjectPtr>());
-        context.area->installEventFilter(val.value<QObjectPtr>());
-
-        qDebug() << "[PLUGINS] Registered event filter for " << plug->getPluginName();
+        QObjectPtr ptr = val.value<QObjectPtr>();
+        if (!(filters.count(plug) && filters.at(plug).first == context.area && filters.at(plug).second == ptr)) {
+            context.area->installEventFilter(ptr);
+            filters[plug] = std::pair<QObjectPtr,QObjectPtr>(context.area,ptr);
+            qDebug() << "[PLUGINS] Registered event filter for " << plug->getPluginName();
+        }
         return true;
 
     } else if (key == "load_key_value" && val.canConvert<QString>()) {
