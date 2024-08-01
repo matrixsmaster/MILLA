@@ -21,17 +21,17 @@ public:
     QString getPluginName()  { return "WebCamera"; }
     QString getPluginDesc()  { return "A simple plugin to capture web camera video stream."; }
 
-    bool isContinous() const { return true; }
+    bool isContinous()       { return true; }
 
-    MillaPluginContentType inputContent() const  { return MILLA_CONTENT_NONE; }
-    MillaPluginContentType outputContent() const { return MILLA_CONTENT_IMAGE; }
+    MillaPluginContentType inputContent()  { return MILLA_CONTENT_NONE; }
+    MillaPluginContentType outputContent() { return MILLA_CONTENT_IMAGE; }
 
     bool init();
     bool finalize();
 
     void showUI();
-    void setConfigCB(PlugConfCB)        {}
-    void setProgressCB(ProgressCB)      {}
+    void setConfigCB(PlugConfCB)           {}
+    void setProgressCB(ProgressCB)         {}
 
     QVariant getParam(QString key);
     bool setParam(QString key, QVariant val);

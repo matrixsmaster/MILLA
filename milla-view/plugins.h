@@ -24,10 +24,10 @@ public:
     virtual QString getPluginName() = 0;
     virtual QString getPluginDesc() = 0;
 
-    virtual bool isContinous() const = 0;
+    virtual bool isContinous() = 0;
 
-    virtual MillaPluginContentType inputContent() const = 0;
-    virtual MillaPluginContentType outputContent() const = 0;
+    virtual MillaPluginContentType inputContent() = 0;
+    virtual MillaPluginContentType outputContent() = 0;
 
     virtual bool init() = 0;
     virtual bool finalize() = 0;

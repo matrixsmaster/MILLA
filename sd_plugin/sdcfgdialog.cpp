@@ -25,3 +25,9 @@ void SDCfgDialog::on_pushButton_2_clicked()
     QString fn = QFileDialog::getOpenFileName(this,"Select VAE file","",SDPLUGIN_MODEL_FILTER);
     if (!fn.isEmpty()) ui->vaeFile->setText(fn);
 }
+
+void SDCfgDialog::on_pushButton_4_clicked()
+{
+    QString fn = QFileDialog::getOpenFileName(this,"Select upscaler file","",SDPLUGIN_MODEL_FILTER);
+    if (!fn.isEmpty()) ui->upscModel->setText(fn);
+}

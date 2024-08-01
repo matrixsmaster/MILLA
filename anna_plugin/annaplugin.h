@@ -29,10 +29,10 @@ public:
     QString getPluginName()  { return "ANNA"; }
     QString getPluginDesc()  { return "Integration plugin for ANNA project. Run LLMs and VLMs inside MILLA."; }
 
-    bool isContinous() const                      { return false; }
+    bool isContinous()                            { return false; }
 
-    MillaPluginContentType inputContent() const   { return cin; }
-    MillaPluginContentType outputContent() const  { return cout; }
+    MillaPluginContentType inputContent()         { return cin; }
+    MillaPluginContentType outputContent()        { return cout; }
 
     bool init();
     bool finalize();

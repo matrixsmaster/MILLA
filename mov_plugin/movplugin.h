@@ -24,17 +24,17 @@ public:
     QString getPluginName()  { return "SilentMovie"; }
     QString getPluginDesc()  { return "A silent animated clip player."; }
 
-    bool isContinous() const { return true; }
+    bool isContinous()       { return true; }
 
-    MillaPluginContentType inputContent() const  { return MILLA_CONTENT_FILE; }
-    MillaPluginContentType outputContent() const { return MILLA_CONTENT_IMAGE; }
+    MillaPluginContentType inputContent()  { return MILLA_CONTENT_FILE; }
+    MillaPluginContentType outputContent() { return MILLA_CONTENT_IMAGE; }
 
     bool init();
     bool finalize();
 
     void showUI();
-    void setConfigCB(PlugConfCB cb)     { config_cb = cb; }
-    void setProgressCB(ProgressCB)      {}
+    void setConfigCB(PlugConfCB cb)        { config_cb = cb; }
+    void setProgressCB(ProgressCB)         {}
 
     QVariant getParam(QString key);
     bool setParam(QString key, QVariant val);

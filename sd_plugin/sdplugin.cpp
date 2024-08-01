@@ -3,7 +3,6 @@
 #include "sdplugin.h"
 #include "sdcfgdialog.h"
 #include "ui_sdcfgdialog.h"
-#include "stable-diffusion.h"
 
 SDPlugin::SDPlugin() :
     QObject(),
@@ -14,6 +13,7 @@ SDPlugin::SDPlugin() :
 
 SDPlugin::~SDPlugin()
 {
+    Cleanup();
     qDebug() << "[SD] Plugin destroyed";
 }
 
@@ -29,6 +29,8 @@ bool SDPlugin::finalize()
 
     //save the settings
     if (!config_cb) return true;
+
+    config_cb("save_key_value","SD_dogen="+QString::asprintf("%d",dogen));
     config_cb("save_key_value","SD_model="+QString::fromStdString(model));
     config_cb("save_key_value","SD_vae="+QString::fromStdString(vaemodel));
     config_cb("save_key_value","SD_cnet="+QString::fromStdString(cnmodel));
@@ -37,7 +39,14 @@ bool SDPlugin::finalize()
     config_cb("save_key_value","SD_styleratio="+QString::asprintf("%.3f",style_ratio));
     config_cb("save_key_value","SD_steps="+QString::asprintf("%d",steps));
     config_cb("save_key_value","SD_batch="+QString::asprintf("%d",batch));
+
+    config_cb("save_key_value","SD_doupsc="+QString::asprintf("%d",doupsc));
+    config_cb("save_key_value","SD_esrgan="+QString::fromStdString(esrgan));
+    config_cb("save_key_value","SD_scalefac="+QString::asprintf("%d",scale_fac));
+
     qDebug() << "[SD] Config saved";
+
+    Cleanup();
     return true;
 }
 
@@ -46,6 +55,7 @@ void SDPlugin::showUI()
     qDebug() << "[SD] Showing UI...";
     SDCfgDialog dlg;
 
+    dlg.ui->doGen->setChecked(dogen);
     dlg.ui->modelFile->setText(QString::fromStdString(model));
     dlg.ui->vaeFile->setText(QString::fromStdString(vaemodel));
     dlg.ui->cnFile->setText(QString::fromStdString(cnmodel));
@@ -55,9 +65,14 @@ void SDPlugin::showUI()
     dlg.ui->stepsCnt->setValue(steps);
     dlg.ui->batchCnt->setValue(batch);
 
+    dlg.ui->doUpsc->setChecked(doupsc);
+    dlg.ui->upscModel->setText(QString::fromStdString(esrgan));
+    dlg.ui->upscFactor->setValue(scale_fac);
+
     skip_gen = !dlg.exec();
     if (skip_gen) return;
 
+    dogen = dlg.ui->doGen->isChecked();
     model = dlg.ui->modelFile->text().toStdString();
     vaemodel = dlg.ui->vaeFile->text().toStdString();
     cnmodel = dlg.ui->cnFile->text().toStdString();
@@ -67,10 +82,14 @@ void SDPlugin::showUI()
     steps = dlg.ui->stepsCnt->value();
     batch = dlg.ui->batchCnt->value();
 
+    doupsc = dlg.ui->doUpsc->isChecked();
+    esrgan = dlg.ui->upscModel->text().toStdString();
+    scale_fac = dlg.ui->upscFactor->value();
+
     outputs.clear();
     curout = 0;
 
-    if (config_cb) {
+    if (config_cb && dogen) {
         QVariant i;
         i.setValue(QObjectPtr(this));
         config_cb("set_event_filter",i); //insert event filter into main window
@@ -94,10 +113,16 @@ bool SDPlugin::setParam(QString key, QVariant val)
 {
     qDebug() << "[SD] parameter " << key << " sent";
     if (key == "process_started") {
-        if (val.canConvert(QMetaType::Bool) && val.toBool()) {
+        if (!val.canConvert(QMetaType::Bool)) return false;
+        if (dogen && val.toBool()) {
             qDebug() << "[SD] Run request received";
             if (skip_gen || !GenerateBatch()) return false;
             skip_gen = true; // requires reset via showUI()
+            return true;
+
+        } else if (!val.toBool()) {
+            qDebug() << "[SD] Stop request received";
+            //TODO
             return true;
         }
     }
@@ -113,6 +138,10 @@ void SDPlugin::setConfigCB(PlugConfCB cb)
     if (load_once) return;
 
     QVariant r;
+    r = config_cb("load_key_value","SD_dogen");
+    if (r.canConvert<QString>())
+        dogen = r.value<QString>().toInt();
+
     r = config_cb("load_key_value","SD_model");
     if (r.canConvert<QString>())
         model = r.value<QString>().toStdString();
@@ -145,17 +174,35 @@ void SDPlugin::setConfigCB(PlugConfCB cb)
     if (r.canConvert<QString>())
         batch = r.value<QString>().toInt();
 
+    r = config_cb("load_key_value","SD_doupsc");
+    if (r.canConvert<QString>())
+        doupsc = r.value<QString>().toInt();
+
+    r = config_cb("load_key_value","SD_esrgan");
+    if (r.canConvert<QString>())
+        esrgan = r.value<QString>().toStdString();
+
+    r = config_cb("load_key_value","SD_scalefac");
+    if (r.canConvert<QString>())
+        scale_fac = r.value<QString>().toInt();
+
     load_once = true;
     qDebug() << "[SD] Config preloaded";
 }
 
-QVariant SDPlugin::action(QVariant /*in*/)
+QVariant SDPlugin::action(QVariant in)
 {
     QPixmap px;
-    out_mutex.lock();
-    if (curout >= 0 && curout < outputs.count())
-        px = outputs.at(curout);
-    out_mutex.unlock();
+
+    if (dogen) {
+        out_mutex.lock();
+        if (curout >= 0 && curout < outputs.count())
+            px = outputs.at(curout);
+        out_mutex.unlock();
+
+    } else if (doupsc && in.canConvert<QPixmap>()) {
+        //
+    }
 
     if (px.isNull()) return QVariant();
     return QVariant(px);
@@ -203,12 +250,13 @@ static bool progress_helper(int step, int steps, float /*time*/, void* data)
 
 bool SDPlugin::GenerateBatch()
 {
-    qDebug() << "[SD] Initializing context...";
     sd_set_log_callback(log_helper,nullptr);
     sd_set_progress_callback(progress_helper,this);
+
+    qDebug() << "[SD] Initializing context...";
     sd_ctx_t* ctx = new_sd_ctx(model.c_str(),vaemodel.c_str(),"",cnmodel.c_str(),"","","",true,false,true,get_num_physical_cores(),SD_TYPE_COUNT,STD_DEFAULT_RNG,DEFAULT,false,false,false);
     if (!ctx) {
-        qDebug() << "[SD] ERROR: Unable to create context!";
+        qDebug() << "[SD] ERROR: Unable to create generator context!";
         return false;
     }
 
@@ -222,8 +270,12 @@ bool SDPlugin::GenerateBatch()
             if (!out[i].data) continue;
 
             QImage img(out[i].data,out[i].width,out[i].height,((out[i].channel == 4)? QImage::Format_ARGB32 : QImage::Format_RGB888));
+            QPixmap pix;
+            if (doupsc) pix = Scaleup(img);
+            else pix = QPixmap::fromImage(img);
+
             out_mutex.lock();
-            outputs.push_back(QPixmap::fromImage(img));
+            outputs.push_back(pix);
             out_mutex.unlock();
 
             free(out[i].data);
@@ -235,4 +287,59 @@ bool SDPlugin::GenerateBatch()
     free(out);
     free_sd_ctx(ctx);
     return out; // if it was OK, it'll evaluate to true
+}
+
+bool SDPlugin::isContinous()
+{
+    if (!load_once) return true; // by default, we want the UI to show it as a togglable plugin
+    return dogen;
+}
+
+MillaPluginContentType SDPlugin::inputContent()
+{
+    return (!dogen && doupsc)? MILLA_CONTENT_IMAGE : MILLA_CONTENT_NONE;
+}
+
+QPixmap SDPlugin::Scaleup(QImage in)
+{
+    qDebug() << "[SD] Scale up()";
+    sd_set_log_callback(log_helper,nullptr);
+    sd_set_progress_callback(progress_helper,this);
+
+    if (!upscaler) {
+        out_mutex.lock();
+        upscaler = new_upscaler_ctx(esrgan.c_str(),get_num_physical_cores(),SD_TYPE_COUNT);
+        out_mutex.unlock();
+        if (!upscaler) {
+            qDebug() << "[SD] ERROR: Unable to create upscaler context!";
+            return QPixmap();
+        }
+    }
+
+    sd_image_t img;
+    img.channel = (in.format() == QImage::Format_ARGB32)? 4 : 3;
+    img.width = in.width();
+    img.height = in.height();
+    img.data = (uint8_t*)in.constBits(); // we ain't gonna change the data
+
+    sd_image_t res = upscale(upscaler,img,scale_fac);
+    if (res.data) {
+        qDebug() << "[SD] Upscale complete";
+        QImage out(res.data,res.width,res.height,((res.channel == 4)? QImage::Format_ARGB32 : QImage::Format_RGB888));
+        QPixmap final = QPixmap::fromImage(out);
+        free(res.data);
+        return final;
+    }
+
+    qDebug() << "[SD] ERROR: Upscale failed!";
+    return QPixmap();
+}
+
+void SDPlugin::Cleanup()
+{
+    out_mutex.lock();
+    outputs.clear();
+    if (upscaler) free_upscaler_ctx(upscaler);
+    out_mutex.unlock();
+    qDebug() << "[SD] Cleanup complete";
 }
