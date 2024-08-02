@@ -203,9 +203,8 @@ QVariant SDPlugin::action(QVariant in)
         out_mutex.unlock();
 
     } else if (doupsc && in.canConvert<QPixmap>()) {
-        QPixmap imgin = in.value<QPixmap>();
-        QImage img = imgin.toImage();
-        img.convertTo(imgin.hasAlphaChannel()? QImage::Format_ARGB32 : QImage::Format_RGB888);
+        QImage img = in.value<QPixmap>().toImage();
+        img.convertTo(QImage::Format_RGB888); // upscaler doesn't care about alpha
         px = Scaleup(img);
 
         if (config_cb) {
@@ -329,7 +328,7 @@ QPixmap SDPlugin::Scaleup(const QImage &in)
 
     QImage tmp;
     sd_image_t img;
-    img.channel = (in.format() == QImage::Format_ARGB32)? 4 : 3;
+    img.channel = in.depth() / 8;
     img.width = in.width();
     img.width += SDPLUGIN_TILE_SIZE - (img.width % SDPLUGIN_TILE_SIZE); // make sure it's divisible by smallest tile size
     img.height = in.height();
