@@ -57,6 +57,7 @@ private:
 
     bool load_once = false;
     bool skip_gen = false;
+    bool self_stop = false;
 
     upscaler_ctx_t* upscaler = nullptr;
 

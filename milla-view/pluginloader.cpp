@@ -244,6 +244,10 @@ bool MillaPluginLoader::stopPlugin(MillaGenericPlugin* plug, QAction* /*sender*/
         qDebug() << "[PLUGINS] Event filter removed for " << plug->getPluginName();
     }
 
+    //make sure the checkbox is unchecked
+    QAction* a = actions[plug->getPluginName()];
+    if (a && a->isCheckable()) a->setChecked(false);
+
     qDebug() << "[PLUGINS] " << plug->getPluginName() << " stopped";
     return true;
 }
@@ -286,6 +290,10 @@ QVariant MillaPluginLoader::pluginConfigCallback(MillaGenericPlugin* plug, QStri
 
         qDebug() << "[PLUGINS] Plugin " << plug->getPluginName() << " stores a value for " << l.at(0) << ": " << l.at(1);
         return DBHelper::setExtraStringVal(l.at(0),l.at(1));
+
+    } else if (key == "self_disable" && val.isNull()) {
+        return stopPlugin(plug,nullptr);
+
     }
     return QVariant();
 }
@@ -305,9 +313,6 @@ void MillaPluginLoader::stopAllPlugins()
 {
     for (auto &i : plugins) {
         //if (!i.second->isContinous()) continue;
-        if (!stopPlugin(i.second,nullptr)) continue;
-
-        QAction* a = actions[i.second->getPluginName()];
-        if (a && a->isCheckable()) a->setChecked(false);
+        stopPlugin(i.second,nullptr);
     }
 }

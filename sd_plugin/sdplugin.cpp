@@ -122,7 +122,8 @@ bool SDPlugin::setParam(QString key, QVariant val)
 
         } else if (!val.toBool()) {
             qDebug() << "[SD] Stop request received";
-            Cleanup();
+            if (!self_stop) Cleanup();
+            self_stop = false;
             return true;
         }
     }
@@ -206,6 +207,11 @@ QVariant SDPlugin::action(QVariant in)
         QImage img = imgin.toImage();
         img.convertTo(imgin.hasAlphaChannel()? QImage::Format_ARGB32 : QImage::Format_RGB888);
         px = Scaleup(img);
+
+        if (config_cb) {
+            self_stop = true;
+            config_cb("self_disable",QVariant());
+        }
     }
 
     if (px.isNull()) return QVariant();
