@@ -9,6 +9,7 @@
 
 #define SDPLUGIN_IMGSIZE 512
 #define SDPLUGIN_DEF_DELAY 50
+#define SDPLUGIN_TILE_SIZE 32
 
 typedef enum {
     SDP_ACT_GEN_ONLY = 0x01,
@@ -75,7 +76,7 @@ private:
     std::mutex out_mutex;
 
     bool GenerateBatch();
-    QPixmap Scaleup(QImage in);
+    QPixmap Scaleup(const QImage &in);
     void Cleanup();
 };
 

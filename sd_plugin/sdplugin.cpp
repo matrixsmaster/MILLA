@@ -305,7 +305,7 @@ MillaPluginContentType SDPlugin::inputContent()
     return (!dogen && doupsc)? MILLA_CONTENT_IMAGE : MILLA_CONTENT_NONE;
 }
 
-QPixmap SDPlugin::Scaleup(QImage in)
+QPixmap SDPlugin::Scaleup(const QImage &in)
 {
     qDebug() << "[SD] Scale up()";
     sd_set_log_callback(log_helper,nullptr);
@@ -321,11 +321,23 @@ QPixmap SDPlugin::Scaleup(QImage in)
         }
     }
 
+    QImage tmp;
     sd_image_t img;
     img.channel = (in.format() == QImage::Format_ARGB32)? 4 : 3;
     img.width = in.width();
+    img.width += SDPLUGIN_TILE_SIZE - (img.width % SDPLUGIN_TILE_SIZE); // make sure it's divisible by smallest tile size
     img.height = in.height();
+    img.height += SDPLUGIN_TILE_SIZE - (img.height % SDPLUGIN_TILE_SIZE);
     img.data = (uint8_t*)in.constBits(); // we ain't gonna change the data
+
+    // pad the area if needed
+    if (img.width > (unsigned)in.width() || img.height > (unsigned)in.height()) {
+        tmp = QImage(img.width,img.height,in.format());
+        tmp.fill(0);
+        for (int i = 0; i < in.height(); i++)
+            memcpy(tmp.scanLine(i),in.scanLine(i),in.bytesPerLine());
+        img.data = (uint8_t*)tmp.constBits();
+    }
 
     sd_image_t res = upscale(upscaler,img,scale_fac);
     if (res.data) {
