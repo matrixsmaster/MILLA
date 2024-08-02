@@ -117,12 +117,12 @@ bool SDPlugin::setParam(QString key, QVariant val)
         if (dogen && val.toBool()) {
             qDebug() << "[SD] Run request received";
             if (skip_gen || !GenerateBatch()) return false;
-            skip_gen = true; // requires reset via showUI()
+            //skip_gen = true; // requires reset via showUI()
             return true;
 
         } else if (!val.toBool()) {
             qDebug() << "[SD] Stop request received";
-            //TODO
+            Cleanup();
             return true;
         }
     }
@@ -192,8 +192,9 @@ void SDPlugin::setConfigCB(PlugConfCB cb)
 
 QVariant SDPlugin::action(QVariant in)
 {
-    QPixmap px;
+    if (skip_gen) return QVariant();
 
+    QPixmap px;
     if (dogen) {
         out_mutex.lock();
         if (curout >= 0 && curout < outputs.count())
@@ -201,7 +202,10 @@ QVariant SDPlugin::action(QVariant in)
         out_mutex.unlock();
 
     } else if (doupsc && in.canConvert<QPixmap>()) {
-        //
+        QPixmap imgin = in.value<QPixmap>();
+        QImage img = imgin.toImage();
+        img.convertTo(imgin.hasAlphaChannel()? QImage::Format_ARGB32 : QImage::Format_RGB888);
+        px = Scaleup(img);
     }
 
     if (px.isNull()) return QVariant();
@@ -270,6 +274,7 @@ bool SDPlugin::GenerateBatch()
             if (!out[i].data) continue;
 
             QImage img(out[i].data,out[i].width,out[i].height,((out[i].channel == 4)? QImage::Format_ARGB32 : QImage::Format_RGB888));
+            img.bits(); // force copying
             QPixmap pix;
             if (doupsc) pix = Scaleup(img);
             else pix = QPixmap::fromImage(img);
@@ -340,6 +345,7 @@ void SDPlugin::Cleanup()
     out_mutex.lock();
     outputs.clear();
     if (upscaler) free_upscaler_ctx(upscaler);
+    upscaler = nullptr;
     out_mutex.unlock();
     qDebug() << "[SD] Cleanup complete";
 }
