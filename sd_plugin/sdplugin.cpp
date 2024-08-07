@@ -1,6 +1,5 @@
 #include <thread>
 #include <QDebug>
-#include "dbhelper.h"
 #include "sdplugin.h"
 #include "sdcfgdialog.h"
 #include "ui_sdcfgdialog.h"
@@ -445,10 +444,7 @@ void SDPlugin::AutosaveImage(const QPixmap &img)
 
     if (!asav_addb || !config_cb) return;
 
-    if (DBHelper::isStatRecordExists(fn)) {
-        qDebug() << "[SD] File record for " << fn << " exists, possible bad path or corrupted DB; not saving new metadata";
-        return;
-    }
+    config_cb("show_message",QVariant("File " + fn + " saved"));
 
     QVariant r = config_cb("index_new_file",QVariant(fn));
     if (!r.isValid() || !r.toBool()) {
@@ -457,21 +453,18 @@ void SDPlugin::AutosaveImage(const QPixmap &img)
     }
 
     if (asav_match) {
-        //TODO
+        //TODO: get_all_tags
     }
 
     if (asav_addtag) {
-        //TODO
-        //DBHelper::getFileTags(fn)
+        //TODO: append_tags
     }
 
-    QString notes;
-    if (asav_addnote) {
-        //TODO
-        notes += '\n';
-    }
-    notes += TextualizeConfig();
-    DBHelper::updateFileNotes(fn,notes);
+    QStringList lst;
+    lst.append(fn);
+    if (asav_addnote) lst.append(asav_notes + "\n" + TextualizeConfig());
+    else lst.append(TextualizeConfig());
+    config_cb("append_notes",QVariant(lst));
 }
 
 QString SDPlugin::ScanNextImageFn()
@@ -488,14 +481,38 @@ QString SDPlugin::ScanNextImageFn()
         return res;
     }
     QString fmt = QString::asprintf("%%0%dd",lst.at(2).length());
-    qDebug() << "[SD] fmt = '" << fmt << "'";
+    //qDebug() << "[SD] fmt = '" << fmt << "'";
 
     for (int i = SDPLUGIN_ASAVE_START; i < SDPLUGIN_ASAVE_MAX; i++) {
         res = asav_dir + "/" + lst.at(1) + QString::asprintf(fmt.toStdString().c_str(),i) + "." + asav_fmt.toLower();
-        qDebug() << "[SD] testing " << res;
+        res.replace("//","/");
+        //qDebug() << "[SD] testing " << res;
         if (!QFile::exists(res)) return res;
     }
 
     qDebug() << "[SD] ERROR: Exhausted file name search space!";
     return QString();
+}
+
+QString SDPlugin::TextualizeConfig()
+{
+    QString r;
+
+    if (dogen) {
+        std::string s;
+        s += "Image generated with " + model + ", using encoder " + vaemodel;
+        if (!cnmodel.empty()) s += " with control net " + cnmodel;
+        s += ".\n";
+        s += "Prompt used:\n" + prompt + "\n";
+        if (!nprompt.empty()) s += "Negative prompt used:\n" + nprompt + "\n";
+        r = QString::fromStdString(s);
+        r += QString::asprintf("cfg_scale = %.3f; style_ratio = %.3f; steps = %d; batch = %d/%d",cfg_scale,style_ratio,steps,curout+1,batch);
+    }
+
+    if (doupsc) {
+        r += "Image upscaled using " + QString::fromStdString(esrgan);
+        r += QString::asprintf(" with scale factor of %d.",scale_fac);
+    }
+
+    return r;
 }

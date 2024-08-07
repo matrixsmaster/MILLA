@@ -294,12 +294,29 @@ QVariant MillaPluginLoader::pluginConfigCallback(MillaGenericPlugin* plug, QStri
     } else if (key == "self_disable" && val.isNull()) {
         return stopPlugin(plug,nullptr);
 
+    } else if (key == "show_message" && val.canConvert<QString>()) {
+        MViewer* wnd = dynamic_cast<MViewer*>(context.window);
+        if (wnd) wnd->showMessage(val.toString());
+        return QVariant(bool(true));
+
     } else if (key == "index_new_file" && val.canConvert<QString>()) {
         QString fn = val.toString();
         MViewer* wnd = dynamic_cast<MViewer*>(context.window);
         if (!wnd) return QVariant();
-        return QVariant(wnd->createStatRecord(fn,false));
+        return QVariant(wnd->createStatRecord(fn,true));
 
+    } else if (key == "get_all_tags" && val.isNull()) {
+        //TODO
+
+    } else if (key == "append_tags" && val.canConvert<QStringList>()) {
+        //TODO
+
+    } else if (key == "append_notes" && val.canConvert<QStringList>()) {
+        QStringList lst = val.toStringList();
+        MViewer* wnd = dynamic_cast<MViewer*>(context.window);
+        if (!wnd) return QVariant();
+        wnd->appendNotes(lst.at(1),lst.at(0));
+        return QVariant(bool(true));
     }
     return QVariant();
 }

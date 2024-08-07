@@ -436,6 +436,9 @@
        </item>
        <item>
         <widget class="QCheckBox" name="savMatch">
+         <property name="enabled">
+          <bool>false</bool>
+         </property>
          <property name="text">
           <string>Attempt to match tags</string>
          </property>
@@ -445,13 +448,20 @@
         <layout class="QHBoxLayout" name="horizontalLayout_6">
          <item>
           <widget class="QCheckBox" name="savAddTag">
+           <property name="enabled">
+            <bool>false</bool>
+           </property>
            <property name="text">
             <string>Add tags (comma-separated)</string>
            </property>
           </widget>
          </item>
          <item>
-          <widget class="QLineEdit" name="savTags"/>
+          <widget class="QLineEdit" name="savTags">
+           <property name="enabled">
+            <bool>false</bool>
+           </property>
+          </widget>
          </item>
         </layout>
        </item>

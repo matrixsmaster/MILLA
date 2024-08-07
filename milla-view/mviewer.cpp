@@ -1313,11 +1313,26 @@ void MViewer::showGeneratedPicture(QPixmap const &in)
     }
 }
 
-void MViewer::appendNotes(const QString &str)
+void MViewer::showMessage(const QString &str)
 {
-    ui->notes->appendPlainText(str);
-    ui->tabWidget->setCurrentIndex(MVTAB_NOTES);
-    on_pushButton_2_clicked();
+    ui->statusBar->showMessage(str);
+}
+
+void MViewer::appendNotes(QString const &str, QString const &fn)
+{
+    if (fn.isEmpty()) {
+        // current file
+        ui->notes->appendPlainText(str);
+        ui->tabWidget->setCurrentIndex(MVTAB_NOTES);
+        on_pushButton_2_clicked();
+
+    } else if (db.isStatRecordExists(fn)) {
+        // remote file
+        QString conv = db.getFileNotes(fn);
+        if (!conv.isEmpty()) conv += "\n";
+        conv += str;
+        db.updateFileNotes(fn,conv.replace('\"','\''));
+    }
 }
 
 void MViewer::enableShortcuts(QObjectList const &children, bool en)
