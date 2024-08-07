@@ -4,6 +4,17 @@
 #include "sdcfgdialog.h"
 #include "ui_sdcfgdialog.h"
 
+#define CONFIG_SAVE_STR(K,V) config_cb("save_key_value",(K "=")+V);
+#define CONFIG_SAVE_STDSTR(K,V) config_cb("save_key_value",(K "=")+QString::fromStdString(V));
+#define CONFIG_SAVE_INT(K,V) config_cb("save_key_value",(K "=")+QString::asprintf("%d",(V)));
+#define CONFIG_SAVE_FLOAT(K,V) config_cb("save_key_value",(K "=")+QString::asprintf("%.3f",(V)));
+
+#define CONFIG_LOAD_STR(K,V) r = config_cb("load_key_value",K); if (r.canConvert<QString>()) V = r.value<QString>();
+#define CONFIG_LOAD_STDSTR(K,V) r = config_cb("load_key_value",K); if (r.canConvert<QString>()) V = r.value<QString>().toStdString();
+#define CONFIG_LOAD_INT(K,V) r = config_cb("load_key_value",K); if (r.canConvert<QString>()) V = r.value<QString>().toInt();
+#define CONFIG_LOAD_INTT(K,V,T) r = config_cb("load_key_value",K); if (r.canConvert<QString>()) V = (T)(r.value<QString>().toInt());
+#define CONFIG_LOAD_FLOAT(K,V) r = config_cb("load_key_value",K); if (r.canConvert<QString>()) V = r.value<QString>().toFloat();
+
 SDPlugin::SDPlugin() :
     QObject(),
     MillaGenericPlugin()
@@ -26,28 +37,82 @@ bool SDPlugin::init()
 bool SDPlugin::finalize()
 {
     qDebug() << "[SD] Finalizing...";
-
-    //save the settings
-    if (!config_cb) return true;
-
-    config_cb("save_key_value","SD_dogen="+QString::asprintf("%d",dogen));
-    config_cb("save_key_value","SD_model="+QString::fromStdString(model));
-    config_cb("save_key_value","SD_vae="+QString::fromStdString(vaemodel));
-    config_cb("save_key_value","SD_cnet="+QString::fromStdString(cnmodel));
-    config_cb("save_key_value","SD_prompt="+QString::fromStdString(prompt));
-    config_cb("save_key_value","SD_cfgscale="+QString::asprintf("%.3f",cfg_scale));
-    config_cb("save_key_value","SD_styleratio="+QString::asprintf("%.3f",style_ratio));
-    config_cb("save_key_value","SD_steps="+QString::asprintf("%d",steps));
-    config_cb("save_key_value","SD_batch="+QString::asprintf("%d",batch));
-
-    config_cb("save_key_value","SD_doupsc="+QString::asprintf("%d",doupsc));
-    config_cb("save_key_value","SD_esrgan="+QString::fromStdString(esrgan));
-    config_cb("save_key_value","SD_scalefac="+QString::asprintf("%d",scale_fac));
-
-    qDebug() << "[SD] Config saved";
-
+    ConfigSave();
     Cleanup();
     return true;
+}
+
+void SDPlugin::ConfigLoad()
+{
+    QVariant r;
+    if (!config_cb) {
+        qDebug() << "[SD] ERROR: Unable to load configuration!";
+        return;
+    }
+
+    CONFIG_LOAD_INT("SD_dogen",dogen);
+    CONFIG_LOAD_STDSTR("SD_model",model);
+    CONFIG_LOAD_STDSTR("SD_vae",vaemodel);
+    CONFIG_LOAD_STDSTR("SD_cnet",cnmodel);
+    CONFIG_LOAD_STDSTR("SD_prompt",prompt);
+    CONFIG_LOAD_STDSTR("SD_nprompt",nprompt);
+    CONFIG_LOAD_FLOAT("SD_cfgscale",cfg_scale);
+    CONFIG_LOAD_FLOAT("SD_styleratio",style_ratio);
+    CONFIG_LOAD_INT("SD_steps",steps);
+    CONFIG_LOAD_INT("SD_batch",batch);
+
+    CONFIG_LOAD_INT("SD_doupsc",doupsc);
+    CONFIG_LOAD_STDSTR("SD_esrgan",esrgan);
+    CONFIG_LOAD_INT("SD_scalefac",scale_fac);
+
+    CONFIG_LOAD_INTT("SD_autosave",autosave,sdplug_autosave_t);
+    CONFIG_LOAD_INT("SD_asav_addb",asav_addb);
+    CONFIG_LOAD_INT("SD_asav_match",asav_match);
+    CONFIG_LOAD_INT("SD_asav_addtag",asav_addtag);
+    CONFIG_LOAD_INT("SD_asav_addnote",asav_addnote);
+    CONFIG_LOAD_STR("SD_asav_dir",asav_dir);
+    CONFIG_LOAD_STR("SD_asav_fmt",asav_fmt);
+    CONFIG_LOAD_STR("SD_asav_pat",asav_pat);
+    CONFIG_LOAD_STR("SD_asav_tags",asav_tags);
+    CONFIG_LOAD_STR("SD_asav_notes",asav_notes);
+
+    qDebug() << "[SD] Config loaded";
+}
+
+void SDPlugin::ConfigSave()
+{
+    if (!config_cb) {
+        qDebug() << "[SD] ERROR: Unable to save configuration!";
+        return;
+    }
+
+    CONFIG_SAVE_INT("SD_dogen",dogen);
+    CONFIG_SAVE_STDSTR("SD_model",model);
+    CONFIG_SAVE_STDSTR("SD_vae",vaemodel);
+    CONFIG_SAVE_STDSTR("SD_cnet",cnmodel);
+    CONFIG_SAVE_STDSTR("SD_prompt",prompt);
+    CONFIG_SAVE_STDSTR("SD_nprompt",nprompt);
+    CONFIG_SAVE_FLOAT("SD_cfgscale",cfg_scale);
+    CONFIG_SAVE_FLOAT("SD_styleratio",style_ratio);
+    CONFIG_SAVE_INT("SD_steps",steps);
+    CONFIG_SAVE_INT("SD_batch",batch);
+
+    CONFIG_SAVE_INT("SD_doupsc",doupsc);
+    CONFIG_SAVE_STDSTR("SD_esrgan",esrgan);
+    CONFIG_SAVE_INT("SD_scalefac",scale_fac);
+
+    CONFIG_SAVE_INT("SD_autosave",autosave);
+    CONFIG_SAVE_INT("SD_asav_addb",asav_addb);
+    CONFIG_SAVE_INT("SD_asav_match",asav_match);
+    CONFIG_SAVE_INT("SD_asav_addtag",asav_addtag);
+    CONFIG_SAVE_INT("SD_asav_addnote",asav_addnote);
+    CONFIG_SAVE_STR("SD_asav_dir",asav_dir);
+    CONFIG_SAVE_STR("SD_asav_fmt",asav_fmt);
+    CONFIG_SAVE_STR("SD_asav_pat",asav_pat);
+    CONFIG_SAVE_STR("SD_asav_tags",asav_tags);
+    CONFIG_SAVE_STR("SD_asav_notes",asav_notes);
+
+    qDebug() << "[SD] Config saved";
 }
 
 void SDPlugin::showUI()
@@ -60,6 +125,7 @@ void SDPlugin::showUI()
     dlg.ui->vaeFile->setText(QString::fromStdString(vaemodel));
     dlg.ui->cnFile->setText(QString::fromStdString(cnmodel));
     dlg.ui->promptEdit->setPlainText(QString::fromStdString(prompt));
+    dlg.ui->negPromptEdit->setPlainText(QString::fromStdString(nprompt));
     dlg.ui->cfgScale->setValue(cfg_scale);
     dlg.ui->styleRatio->setValue(style_ratio);
     dlg.ui->stepsCnt->setValue(steps);
@@ -69,6 +135,21 @@ void SDPlugin::showUI()
     dlg.ui->upscModel->setText(QString::fromStdString(esrgan));
     dlg.ui->upscFactor->setValue(scale_fac);
 
+    switch (autosave) {
+        case SDP_ASAV_NONE: dlg.ui->savNone->setChecked(true); break;
+        case SDP_ASAV_ALL: dlg.ui->savAll->setChecked(true); break;
+        case SDP_ASAV_USER: dlg.ui->savUser->setChecked(true); break;
+    }
+    dlg.ui->savDir->setText(asav_dir);
+    dlg.ui->savFmt->setCurrentText(asav_fmt);
+    dlg.ui->savPat->setText(asav_pat);
+    dlg.ui->savDB->setChecked(asav_addb);
+    dlg.ui->savMatch->setChecked(asav_match);
+    dlg.ui->savAddNote->setChecked(asav_addnote);
+    dlg.ui->savAddTag->setChecked(asav_addtag);
+    dlg.ui->savTags->setText(asav_tags);
+    dlg.ui->savNotes->setPlainText(asav_notes);
+
     skip_gen = !dlg.exec();
     if (skip_gen) return;
 
@@ -77,6 +158,7 @@ void SDPlugin::showUI()
     vaemodel = dlg.ui->vaeFile->text().toStdString();
     cnmodel = dlg.ui->cnFile->text().toStdString();
     prompt = dlg.ui->promptEdit->toPlainText().toStdString();
+    nprompt = dlg.ui->negPromptEdit->toPlainText().toStdString();
     cfg_scale = dlg.ui->cfgScale->value();
     style_ratio = dlg.ui->styleRatio->value();
     steps = dlg.ui->stepsCnt->value();
@@ -85,6 +167,19 @@ void SDPlugin::showUI()
     doupsc = dlg.ui->doUpsc->isChecked();
     esrgan = dlg.ui->upscModel->text().toStdString();
     scale_fac = dlg.ui->upscFactor->value();
+
+    autosave = SDP_ASAV_NONE;
+    if (dlg.ui->savAll->isChecked()) autosave = SDP_ASAV_ALL;
+    if (dlg.ui->savUser->isChecked()) autosave = SDP_ASAV_USER;
+    asav_dir = dlg.ui->savDir->text();
+    asav_fmt = dlg.ui->savFmt->currentText();
+    asav_pat = dlg.ui->savPat->text();
+    asav_addb = dlg.ui->savDB->isChecked();
+    asav_match = dlg.ui->savMatch->isChecked();
+    asav_addnote = dlg.ui->savAddNote->isChecked();
+    asav_addtag = dlg.ui->savAddTag->isChecked();
+    asav_tags = dlg.ui->savTags->text();
+    asav_notes = dlg.ui->savNotes->toPlainText();
 
     outputs.clear();
     curout = 0;
@@ -136,59 +231,8 @@ void SDPlugin::setConfigCB(PlugConfCB cb)
     if (!cb) return;
 
     //load previous settings
-    if (load_once) return;
-
-    QVariant r;
-    r = config_cb("load_key_value","SD_dogen");
-    if (r.canConvert<QString>())
-        dogen = r.value<QString>().toInt();
-
-    r = config_cb("load_key_value","SD_model");
-    if (r.canConvert<QString>())
-        model = r.value<QString>().toStdString();
-
-    r = config_cb("load_key_value","SD_vae");
-    if (r.canConvert<QString>())
-        vaemodel = r.value<QString>().toStdString();
-
-    r = config_cb("load_key_value","SD_cnet");
-    if (r.canConvert<QString>())
-        cnmodel = r.value<QString>().toStdString();
-
-    r = config_cb("load_key_value","SD_prompt");
-    if (r.canConvert<QString>())
-        prompt = r.value<QString>().toStdString();
-
-    r = config_cb("load_key_value","SD_cfgscale");
-    if (r.canConvert<QString>())
-        cfg_scale = r.value<QString>().toFloat();
-
-    r = config_cb("load_key_value","SD_styleratio");
-    if (r.canConvert<QString>())
-        style_ratio = r.value<QString>().toFloat();
-
-    r = config_cb("load_key_value","SD_steps");
-    if (r.canConvert<QString>())
-        steps = r.value<QString>().toInt();
-
-    r = config_cb("load_key_value","SD_batch");
-    if (r.canConvert<QString>())
-        batch = r.value<QString>().toInt();
-
-    r = config_cb("load_key_value","SD_doupsc");
-    if (r.canConvert<QString>())
-        doupsc = r.value<QString>().toInt();
-
-    r = config_cb("load_key_value","SD_esrgan");
-    if (r.canConvert<QString>())
-        esrgan = r.value<QString>().toStdString();
-
-    r = config_cb("load_key_value","SD_scalefac");
-    if (r.canConvert<QString>())
-        scale_fac = r.value<QString>().toInt();
-
+    if (!load_once) ConfigLoad();
     load_once = true;
-    qDebug() << "[SD] Config preloaded";
 }
 
 QVariant SDPlugin::action(QVariant in)

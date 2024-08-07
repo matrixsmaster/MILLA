@@ -3203,7 +3203,7 @@
   </action>
   <action name="actionReload_metadata">
    <property name="text">
-    <string>Reload metadata</string>
+    <string>Refresh metadata</string>
    </property>
    <property name="shortcut">
     <string>Ctrl+R</string>

@@ -31,3 +31,9 @@ void SDCfgDialog::on_pushButton_4_clicked()
     QString fn = QFileDialog::getOpenFileName(this,"Select upscaler file","",SDPLUGIN_MODEL_FILTER);
     if (!fn.isEmpty()) ui->upscModel->setText(fn);
 }
+
+void SDCfgDialog::on_pushButton_5_clicked()
+{
+    QString dr = QFileDialog::getExistingDirectory(this,"Select directory");
+    if (!dr.isEmpty()) ui->savDir->setText(dr);
+}

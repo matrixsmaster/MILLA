@@ -17,6 +17,12 @@ typedef enum {
     SDP_ACT_GEN_SCALE = 0x03,
 } sdplug_action_t;
 
+typedef enum {
+    SDP_ASAV_NONE = 0,
+    SDP_ASAV_ALL,
+    SDP_ASAV_USER
+} sdplug_autosave_t;
+
 class SDPlugin : public QObject, public MillaGenericPlugin
 {
     Q_OBJECT
@@ -63,19 +69,27 @@ private:
 
     bool dogen = false;
     bool doupsc = false;
-    std::string model, vaemodel, cnmodel, prompt, nprompt, esrgan; // TODO: make use of negprompt and add controlnet image input
+    std::string model, vaemodel, cnmodel, prompt, nprompt, esrgan; // TODO: add controlnet image input
     float cfg_scale = 1;
     float style_ratio = 1;
     int steps = 2;
     int batch = 1;
     int seed = -1;
     int scale_fac = 4;
+    sdplug_autosave_t autosave = SDP_ASAV_NONE;
+    bool asav_addb = false;
+    bool asav_match = false;
+    bool asav_addtag = false;
+    bool asav_addnote = false;
+    QString asav_dir, asav_fmt, asav_pat, asav_tags, asav_notes;
 
     int curout = 0;
     QList<QPixmap> outputs;
     int delay = SDPLUGIN_DEF_DELAY;
     std::mutex out_mutex;
 
+    void ConfigLoad();
+    void ConfigSave();
     bool GenerateBatch();
     QPixmap Scaleup(const QImage &in);
     void Cleanup();
