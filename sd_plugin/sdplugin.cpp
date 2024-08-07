@@ -1,5 +1,6 @@
 #include <thread>
 #include <QDebug>
+#include "dbhelper.h"
 #include "sdplugin.h"
 #include "sdcfgdialog.h"
 #include "ui_sdcfgdialog.h"
@@ -181,6 +182,8 @@ void SDPlugin::showUI()
     asav_tags = dlg.ui->savTags->text();
     asav_notes = dlg.ui->savNotes->toPlainText();
 
+    //TODO: validate autosave pattern against SDPLUGIN_ASAVE_REGEX, maybe?
+
     outputs.clear();
     curout = 0;
 
@@ -276,6 +279,21 @@ bool SDPlugin::eventFilter(QObject *obj, QEvent *event)
         }
         break;
 
+    case QEvent::KeyPress:
+        if (!outputs.empty()) {
+            QKeyEvent* kev = static_cast<QKeyEvent*>(event);
+            if (kev->key() == Qt::Key_Space && autosave == SDP_ASAV_USER) {
+                out_mutex.lock();
+                if (curout >= 0 && curout < outputs.size()) {
+                    qDebug() << "[SDPlugin] Saving image " << curout;
+                    AutosaveImage(outputs.at(curout));
+                } else
+                    qDebug() << "[SDPlugin] Invalid image selected: " << curout;
+                out_mutex.unlock();
+            }
+        }
+        break;
+
     default: return QObject::eventFilter(obj,event); //unknown event, move on
     }
 
@@ -331,6 +349,8 @@ bool SDPlugin::GenerateBatch()
             out_mutex.lock();
             outputs.push_back(pix);
             out_mutex.unlock();
+
+            if (autosave == SDP_ASAV_ALL) AutosaveImage(pix);
 
             free(out[i].data);
             out[i].data = NULL;
@@ -409,4 +429,73 @@ void SDPlugin::Cleanup()
     upscaler = nullptr;
     out_mutex.unlock();
     qDebug() << "[SD] Cleanup complete";
+}
+
+void SDPlugin::AutosaveImage(const QPixmap &img)
+{
+    if (img.isNull()) {
+        qDebug() << "[SD] ERROR: AutosaveImage(): Null image supplied!";
+        return;
+    }
+
+    QString fn = ScanNextImageFn();
+    if (fn.isEmpty()) return;
+    img.save(fn);
+    qDebug() << "[SD] Image saved to " << fn;
+
+    if (!asav_addb || !config_cb) return;
+
+    if (DBHelper::isStatRecordExists(fn)) {
+        qDebug() << "[SD] File record for " << fn << " exists, possible bad path or corrupted DB; not saving new metadata";
+        return;
+    }
+
+    QVariant r = config_cb("index_new_file",QVariant(fn));
+    if (!r.isValid() || !r.toBool()) {
+        qDebug() << "[SD] ERROR: Unable to index newly created file, aborting...";
+        return;
+    }
+
+    if (asav_match) {
+        //TODO
+    }
+
+    if (asav_addtag) {
+        //TODO
+        //DBHelper::getFileTags(fn)
+    }
+
+    QString notes;
+    if (asav_addnote) {
+        //TODO
+        notes += '\n';
+    }
+    notes += TextualizeConfig();
+    DBHelper::updateFileNotes(fn,notes);
+}
+
+QString SDPlugin::ScanNextImageFn()
+{
+    QString res;
+    QRegExp ex(SDPLUGIN_ASAVE_REGEX);
+    if (ex.indexIn(asav_pat) < 0) {
+        qDebug() << "[SD] ERROR: Unable to match pattern " << asav_pat;
+        return res;
+    }
+    auto lst = ex.capturedTexts();
+    if (lst.length() != 3) {
+        qDebug() << "[SD] ERROR: Incorrect number of captures: " << lst.length();
+        return res;
+    }
+    QString fmt = QString::asprintf("%%0%dd",lst.at(2).length());
+    qDebug() << "[SD] fmt = '" << fmt << "'";
+
+    for (int i = SDPLUGIN_ASAVE_START; i < SDPLUGIN_ASAVE_MAX; i++) {
+        res = asav_dir + "/" + lst.at(1) + QString::asprintf(fmt.toStdString().c_str(),i) + "." + asav_fmt.toLower();
+        qDebug() << "[SD] testing " << res;
+        if (!QFile::exists(res)) return res;
+    }
+
+    qDebug() << "[SD] ERROR: Exhausted file name search space!";
+    return QString();
 }

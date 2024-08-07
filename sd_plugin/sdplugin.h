@@ -10,6 +10,9 @@
 #define SDPLUGIN_IMGSIZE 512
 #define SDPLUGIN_DEF_DELAY 50
 #define SDPLUGIN_TILE_SIZE 32
+#define SDPLUGIN_ASAVE_START 1
+#define SDPLUGIN_ASAVE_MAX 500000
+#define SDPLUGIN_ASAVE_REGEX "([A-Za-z_-+. ]+).*([#]+)"
 
 typedef enum {
     SDP_ACT_GEN_ONLY = 0x01,
@@ -93,6 +96,9 @@ private:
     bool GenerateBatch();
     QPixmap Scaleup(const QImage &in);
     void Cleanup();
+    void AutosaveImage(const QPixmap &img);
+    QString ScanNextImageFn();
+    QString TextualizeConfig();
 };
 
 #endif // SDPLUGIN_H

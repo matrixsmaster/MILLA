@@ -63,6 +63,8 @@ public:
 
     void prepareLongProcessing(bool finish = false);
 
+    bool createStatRecord(QString const &fn, bool cache_global = false);
+
     void showGeneratedPicture(QPixmap const &in);
 
     void appendNotes(QString const &str);
@@ -320,8 +322,6 @@ private:
     void updateStars(QString const &fn = QString());
 
     void changedStars(int n);
-
-    bool createStatRecord(QString const &fn, bool cache_global = false);
 
     void checkExtraCache();
 

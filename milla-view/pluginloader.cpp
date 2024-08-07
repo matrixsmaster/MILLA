@@ -294,6 +294,12 @@ QVariant MillaPluginLoader::pluginConfigCallback(MillaGenericPlugin* plug, QStri
     } else if (key == "self_disable" && val.isNull()) {
         return stopPlugin(plug,nullptr);
 
+    } else if (key == "index_new_file" && val.canConvert<QString>()) {
+        QString fn = val.toString();
+        MViewer* wnd = dynamic_cast<MViewer*>(context.window);
+        if (!wnd) return QVariant();
+        return QVariant(wnd->createStatRecord(fn,false));
+
     }
     return QVariant();
 }

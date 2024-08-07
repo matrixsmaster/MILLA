@@ -1,6 +1,7 @@
-QT += core gui
+QT += core gui sql
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 include(../cfg/cfg_sd.pri)
+include(../cfg/cfg_opencv4.pri)
 
 TARGET = sd_plugin
 TEMPLATE = lib

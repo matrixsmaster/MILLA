@@ -1,7 +1,7 @@
 #ifndef DB_FORMAT_H
 #define DB_FORMAT_H
 
-#include <QtSql/QSqlDatabase>
+#include <QSqlDatabase>
 #include <QSqlQuery>
 #include <QSqlError>
 #include "shared.h"

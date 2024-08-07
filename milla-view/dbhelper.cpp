@@ -54,7 +54,7 @@ bool DBHelper::initDatabase(ProgressCB progress_cb, UserActionCB uaction_cb)
             qDebug() << "[db] Version mismatch!";
             QList<int> vsupp = DB_VER_SUPPORTED;
             if (uaction_cb && vsupp.contains(ver) && uaction_cb(QString::asprintf("DB version is obsolete. Verion %d was found, but current version is %d.\n"
-                                                                                  "Do you want to update? Please do backup the DB before updating!",ver,DB_VERSION))) {
+                                                                                  "Do you want to update? Please backup the DB before updating!",ver,DB_VERSION))) {
                 if (!updateDatabase(ver)) return false;
             } else
                 return false;
