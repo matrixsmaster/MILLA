@@ -26,6 +26,11 @@ typedef enum {
     SDP_ASAV_USER
 } sdplug_autosave_t;
 
+struct SDOutputRec {
+    QPixmap img;
+    bool saved;
+};
+
 class SDPlugin : public QObject, public MillaGenericPlugin
 {
     Q_OBJECT
@@ -87,7 +92,7 @@ private:
     QString asav_dir, asav_fmt, asav_pat, asav_tags, asav_notes;
 
     int curout = 0;
-    QList<QPixmap> outputs;
+    QList<SDOutputRec> outputs;
     int delay = SDPLUGIN_DEF_DELAY;
     std::mutex out_mutex;
 
@@ -96,7 +101,7 @@ private:
     bool GenerateBatch();
     QPixmap Scaleup(const QImage &in);
     void Cleanup();
-    void AutosaveImage(const QPixmap &img);
+    void AutosaveImage(SDOutputRec &rec);
     QString ScanNextImageFn();
     QString TextualizeConfig();
 };

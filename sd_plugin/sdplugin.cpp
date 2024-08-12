@@ -245,7 +245,7 @@ QVariant SDPlugin::action(QVariant in)
     if (dogen) {
         out_mutex.lock();
         if (curout >= 0 && curout < outputs.count())
-            px = outputs.at(curout);
+            px = outputs.at(curout).img;
         out_mutex.unlock();
 
     } else if (doupsc && in.canConvert<QPixmap>()) {
@@ -281,15 +281,29 @@ bool SDPlugin::eventFilter(QObject *obj, QEvent *event)
     case QEvent::KeyPress:
         if (!outputs.empty()) {
             QKeyEvent* kev = static_cast<QKeyEvent*>(event);
-            if (kev->key() == Qt::Key_Space && autosave == SDP_ASAV_USER) {
-                out_mutex.lock();
-                if (curout >= 0 && curout < outputs.size()) {
-                    qDebug() << "[SDPlugin] Saving image " << curout;
-                    AutosaveImage(outputs.at(curout));
-                } else
-                    qDebug() << "[SDPlugin] Invalid image selected: " << curout;
-                out_mutex.unlock();
+            out_mutex.lock();
+            switch (kev->key()) {
+            case Qt::Key_Space:
+                if (autosave == SDP_ASAV_USER) {
+                    if (curout >= 0 && curout < outputs.size()) {
+                        qDebug() << "[SDPlugin] Saving image " << curout;
+                        AutosaveImage(outputs[curout]);
+                    } else
+                        qDebug() << "[SDPlugin] Invalid image selected: " << curout;
+                }
+                break;
+
+            case Qt::Key_PageUp:
+                if (curout >= 0) curout--;
+                break;
+
+            case Qt::Key_PageDown:
+                if (curout < outputs.size()-1) curout++;
+                break;
+
+            default: break;
             }
+            out_mutex.unlock();
         }
         break;
 
@@ -341,15 +355,15 @@ bool SDPlugin::GenerateBatch()
 
             QImage img(out[i].data,out[i].width,out[i].height,((out[i].channel == 4)? QImage::Format_ARGB32 : QImage::Format_RGB888));
             img.bits(); // force copying
-            QPixmap pix;
-            if (doupsc) pix = Scaleup(img);
-            else pix = QPixmap::fromImage(img);
+            SDOutputRec rec;
+            if (doupsc) rec.img = Scaleup(img);
+            else rec.img  = QPixmap::fromImage(img);
+            rec.saved = false;
+            if (autosave == SDP_ASAV_ALL) AutosaveImage(rec);
 
             out_mutex.lock();
-            outputs.push_back(pix);
+            outputs.push_back(rec);
             out_mutex.unlock();
-
-            if (autosave == SDP_ASAV_ALL) AutosaveImage(pix);
 
             free(out[i].data);
             out[i].data = NULL;
@@ -430,22 +444,34 @@ void SDPlugin::Cleanup()
     qDebug() << "[SD] Cleanup complete";
 }
 
-void SDPlugin::AutosaveImage(const QPixmap &img)
+void SDPlugin::AutosaveImage(SDOutputRec &rec)
 {
-    if (img.isNull()) {
+    if (rec.img.isNull()) {
         qDebug() << "[SD] ERROR: AutosaveImage(): Null image supplied!";
+        return;
+    }
+    if (rec.saved) {
+        qDebug() << "[SD] WARN: Image has been already saved, ignoring...";
+        if (config_cb)
+            config_cb("show_message",QVariant("Already saved"));
         return;
     }
 
     QString fn = ScanNextImageFn();
     if (fn.isEmpty()) return;
-    img.save(fn);
-    qDebug() << "[SD] Image saved to " << fn;
+    rec.saved = rec.img.save(fn);
+
+    if (rec.saved) {
+        qDebug() << "[SD] Image saved to " << fn;
+        if (config_cb)
+            config_cb("show_message",QVariant("File " + fn + " saved"));
+    } else {
+        qDebug() << "[SD] ERROR: Unable to save image to " << fn;
+        if (config_cb)
+            config_cb("show_message",QVariant("Unable to save image to '" + fn + "' !"));
+    }
 
     if (!asav_addb || !config_cb) return;
-
-    config_cb("show_message",QVariant("File " + fn + " saved"));
-
     QVariant r = config_cb("index_new_file",QVariant(fn));
     if (!r.isValid() || !r.toBool()) {
         qDebug() << "[SD] ERROR: Unable to index newly created file, aborting...";
