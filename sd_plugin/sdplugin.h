@@ -51,7 +51,7 @@ public:
     bool init();
     bool finalize();
 
-    void showUI();
+    bool showUI();
     void setConfigCB(PlugConfCB cb);
     void setProgressCB(ProgressCB cb)      { progress_cb = cb; }
 
@@ -70,7 +70,7 @@ private:
     ProgressCB progress_cb = nullptr;
 
     bool load_once = false;
-    bool skip_gen = false;
+    bool skip_gen = false; //FIXME: do we still need it, or the new abort-by-UI-Cancel is enough
     bool self_stop = false;
 
     upscaler_ctx_t* upscaler = nullptr;

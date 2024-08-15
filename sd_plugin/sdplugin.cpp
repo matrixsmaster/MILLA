@@ -115,7 +115,7 @@ void SDPlugin::ConfigSave()
     qDebug() << "[SD] Config saved";
 }
 
-void SDPlugin::showUI()
+bool SDPlugin::showUI()
 {
     qDebug() << "[SD] Showing UI...";
     SDCfgDialog dlg;
@@ -151,7 +151,7 @@ void SDPlugin::showUI()
     dlg.ui->savNotes->setPlainText(asav_notes);
 
     skip_gen = !dlg.exec();
-    if (skip_gen) return;
+    if (skip_gen) return false;
 
     dogen = dlg.ui->doGen->isChecked();
     model = dlg.ui->modelFile->text().toStdString();
@@ -191,6 +191,8 @@ void SDPlugin::showUI()
         i.setValue(QObjectPtr(this));
         config_cb("set_event_filter",i); //insert event filter into main window
     }
+
+    return true;
 }
 
 QVariant SDPlugin::getParam(QString key)

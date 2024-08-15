@@ -38,27 +38,28 @@ bool AnnaPlugin::finalize()
     return true;
 }
 
-void AnnaPlugin::showUI()
+bool AnnaPlugin::showUI()
 {
     qDebug() << "[ANNA] Showing interface...";
     AnnaCfgDialog dlg;
     dlg.loadConfig(&config);
-    if (!dlg.exec()) return;
+    if (!dlg.exec()) return false;
 
     //set some config options
     dlg.updateConfig(&config);
     qDebug() << "[ANNA] Config updated";
 
     //and save them
-    if (!config_cb) return;
+    if (!config_cb) return true;
     QVariant r;
-    //FIXME: check results??
     r = config_cb("save_key_value","ANNA_fmodel="+QString(config.params.model));
     r = config_cb("save_key_value","ANNA_fvision="+QString::fromStdString(cfg_extra.vision_file));
     r = config_cb("save_key_value","ANNA_prefai="+QString::fromStdString(cfg_extra.ai_prefix));
     r = config_cb("save_key_value","ANNA_prefusr="+QString::fromStdString(cfg_extra.usr_prefix));
     r = config_cb("save_key_value","ANNA_prompt="+QString(config.params.prompt));
+    //FIXME: check results??
     qDebug() << "[ANNA] Config saved";
+    return true;
 }
 
 void AnnaPlugin::setConfigCB(PlugConfCB cb)

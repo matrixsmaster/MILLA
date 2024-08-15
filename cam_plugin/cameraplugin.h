@@ -29,7 +29,7 @@ public:
     bool init();
     bool finalize();
 
-    void showUI();
+    bool showUI();
     void setConfigCB(PlugConfCB)           {}
     void setProgressCB(ProgressCB)         {}
 

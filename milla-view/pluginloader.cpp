@@ -128,18 +128,24 @@ void MillaPluginLoader::pluginAction(QString name, QAction* sender)
         if (!g.canConvert<bool>() || !g.value<bool>()) showui = false;
     }
 
+    //show UI if needed
+    if (showui) {
+        bool uiok = true;
+        if (sender->isCheckable())  {
+            if (sender->isChecked()) uiok = plug->showUI();
+        } else
+            uiok = plug->showUI();
+
+        if (!uiok) {
+            qDebug() << "[PLUGINS] Plugin action aborted by user";
+            return;
+        }
+    }
+
     //prepare processing
     wnd->prepareLongProcessing();
     last_plugin = std::pair<QString,QAction*>(name,sender);
     QSize sz(context.area->width(),context.area->height());
-
-    //show UI if needed
-    if (showui) {
-        if (sender->isCheckable())  {
-            if (sender->isChecked()) plug->showUI();
-        } else
-            plug->showUI();
-    }
 
     //process
     QVariant res;

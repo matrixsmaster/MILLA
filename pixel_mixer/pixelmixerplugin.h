@@ -24,7 +24,7 @@ public:
     bool init();
     bool finalize();
 
-    void showUI();
+    bool showUI();
     void setConfigCB(PlugConfCB)           {}
     void setProgressCB(ProgressCB cb)      { progress_cb = cb; }
 
@@ -36,7 +36,7 @@ public:
 private:
     ProgressCB progress_cb = nullptr;
     double radius = 16;
-    bool once = false;
+    //bool once = false;
 };
 
 #endif // PIXELMIXERPLUGIN_H

@@ -21,11 +21,12 @@ bool LifeGenPlugin::finalize()
     return true;
 }
 
-void LifeGenPlugin::showUI()
+bool LifeGenPlugin::showUI()
 {
     LifeCfgDialog dlg;
-    if (dlg.exec()) text_life = dlg.getData();
-    else text_life.clear();
+    if (!dlg.exec()) return false;
+    text_life = dlg.getData();
+    return true;
 }
 
 QVariant LifeGenPlugin::getParam(QString key)

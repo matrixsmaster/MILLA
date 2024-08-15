@@ -25,20 +25,22 @@ bool PixelMixerPlugin::finalize()
     return true;
 }
 
-void PixelMixerPlugin::showUI()
+bool PixelMixerPlugin::showUI()
 {
     qDebug() << "[PixMix] Showing interface";
     PixMixCfgDialog dlg;
-    once = dlg.exec();
+    //once = dlg.exec();
+    if (!dlg.exec()) return false;
     radius = dlg.getRadius();
+    return true;
 }
 
 QVariant PixelMixerPlugin::getParam(QString key)
 {
     qDebug() << "[PixMix] requested parameter " << key;
-    if (key == "show_ui") {
+    /*if (key == "show_ui") {
         return !once;
-    }
+    }*/
     return QVariant();
 }
 

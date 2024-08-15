@@ -32,7 +32,7 @@ public:
     virtual bool init() = 0;
     virtual bool finalize() = 0;
 
-    virtual void showUI() = 0;
+    virtual bool showUI() = 0;
     virtual void setConfigCB(PlugConfCB cb) = 0;
     virtual void setProgressCB(ProgressCB cb) = 0;
 

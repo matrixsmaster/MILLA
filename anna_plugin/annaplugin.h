@@ -37,7 +37,7 @@ public:
     bool init();
     bool finalize();
 
-    void showUI();
+    bool showUI();
     void setConfigCB(PlugConfCB cb);
     void setProgressCB(ProgressCB cb)             { progress_cb = cb; }
 

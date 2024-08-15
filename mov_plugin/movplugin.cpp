@@ -33,10 +33,10 @@ bool MovPlugin::finalize()
     return true;
 }
 
-void MovPlugin::showUI()
+bool MovPlugin::showUI()
 {
     MovCfgDialog dlg;
-    if (!dlg.exec()) return;
+    if (!dlg.exec()) return false;
 
     if (config_cb && dlg.isInteractive()) {
         QVariant i;
@@ -48,6 +48,7 @@ void MovPlugin::showUI()
     delay = floor(1000.f / fps);
     percSpeed = ceil(fps / MILLAMOV_DEFAULT_FPS * 100.f);
     qDebug() << "[MovPlugin] Delay = " << delay << " (FPS = " << fps << "): " << percSpeed << "%";
+    return true;
 }
 
 QVariant MovPlugin::getParam(QString key)
