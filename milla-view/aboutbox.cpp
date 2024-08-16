@@ -16,6 +16,7 @@ AboutBox::AboutBox(QWidget *parent) :
 {
     ui->setupUi(this);
     setGeometry(QStyle::alignedRect(Qt::LeftToRight,Qt::AlignCenter,size(),qApp->desktop()->availableGeometry()));
+    ui->label->installEventFilter(this);
 }
 
 AboutBox::~AboutBox()
@@ -55,22 +56,25 @@ void AboutBox::prepareLogo()
 
     //populate quads data of the logo image
     quads.clear();
-    QPixmap logo = *ui->label->pixmap();//->scaled(ui->label->size(),Qt::KeepAspectRatio,Qt::SmoothTransformation);
+    QImage logo = ui->label->pixmap()->toImage();
     if (!logo.isNull()) {
         quad_size.setX(logo.width() / MILLA_ABOUT_MOSAIC_SIZE);
         quad_size.setY(logo.height() / MILLA_ABOUT_MOSAIC_SIZE);
         for (int y = 0; y < quad_size.y(); y++) {
             for (int x = 0; x < quad_size.x(); x++) {
                 QRect r(x*MILLA_ABOUT_MOSAIC_SIZE,y*MILLA_ABOUT_MOSAIC_SIZE,MILLA_ABOUT_MOSAIC_SIZE,MILLA_ABOUT_MOSAIC_SIZE);
-                QColor c = CVHelper::determineMediumColor(logo,r);
-                quads.push_back(std::pair<QColor,int>(c,MILLA_ABOUT_MOSAIC_MAXDIFF));
+                //convert ROI into Mat
+                QImage roi = logo.copy(r);
+                cv::Mat in = CVHelper::slowConvert(roi);
+                //image histogram
+                cv::Mat hst = CVHelper::getHist(in);
+                quads.push_back(std::pair<cv::Mat,float>(hst,0));
             }
         }
     }
 
     //reset everything
     visited.clear();
-    misscount = 0;
 }
 
 void AboutBox::showEvent(QShowEvent* ev)
@@ -101,6 +105,21 @@ void AboutBox::showEvent(QShowEvent* ev)
     ev->accept();
 }
 
+bool AboutBox::eventFilter(QObject *obj, QEvent *event)
+{
+    if (obj != ui->label) return QObject::eventFilter(obj,event);
+
+    switch (event->type()) {
+    case QEvent::MouseButtonPress:
+        prepareLogo();
+        return true;
+
+    default: break;
+    }
+
+    return QObject::eventFilter(obj,event);
+}
+
 void AboutBox::Mosaic()
 {
     if (int(visited.size()) >= files.size()) {
@@ -116,7 +135,14 @@ void AboutBox::Mosaic()
 
     MImageListRecord rec;
     rec.filename = files.at(idx);
-    if (!DBHelper::getThumbnail(rec)) return;
+    if (!DBHelper::getThumbnail(rec)) {
+        //no thumbnail for this record, let's try again with a different file
+        Mosaic(); //tail recursion
+        return;
+    }
+
+    MImageExtras exrec = DBHelper::getExtrasFromDB(rec.filename);
+    if (!exrec.valid || exrec.hist.empty()) return;
 
     QRect trct = rec.thumb.rect();
     if (trct.width() > trct.height()) {
@@ -126,24 +152,19 @@ void AboutBox::Mosaic()
         trct.setTop((trct.height()-trct.width())/2);
         trct.setHeight(trct.width());
     }
-    QColor col = CVHelper::determineMediumColor(rec.thumb,trct);
-    int ha = col.toHsl().hue();
-    int df = MILLA_ABOUT_MOSAIC_MAXDIFF;
+
+    double df = 0;
     int n = 0, wn = -1;
     for (auto &i : quads) {
-        int v = std::abs(i.first.toHsl().hue()-ha);
-        if (v < df) {
+        double v = MMatcher::OneTimeMatcher(i.first,exrec.hist);
+        if (v > df && v > quads.at(n).second) {
             df = v;
             wn = n;
         }
         n++;
     }
 
-    if (wn < 0 || df > quads.at(wn).second) {
-        if (++misscount >= MILLA_ABOUT_MOSAIC_MAXMISS) prepareLogo();
-        return;
-    }
-
+    if (wn < 0) return;
     quads.at(wn).second = df;
 
     int x = wn % quad_size.x();

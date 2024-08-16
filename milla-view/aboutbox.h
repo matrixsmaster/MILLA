@@ -8,12 +8,10 @@
 #include <QStringList>
 #include <vector>
 #include <set>
+#include <cvhelper.h>
 
 #define MILLA_ABOUT_MOSAIC_TIMER 100
-#define MILLA_ABOUT_MOSAIC_SIZE 80
-#define MILLA_ABOUT_MOSAIC_MINDIFF 60
-#define MILLA_ABOUT_MOSAIC_MAXDIFF 9999
-#define MILLA_ABOUT_MOSAIC_MAXMISS 200
+#define MILLA_ABOUT_MOSAIC_SIZE 48
 #define MILLA_ABOUT_LOGOS { "milla", "milla-icon", "splash_01", "splash_02", "milla" }
 
 namespace Ui {
@@ -31,16 +29,16 @@ public:
     void Mosaic();
 
 protected:
-    void showEvent(QShowEvent* ev);
+    void showEvent(QShowEvent* ev) override;
+    bool eventFilter(QObject *obj, QEvent *event) override;
 
 private:
     Ui::AboutBox *ui;
     QStringList files;
     QTimer timer;
-    std::vector<std::pair<QColor,int>> quads;
+    std::vector<std::pair<cv::Mat,float>> quads;
     QPoint quad_size;
     std::set<int> visited;
-    int misscount;
 
     void prepareLogo();
 };

@@ -12,7 +12,12 @@ ThumbnailModel::ThumbnailModel(QStringList files, ProgressCB loading_cb, MImageL
         images.append(loader->loadFull(i,true));
 
         prg += dp;
-        if (loading_cb) loading_cb(prg);
+        if (loading_cb) {
+            if (!loading_cb(prg)) {
+                qDebug() << "[THUMBMODEL] Aborted by callback";
+                break;
+            }
+        }
     }
 }
 

@@ -57,6 +57,7 @@ MViewer::MViewer(QWidget *parent) : QMainWindow(parent)
             ui->lcdNumber->display((double)incViews());
         }
     });
+
     //Callback function for long processing interrupt button
     connect(stopButton,&QPushButton::clicked,this,[this] { stop_flag = true; });
 
@@ -357,17 +358,11 @@ void MViewer::updateModelThumbnailSettings(ThumbnailModel* ptr, bool purelist)
 void MViewer::showImageList(QStringList const &lst)
 {
     cleanUp(); //remove everything
-    prepareLongProcessing(true); //reset progress bar after thumbnails loading
 
     //prepare new selection model
-    ThumbnailModel* ptr = new ThumbnailModel(lst,[this] (auto v) {
-        //progress bar callback
-        this->progressBar->setValue(floor(v));
-        QCoreApplication::processEvents();
-        return true;
-    },
-    loader,
-    ui->listView);
+    prepareLongProcessing(false);
+    ThumbnailModel* ptr = new ThumbnailModel(lst,prog_callback,loader,ui->listView);
+    prepareLongProcessing(true);
 
     //fill in settings to correctly display this selection model
     ui->listView->setModel(ptr);
@@ -1599,10 +1594,12 @@ bool MViewer::eventFilter(QObject *obj, QEvent *event)
     case QEvent::MouseMove:
         mev = static_cast<QMouseEvent*>(event);
         break;
+
     case QEvent::StatusTip:
         if (static_cast<QStatusTipEvent*>(event)->tip().isEmpty())
             return true;
         return false;
+
     default:
         return QObject::eventFilter(obj,event);
     }
@@ -1677,6 +1674,14 @@ bool MViewer::eventFilter(QObject *obj, QEvent *event)
     }
 
     return true;
+}
+
+void MViewer::closeEvent(QCloseEvent* /*event*/)
+{
+    connect(&view_timer,&QTimer::timeout,this,[] { QApplication::exit(0); });
+    view_timer.start(2);
+    block_events = true;
+    stop_flag = true;
 }
 
 QString MViewer::printInfo(QString const &title, MImageListRecord const &targ)

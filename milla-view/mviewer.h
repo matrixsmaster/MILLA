@@ -71,6 +71,11 @@ public:
 
     void appendNotes(QString const &str, QString const &fn = QString());
 
+protected:
+    bool eventFilter(QObject *obj, QEvent *event) override;
+
+    void closeEvent(QCloseEvent *event) override;
+
 private slots:
     void on_pushButton_clicked();
 
@@ -364,8 +369,6 @@ private:
     void copyTagsetTo(QString const &fn);
 
     void updateStory(QPixmap const &result);
-
-    bool eventFilter(QObject *obj, QEvent *event);
 
     QString printInfo(const QString &title, MImageListRecord const &targ);
 
