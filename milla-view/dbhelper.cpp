@@ -1,3 +1,5 @@
+#include <sqlite3.h>
+#include <QSqlDriver>
 #include "dbhelper.h"
 #include "mmatcher.h"
 
@@ -23,15 +25,42 @@ DBHelper::~DBHelper()
 bool DBHelper::initDatabase(ProgressCB progress_cb, UserActionCB uaction_cb)
 {
     QSqlDatabase db = QSqlDatabase::addDatabase("QSQLITE");
+    QSqlDatabase hddb = QSqlDatabase::addDatabase("QSQLITE","hddb");
 
     QString fn = QDir::homePath() + DB_FILEPATH;
     qDebug() << "[db] Storage filename: " << fn;
-    db.setHostName("localhost");
-    db.setDatabaseName(fn);
-    db.setUserName("user");
-    bool ok = db.open();
-    qDebug() << "[db] open:  " << ok;
+    hddb.setHostName("localhost");
+    hddb.setDatabaseName(fn);
+    hddb.setUserName("milla");
+    bool ok = hddb.open();
+    qDebug() << "[db] HDD DB open:  " << ok;
     if (!ok) return false;
+
+    db.setHostName("localhost");
+    db.setDatabaseName(":memory:");
+    db.setUserName("milla");
+    ok = db.open();
+    qDebug() << "[db] RAM DB open:  " << ok;
+    if (!ok) return false;
+
+    //FIXME: this is a test to measure the speedup of an in-memory database.
+    QVariant v = db.driver()->handle();
+    sqlite3* handled = nullptr, *handlem = nullptr;
+    if (v.isValid() && !qstrcmp(v.typeName(), "sqlite3*"))
+        handlem = *static_cast<sqlite3**>(v.data());
+    v = hddb.driver()->handle();
+    if (v.isValid() && !qstrcmp(v.typeName(), "sqlite3*"))
+        handled = *static_cast<sqlite3**>(v.data());
+
+    if (handled && handlem) {
+        sqlite3_backup* bck = sqlite3_backup_init(handlem,"main",handled,"main");
+        if (bck) {
+            sqlite3_backup_step(bck,-1);
+            sqlite3_backup_finish(bck);
+        }
+        int rc = sqlite3_errcode(handlem);
+        qDebug() << "[db] Backup op: " << rc;
+    }
 
     QSqlQuery q;
     ok = q.exec("SELECT version FROM meta") && q.next();

@@ -78,6 +78,8 @@ FORMS    += mviewer.ui \
 CONFIG   += c++14
 QMAKE_CXXFLAGS  += -Wextra -Wno-deprecated-declarations
 
+LIBS += -lsqlite3
+
 RESOURCES += milla-view.qrc
 
 DESTDIR = ../bin
