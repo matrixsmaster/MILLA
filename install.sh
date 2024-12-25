@@ -1,9 +1,11 @@
 #!/bin/bash
 set -e
 
+BUILDIR="build-Desktop-Release"
+
 sudo mkdir -p /opt/milla/share/icons
-sudo cp -av ../build-milla-Desktop-Release/bin /opt/milla/
-sudo cp -av ../build-milla-Desktop-Release/share /opt/milla/
+sudo cp -av "$BUILDIR/bin" /opt/milla/
+sudo cp -av "$BUILDIR/share" /opt/milla/
 sudo cp -av milla-view/milla*.png /opt/milla/share/icons/
 sudo cp 3rdparty/* /opt/milla/share/
 
