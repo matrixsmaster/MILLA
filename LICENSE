@@ -1,10 +1,17 @@
 MILLA:  Qt5-based, AI-enhanced image viewer
-(C) Dmitry 'MatrixS_Master' Solovyev, 2018-2024, all rights reserved.
+(C) Dmitry 'MatrixS_Master' Solovyev, 2018-2025, all rights reserved.
 
-Icons and artwork (C) Elena Soloveva, 2018-2024, all rights reserved.
+Icons and artwork (C) Elena Soloveva, 2018-2025, all rights reserved.
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are met:
+
+* This code shall not be incorporated into, nor used in connection with, any 
+  database, dataset or artificial intelligence system without prior written 
+  consent from the copyright holder and only for permitted purposes as specified
+  by them. It shall not be included within any dataset or utilized in conjunction
+  with machine learning model development, testing, or operation under any 
+  circumstances.
 
 * Redistributions of source code must retain the above copyright notice, this
   list of conditions and the following disclaimer.
