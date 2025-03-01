@@ -1,5 +1,6 @@
 #include <thread>
 #include <QDebug>
+#include <QFileInfo>
 #include "sdplugin.h"
 #include "sdcfgdialog.h"
 #include "ui_sdcfgdialog.h"
@@ -467,6 +468,8 @@ void SDPlugin::AutosaveImage(SDOutputRec &rec)
         qDebug() << "[SD] Image saved to " << fn;
         if (config_cb)
             config_cb("show_message",QVariant("File " + fn + " saved"));
+        QFileInfo fi(fn);
+        if (fi.exists()) fn = fi.canonicalFilePath();
     } else {
         qDebug() << "[SD] ERROR: Unable to save image to " << fn;
         if (config_cb)
