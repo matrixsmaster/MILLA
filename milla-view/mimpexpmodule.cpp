@@ -91,7 +91,7 @@ bool MImpExpModule::exportStats(ExportFormData const &s, QTextStream &f)
             if (s.likes)    f << q.value(2).toInt() << s.separator;
             if (s.tags)     f << "\"" << tagsLineConvert(q.value(3).toString(),false) << "\"" << s.separator;
             if (s.tagids)   f << "\"" << q.value(3).toString() << "\"" << s.separator;
-            if (s.notes)    f << "\"" << q.value(4).toString() << "\"" << s.separator;
+            if (s.notes)    f << "\"" << (s.linear_notes? q.value(4).toString().replace('\n',' ') : q.value(4).toString()).trimmed() << "\"" << s.separator;
             if (s.sha)      f << q.value(5).toByteArray().toHex() << s.separator;
             if (s.length)   f << q.value(6).toUInt() << s.separator;
         }

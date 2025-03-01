@@ -23,6 +23,7 @@ struct ExportFormData {
     bool story_update, story_title, story_actions;
     bool link_created, link_left, link_right;
     char separator;
+    bool linear_notes;
     bool imp_noover;
 };
 

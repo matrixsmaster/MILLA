@@ -103,5 +103,6 @@ void ExportForm::on_buttonBox_accepted()
     else if (ui->lineEdit->text().isEmpty()) edata.separator = '\t';
     else edata.separator = ui->lineEdit->text().at(0).toLatin1();
 
+    edata.linear_notes = ui->checkBox_21->isChecked();
     edata.imp_noover = ui->checkBox_13->isChecked();
 }

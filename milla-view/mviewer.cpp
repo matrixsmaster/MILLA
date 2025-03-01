@@ -283,21 +283,28 @@ void MViewer::on_pushButton_clicked()
 
 bool MViewer::createStatRecord(QString const &fn, bool cache_global)
 {
-    if (db.isStatRecordExists(fn)) {
+    // always prefer to use canonical path when querying metadata
+    QString cfn = DBHelper::getCanonicalPath(fn);
+    if (cfn.isEmpty()) cfn = fn; // fallback
+
+    // does it already exist?
+    if (db.isStatRecordExists(cfn)) {
         qDebug() << "ALERT: createStatRecord() called for known file";
         return false;
     }
 
-    MImageExtras ext = getExtraCacheLine(fn,true,cache_global);
+    // create (or retrieve) cachable data (meta, thumb, etc)
+    MImageExtras ext = getExtraCacheLine(cfn,true,cache_global);
     if (!ext.valid) {
-        qDebug() << "ALERT: invalid extra data returned for " << fn;
+        qDebug() << "ALERT: invalid extra data returned for " << cfn;
         return false;
     }
 
-    bool ok = db.updateStatRecord(fn,ext,false);
+    // update the DB explicitly with the new data
+    bool ok = db.updateStatRecord(cfn,ext,false);
     qDebug() << "[db] Creating new statistics record: " << ok;
 
-    checkExtraCache();
+    checkExtraCache(); // keep an eye on the cache size
     return true;
 }
 
