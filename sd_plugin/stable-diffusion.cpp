@@ -1381,6 +1381,11 @@ sd_image_t* generate_image(sd_ctx_t* sd_ctx,
         int64_t sampling_end = ggml_time_ms();
         LOG_INFO("sampling completed, taking %.2fs", (sampling_end - sampling_start) * 1.0f / 1000);
         final_latents.push_back(x_0);
+
+        if (!pretty_progress(b,batch_count,0)) {
+            ggml_free(work_ctx);
+            return NULL;
+        }
     }
 
     if (sd_ctx->sd->free_params_immediately) {
