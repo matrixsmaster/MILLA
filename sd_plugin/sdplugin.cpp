@@ -353,7 +353,9 @@ bool SDPlugin::GenerateBatch()
     sd_set_progress_callback(progress_helper,this);
 
     qDebug() << "[SD] Initializing context...";
-    sd_ctx_t* ctx = new_sd_ctx(model.c_str(),vaemodel.c_str(),"",cnmodel.c_str(),"","","",true,false,true,get_num_physical_cores(),SD_TYPE_COUNT,STD_DEFAULT_RNG,DEFAULT,false,false,false);
+    std::string bmdl = t5model.empty()? model.c_str() : "";
+    std::string dmdl = t5model.empty()? "" : model.c_str();
+    sd_ctx_t* ctx = new_sd_ctx(bmdl.c_str(),clipmodel.c_str(),"",t5model.c_str(),dmdl.c_str(),vaemodel.c_str(),"",cnmodel.c_str(),loradir.c_str(),"","",true,false,true,get_num_physical_cores(),SD_TYPE_COUNT,STD_DEFAULT_RNG,DEFAULT,false,false,false,false);
     if (!ctx) {
         qDebug() << "[SD] ERROR: Unable to create generator context!";
         return false;
@@ -362,7 +364,7 @@ bool SDPlugin::GenerateBatch()
     //FIXME: dehardcode the magics (UI or just define?)
     qDebug() << "[SD] Generating...";
     int vseed = (seed == -1)? std::rand() : seed;
-    sd_image_t* out = txt2img(ctx,prompt.c_str(),nprompt.c_str(),-1,cfg_scale,SDPLUGIN_IMGSIZE,SDPLUGIN_IMGSIZE,EULER_A,steps,vseed,batch,NULL,0.9,style_ratio,false,"");
+    sd_image_t* out = txt2img(ctx,prompt.c_str(),nprompt.c_str(),-1,cfg_scale,3.5,0.f,SDPLUGIN_IMGSIZE,SDPLUGIN_IMGSIZE,EULER_A,steps,vseed,batch,NULL,0.9,style_ratio,false,"",nullptr,0,0,0,0);
     if (out) {
         qDebug() << "[SD] Generation has finished!";
         for (int i = 0; i < batch; i++) {
@@ -410,7 +412,7 @@ QPixmap SDPlugin::Scaleup(const QImage &in)
 
     if (!upscaler) {
         out_mutex.lock();
-        upscaler = new_upscaler_ctx(esrgan.c_str(),get_num_physical_cores(),SD_TYPE_COUNT);
+        upscaler = new_upscaler_ctx(esrgan.c_str(),get_num_physical_cores());
         out_mutex.unlock();
         if (!upscaler) {
             qDebug() << "[SD] ERROR: Unable to create upscaler context!";

@@ -5,7 +5,7 @@ include(../cfg/cfg_sd.pri)
 TARGET = sd_plugin
 TEMPLATE = lib
 CONFIG += c++20 plugin
-INCLUDEPATH += ../milla-view
+INCLUDEPATH += ../milla-view ggml/include
 
 QMAKE_CFLAGS += $$ARCH_CONFIG -fPIC
 QMAKE_CXXFLAGS += $$ARCH_CONFIG -fPIC
@@ -17,10 +17,6 @@ QMAKE_CXXFLAGS_RELEASE += -DNDEBUG -O3
 DESTDIR = ../share/plugins
 
 SOURCES += \
-    ggml-alloc.c \
-    ggml-backend.c \
-    ggml-quants.c \
-    ggml.c \
     main.cpp \
     model.cpp \
     sdcfgdialog.cpp \
@@ -31,22 +27,18 @@ SOURCES += \
     zip.c
 
 HEADERS += \
+    ggml_extend.hpp \
     clip.hpp \
     common.hpp \
     control.hpp \
     denoiser.hpp \
     esrgan.hpp \
-    ggml-alloc.h \
-    ggml-backend-impl.h \
-    ggml-backend.h \
-    ggml-common.h \
-    ggml-impl.h \
-    ggml-quants.h \
-    ggml.h \
-    ggml_extend.hpp \
+    conditioner.hpp \
+    darts.h \
     json.hpp \
     lora.hpp \
     miniz.h \
+    mmdit.hpp \
     model.h \
     pmid.hpp \
     preprocessing.hpp \
@@ -70,14 +62,16 @@ FORMS += \
 DISTFILES += \
     sd_plugin.json
 
-DEFINES += GGML_MAX_NAME=128
+#QMAKE_PRE_LINK = cd $$PWD && $(MAKE) -f ggml-make
 
-equals(USE_CUBLAS,1) {
-    QMAKE_PRE_LINK = cd $$PWD && $(MAKE) -f cuda-make
-    DEFINES += GGML_USE_CUDA GGML_USE_CUBLAS SD_USE_CUBLAS
-    LIBS += -L$$PWD -lsdcuda $$CUBLAS_PATH -lcuda -lcublas -lculibos -lcudart -lcublasLt
+DEFINES += GGML_MAX_NAME=128 GGML_USE_CPU
+LIBS += -L$$PWD/ggml/build/src -lggml -lggml-base -lggml-cpu
 
-    extraclean.commands = cd $$PWD && $(MAKE) -f cuda-make clean;
-    clean.depends = extraclean
-    QMAKE_EXTRA_TARGETS += clean extraclean
+equals(USE_CUDA,1) {
+    DEFINES += GGML_USE_CUDA SD_USE_CUDA
+    LIBS += -L$$PWD/ggml/build/src/ggml-cuda -lggml-cuda $$CUDA_PATH -lcuda -lcublas -lculibos -lcudart -lcublasLt
 }
+
+extraclean.commands = cd $$PWD && $(MAKE) -f ggml-make clean;
+clean.depends = extraclean
+#QMAKE_EXTRA_TARGETS += clean extraclean

@@ -12,16 +12,12 @@
 #include <vector>
 #include "preprocessing.hpp"
 
-#if defined(__APPLE__) && defined(__MACH__)
-#include <sys/sysctl.h>
-#include <sys/types.h>
-#endif
-
 #if !defined(_WIN32)
 #include <sys/ioctl.h>
 #include <unistd.h>
 #endif
 
+#include "ggml-cpu.h"
 #include "ggml.h"
 #include "stable-diffusion.h"
 
@@ -112,18 +108,31 @@ std::vector<std::string> get_files_from_dir(const std::string& dir) {
 
     // Find the first file in the directory
     hFind = FindFirstFile(directoryPath, &findFileData);
-
+    bool isAbsolutePath = false;
     // Check if the directory was found
     if (hFind == INVALID_HANDLE_VALUE) {
-        printf("Unable to find directory.\n");
-        return files;
+        printf("Unable to find directory. Try with original path \n");
+
+        char directoryPathAbsolute[MAX_PATH];
+        sprintf(directoryPathAbsolute, "%s*", dir.c_str());
+
+        hFind = FindFirstFile(directoryPathAbsolute, &findFileData);
+        isAbsolutePath = true;
+        if (hFind == INVALID_HANDLE_VALUE) {
+            printf("Absolute path was also wrong.\n");
+            return files;
+        }
     }
 
     // Loop through all files in the directory
     do {
         // Check if the found file is a regular file (not a directory)
         if (!(findFileData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)) {
-            files.push_back(std::string(currentDirectory) + "\\" + dir + "\\" + std::string(findFileData.cFileName));
+            if (isAbsolutePath) {
+                files.push_back(dir + "\\" + std::string(findFileData.cFileName));
+            } else {
+                files.push_back(std::string(currentDirectory) + "\\" + dir + "\\" + std::string(findFileData.cFileName));
+            }
         }
     } while (FindNextFile(hFind, &findFileData) != 0);
 
@@ -276,6 +285,23 @@ std::string path_join(const std::string& p1, const std::string& p2) {
     return p1 + "/" + p2;
 }
 
+std::vector<std::string> splitString(const std::string& str, char delimiter) {
+    std::vector<std::string> result;
+    size_t start = 0;
+    size_t end   = str.find(delimiter);
+
+    while (end != std::string::npos) {
+        result.push_back(str.substr(start, end - start));
+        start = end + 1;
+        end   = str.find(delimiter, start);
+    }
+
+    // Add the last segment after the last delimiter
+    result.push_back(str.substr(start));
+
+    return result;
+}
+
 sd_image_t* preprocess_id_image(sd_image_t* img) {
     int shortest_edge   = 224;
     int size            = shortest_edge;
@@ -309,34 +335,8 @@ sd_image_t* preprocess_id_image(sd_image_t* img) {
     return resized;
 }
 
-bool pretty_progress(int step, int steps, float time)
-{
-    if (sd_progress_cb)
-        return sd_progress_cb(step, steps, time, sd_progress_cb_data);
-
-    if (step == 0) {
-        return true;
-    }
-    std::string progress = "  |";
-    int max_progress     = 50;
-    int32_t current      = (int32_t)(step * 1.f * max_progress / steps);
-    for (int i = 0; i < 50; i++) {
-        if (i > current) {
-            progress += " ";
-        } else if (i == current && i != max_progress - 1) {
-            progress += ">";
-        } else {
-            progress += "=";
-        }
-    }
-    progress += "|";
-    printf(time > 1.0f ? "\r%s %i/%i - %.2fs/it" : "\r%s %i/%i - %.2fit/s",
-           progress.c_str(), step, steps,
-           time > 1.0f || time == 0 ? time : (1.0f / time));
-    fflush(stdout);  // for linux
-    if (step == steps) {
-        printf("\n");
-    }
+bool pretty_progress(int step, int steps, float time) {
+    if (sd_progress_cb) return sd_progress_cb(step,steps,time,sd_progress_cb_data);
     return true;
 }
 
@@ -394,7 +394,6 @@ const char* sd_get_system_info() {
     static char buffer[1024];
     std::stringstream ss;
     ss << "System Info: \n";
-    ss << "    BLAS = " << ggml_cpu_has_blas() << std::endl;
     ss << "    SSE3 = " << ggml_cpu_has_sse3() << std::endl;
     ss << "    AVX = " << ggml_cpu_has_avx() << std::endl;
     ss << "    AVX2 = " << ggml_cpu_has_avx2() << std::endl;
@@ -563,4 +562,111 @@ sd_image_f32_t clip_preprocess(sd_image_f32_t image, int size) {
     }
 
     return result;
+}
+
+// Ref: https://github.com/AUTOMATIC1111/stable-diffusion-webui/blob/cad87bf4e3e0b0a759afa94e933527c3123d59bc/modules/prompt_parser.py#L345
+//
+// Parses a string with attention tokens and returns a list of pairs: text and its associated weight.
+// Accepted tokens are:
+//   (abc) - increases attention to abc by a multiplier of 1.1
+//   (abc:3.12) - increases attention to abc by a multiplier of 3.12
+//   [abc] - decreases attention to abc by a multiplier of 1.1
+//   \( - literal character '('
+//   \[ - literal character '['
+//   \) - literal character ')'
+//   \] - literal character ']'
+//   \\ - literal character '\'
+//   anything else - just text
+//
+// >>> parse_prompt_attention('normal text')
+// [['normal text', 1.0]]
+// >>> parse_prompt_attention('an (important) word')
+// [['an ', 1.0], ['important', 1.1], [' word', 1.0]]
+// >>> parse_prompt_attention('(unbalanced')
+// [['unbalanced', 1.1]]
+// >>> parse_prompt_attention('\(literal\]')
+// [['(literal]', 1.0]]
+// >>> parse_prompt_attention('(unnecessary)(parens)')
+// [['unnecessaryparens', 1.1]]
+// >>> parse_prompt_attention('a (((house:1.3)) [on] a (hill:0.5), sun, (((sky))).')
+// [['a ', 1.0],
+//  ['house', 1.5730000000000004],
+//  [' ', 1.1],
+//  ['on', 1.0],
+//  [' a ', 1.1],
+//  ['hill', 0.55],
+//  [', sun, ', 1.1],
+//  ['sky', 1.4641000000000006],
+//  ['.', 1.1]]
+std::vector<std::pair<std::string, float>> parse_prompt_attention(const std::string& text) {
+    std::vector<std::pair<std::string, float>> res;
+    std::vector<int> round_brackets;
+    std::vector<int> square_brackets;
+
+    float round_bracket_multiplier  = 1.1f;
+    float square_bracket_multiplier = 1 / 1.1f;
+
+    std::regex re_attention(R"(\\\(|\\\)|\\\[|\\\]|\\\\|\\|\(|\[|:([+-]?[.\d]+)\)|\)|\]|[^\\()\[\]:]+|:)");
+    std::regex re_break(R"(\s*\bBREAK\b\s*)");
+
+    auto multiply_range = [&](int start_position, float multiplier) {
+        for (int p = start_position; p < res.size(); ++p) {
+            res[p].second *= multiplier;
+        }
+    };
+
+    std::smatch m;
+    std::string remaining_text = text;
+
+    while (std::regex_search(remaining_text, m, re_attention)) {
+        std::string text   = m[0];
+        std::string weight = m[1];
+
+        if (text == "(") {
+            round_brackets.push_back((int)res.size());
+        } else if (text == "[") {
+            square_brackets.push_back((int)res.size());
+        } else if (!weight.empty()) {
+            if (!round_brackets.empty()) {
+                multiply_range(round_brackets.back(), std::stof(weight));
+                round_brackets.pop_back();
+            }
+        } else if (text == ")" && !round_brackets.empty()) {
+            multiply_range(round_brackets.back(), round_bracket_multiplier);
+            round_brackets.pop_back();
+        } else if (text == "]" && !square_brackets.empty()) {
+            multiply_range(square_brackets.back(), square_bracket_multiplier);
+            square_brackets.pop_back();
+        } else if (text == "\\(") {
+            res.push_back({text.substr(1), 1.0f});
+        } else {
+            res.push_back({text, 1.0f});
+        }
+
+        remaining_text = m.suffix();
+    }
+
+    for (int pos : round_brackets) {
+        multiply_range(pos, round_bracket_multiplier);
+    }
+
+    for (int pos : square_brackets) {
+        multiply_range(pos, square_bracket_multiplier);
+    }
+
+    if (res.empty()) {
+        res.push_back({"", 1.0f});
+    }
+
+    int i = 0;
+    while (i + 1 < res.size()) {
+        if (res[i].second == res[i + 1].second) {
+            res[i].first += res[i + 1].first;
+            res.erase(res.begin() + i + 1);
+        } else {
+            ++i;
+        }
+    }
+
+    return res;
 }

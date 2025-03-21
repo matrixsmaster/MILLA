@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>505</width>
-    <height>643</height>
+    <height>674</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -228,7 +228,7 @@
         </widget>
        </item>
        <item>
-        <layout class="QHBoxLayout" name="horizontalLayout_2">
+        <layout class="QHBoxLayout" name="horizontalLayout">
          <item>
           <widget class="QLabel" name="label_6">
            <property name="text">
@@ -263,10 +263,24 @@
            </property>
           </widget>
          </item>
+         <item>
+          <widget class="QLabel" name="label_15">
+           <property name="text">
+            <string>Guidance</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QDoubleSpinBox" name="guidanceK">
+           <property name="enabled">
+            <bool>false</bool>
+           </property>
+          </widget>
+         </item>
         </layout>
        </item>
        <item>
-        <layout class="QHBoxLayout" name="horizontalLayout">
+        <layout class="QHBoxLayout" name="horizontalLayout_2">
          <item>
           <widget class="QLabel" name="label_4">
            <property name="maximumSize">
@@ -328,6 +342,20 @@
            </property>
            <property name="maximum">
             <number>1000</number>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QLabel" name="label_18">
+           <property name="text">
+            <string>Seed</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QSpinBox" name="spinBox">
+           <property name="enabled">
+            <bool>false</bool>
            </property>
           </widget>
          </item>
