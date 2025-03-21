@@ -62,7 +62,7 @@ FORMS += \
 DISTFILES += \
     sd_plugin.json
 
-#QMAKE_PRE_LINK = cd $$PWD && $(MAKE) -f ggml-make
+QMAKE_PRE_LINK = cd $$PWD && $(MAKE) -f ggml-make
 
 DEFINES += GGML_MAX_NAME=128 GGML_USE_CPU
 LIBS += -L$$PWD/ggml/build/src -lggml -lggml-base -lggml-cpu
@@ -74,4 +74,4 @@ equals(USE_CUDA,1) {
 
 extraclean.commands = cd $$PWD && $(MAKE) -f ggml-make clean;
 clean.depends = extraclean
-#QMAKE_EXTRA_TARGETS += clean extraclean
+QMAKE_EXTRA_TARGETS += clean extraclean

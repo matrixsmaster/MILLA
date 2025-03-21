@@ -1,0 +1,9 @@
+all:
+	mkdir ggml/build
+	cd ggml/build && cmake .. -DGGML_CUDA=ON
+	cd ggml/build && make -j12
+
+clean:
+	rm -rf ggml/build
+
+.PHONY: all clean
