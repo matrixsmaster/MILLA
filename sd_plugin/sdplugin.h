@@ -77,7 +77,7 @@ private:
 
     bool dogen = false;
     bool doupsc = false;
-    std::string model, vaemodel, cnmodel, prompt, nprompt, esrgan; // TODO: add controlnet image input
+    std::string model, vaemodel, cnmodel, clipmodel, t5model, prompt, nprompt, esrgan; // TODO: add controlnet image input
     float cfg_scale = 1;
     float style_ratio = 1;
     int steps = 2;

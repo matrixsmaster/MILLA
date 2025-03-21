@@ -37,3 +37,15 @@ void SDCfgDialog::on_pushButton_5_clicked()
     QString dr = QFileDialog::getExistingDirectory(this,"Select directory");
     if (!dr.isEmpty()) ui->savDir->setText(dr);
 }
+
+void SDCfgDialog::on_pushButton_8_clicked()
+{
+    QString fn = QFileDialog::getOpenFileName(this,"Select CLiP file","",SDPLUGIN_MODEL_FILTER);
+    if (!fn.isEmpty()) ui->clipFile->setText(fn);
+}
+
+void SDCfgDialog::on_pushButton_9_clicked()
+{
+    QString fn = QFileDialog::getOpenFileName(this,"Select T5XXL file","",SDPLUGIN_MODEL_FILTER);
+    if (!fn.isEmpty()) ui->t5xxlFile->setText(fn);
+}

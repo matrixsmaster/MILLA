@@ -55,6 +55,8 @@ void SDPlugin::ConfigLoad()
     CONFIG_LOAD_STDSTR("SD_model",model);
     CONFIG_LOAD_STDSTR("SD_vae",vaemodel);
     CONFIG_LOAD_STDSTR("SD_cnet",cnmodel);
+    CONFIG_LOAD_STDSTR("SD_clip",clipmodel);
+    CONFIG_LOAD_STDSTR("SD_t5xxl",t5model);
     CONFIG_LOAD_STDSTR("SD_prompt",prompt);
     CONFIG_LOAD_STDSTR("SD_nprompt",nprompt);
     CONFIG_LOAD_FLOAT("SD_cfgscale",cfg_scale);
@@ -91,6 +93,8 @@ void SDPlugin::ConfigSave()
     CONFIG_SAVE_STDSTR("SD_model",model);
     CONFIG_SAVE_STDSTR("SD_vae",vaemodel);
     CONFIG_SAVE_STDSTR("SD_cnet",cnmodel);
+    CONFIG_SAVE_STDSTR("SD_clip",clipmodel);
+    CONFIG_SAVE_STDSTR("SD_t5xxl",t5model);
     CONFIG_SAVE_STDSTR("SD_prompt",prompt);
     CONFIG_SAVE_STDSTR("SD_nprompt",nprompt);
     CONFIG_SAVE_FLOAT("SD_cfgscale",cfg_scale);
@@ -125,6 +129,8 @@ bool SDPlugin::showUI()
     dlg.ui->modelFile->setText(QString::fromStdString(model));
     dlg.ui->vaeFile->setText(QString::fromStdString(vaemodel));
     dlg.ui->cnFile->setText(QString::fromStdString(cnmodel));
+    dlg.ui->clipFile->setText(QString::fromStdString(clipmodel));
+    dlg.ui->t5xxlFile->setText(QString::fromStdString(t5model));
     dlg.ui->promptEdit->setPlainText(QString::fromStdString(prompt));
     dlg.ui->negPromptEdit->setPlainText(QString::fromStdString(nprompt));
     dlg.ui->cfgScale->setValue(cfg_scale);
@@ -158,6 +164,8 @@ bool SDPlugin::showUI()
     model = dlg.ui->modelFile->text().toStdString();
     vaemodel = dlg.ui->vaeFile->text().toStdString();
     cnmodel = dlg.ui->cnFile->text().toStdString();
+    clipmodel = dlg.ui->clipFile->text().toStdString();
+    t5model = dlg.ui->t5xxlFile->text().toStdString();
     prompt = dlg.ui->promptEdit->toPlainText().toStdString();
     nprompt = dlg.ui->negPromptEdit->toPlainText().toStdString();
     cfg_scale = dlg.ui->cfgScale->value();
