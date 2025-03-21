@@ -25,5 +25,6 @@ private slots:
     void on_pushButton_5_clicked();
     void on_pushButton_8_clicked();
     void on_pushButton_9_clicked();
+    void on_pushButton_10_clicked();
 };
 #endif // SDCFGDIALOG_H

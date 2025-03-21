@@ -49,3 +49,9 @@ void SDCfgDialog::on_pushButton_9_clicked()
     QString fn = QFileDialog::getOpenFileName(this,"Select T5XXL file","",SDPLUGIN_MODEL_FILTER);
     if (!fn.isEmpty()) ui->t5xxlFile->setText(fn);
 }
+
+void SDCfgDialog::on_pushButton_10_clicked()
+{
+    QString dr = QFileDialog::getExistingDirectory(this,"Select LoRA directory");
+    if (!dr.isEmpty()) ui->loraDir->setText(dr);
+}
