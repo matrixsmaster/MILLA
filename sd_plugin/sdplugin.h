@@ -80,11 +80,13 @@ private:
     std::string model, vaemodel, cnmodel, clipmodel, t5model, loradir, esrgan; // TODO: add controlnet image input
     std::string prompt, nprompt;
     float cfg_scale = 1;
-    float style_ratio = 1;
+    float style_ratio = 0;
+    float guidance = 3.5;
     int steps = 2;
     int batch = 1;
-    int seed = -1;
+    int seed = 0;
     int scale_fac = 4;
+    int sampler = EULER_A;
     sdplug_autosave_t autosave = SDP_ASAV_NONE;
     bool asav_addb = false;
     bool asav_match = false;

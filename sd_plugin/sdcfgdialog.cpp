@@ -7,6 +7,8 @@ SDCfgDialog::SDCfgDialog(QWidget *parent)
     , ui(new Ui::SDCfgDialog)
 {
     ui->setupUi(this);
+    ui->seedVal->setMinimum(0x80000000);
+    ui->seedVal->setMaximum(0x7fffffff);
 }
 
 SDCfgDialog::~SDCfgDialog()

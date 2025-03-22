@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>505</width>
-    <height>674</height>
+    <width>500</width>
+    <height>720</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -271,16 +271,63 @@
           </widget>
          </item>
          <item>
-          <widget class="QDoubleSpinBox" name="guidanceK">
-           <property name="enabled">
-            <bool>false</bool>
-           </property>
-          </widget>
+          <widget class="QDoubleSpinBox" name="guidanceK"/>
          </item>
         </layout>
        </item>
        <item>
         <layout class="QHBoxLayout" name="horizontalLayout_2">
+         <item>
+          <widget class="QLabel" name="label_18">
+           <property name="text">
+            <string>Seed</string>
+           </property>
+           <property name="alignment">
+            <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QSpinBox" name="seedVal"/>
+         </item>
+         <item>
+          <widget class="QLabel" name="label_19">
+           <property name="text">
+            <string>Sampler</string>
+           </property>
+           <property name="alignment">
+            <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QComboBox" name="samplerBox">
+           <item>
+            <property name="text">
+             <string>Euler_A</string>
+            </property>
+           </item>
+           <item>
+            <property name="text">
+             <string>Euler</string>
+            </property>
+           </item>
+           <item>
+            <property name="text">
+             <string>Heun</string>
+            </property>
+           </item>
+           <item>
+            <property name="text">
+             <string>DPM2</string>
+            </property>
+           </item>
+          </widget>
+         </item>
+        </layout>
+       </item>
+       <item>
+        <layout class="QHBoxLayout" name="horizontalLayout_9">
          <item>
           <widget class="QLabel" name="label_4">
            <property name="maximumSize">
@@ -342,20 +389,6 @@
            </property>
            <property name="maximum">
             <number>1000</number>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QLabel" name="label_18">
-           <property name="text">
-            <string>Seed</string>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QSpinBox" name="spinBox">
-           <property name="enabled">
-            <bool>false</bool>
            </property>
           </widget>
          </item>

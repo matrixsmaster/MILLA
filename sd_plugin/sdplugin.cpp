@@ -62,6 +62,8 @@ void SDPlugin::ConfigLoad()
     CONFIG_LOAD_STDSTR("SD_nprompt",nprompt);
     CONFIG_LOAD_FLOAT("SD_cfgscale",cfg_scale);
     CONFIG_LOAD_FLOAT("SD_styleratio",style_ratio);
+    CONFIG_LOAD_FLOAT("SD_guidance",guidance);
+    CONFIG_LOAD_INT("SD_sampler",sampler);
     CONFIG_LOAD_INT("SD_steps",steps);
     CONFIG_LOAD_INT("SD_batch",batch);
 
@@ -101,6 +103,8 @@ void SDPlugin::ConfigSave()
     CONFIG_SAVE_STDSTR("SD_nprompt",nprompt);
     CONFIG_SAVE_FLOAT("SD_cfgscale",cfg_scale);
     CONFIG_SAVE_FLOAT("SD_styleratio",style_ratio);
+    CONFIG_SAVE_FLOAT("SD_guidance",guidance);
+    CONFIG_SAVE_INT("SD_sampler",sampler);
     CONFIG_SAVE_INT("SD_steps",steps);
     CONFIG_SAVE_INT("SD_batch",batch);
 
@@ -138,6 +142,8 @@ bool SDPlugin::showUI()
     dlg.ui->negPromptEdit->setPlainText(QString::fromStdString(nprompt));
     dlg.ui->cfgScale->setValue(cfg_scale);
     dlg.ui->styleRatio->setValue(style_ratio);
+    dlg.ui->samplerBox->setCurrentIndex(sampler);
+    dlg.ui->guidanceK->setValue(guidance);
     dlg.ui->stepsCnt->setValue(steps);
     dlg.ui->batchCnt->setValue(batch);
 
@@ -174,8 +180,11 @@ bool SDPlugin::showUI()
     nprompt = dlg.ui->negPromptEdit->toPlainText().toStdString();
     cfg_scale = dlg.ui->cfgScale->value();
     style_ratio = dlg.ui->styleRatio->value();
+    guidance = dlg.ui->guidanceK->value();
+    sampler = dlg.ui->samplerBox->currentIndex();
     steps = dlg.ui->stepsCnt->value();
     batch = dlg.ui->batchCnt->value();
+    seed = dlg.ui->seedVal->value();
 
     doupsc = dlg.ui->doUpsc->isChecked();
     esrgan = dlg.ui->upscModel->text().toStdString();
@@ -361,10 +370,10 @@ bool SDPlugin::GenerateBatch()
         return false;
     }
 
-    //FIXME: dehardcode the magics (UI or just define?)
     qDebug() << "[SD] Generating...";
-    int vseed = (seed == -1)? std::rand() : seed;
-    sd_image_t* out = txt2img(ctx,prompt.c_str(),nprompt.c_str(),-1,cfg_scale,3.5,0.f,SDPLUGIN_IMGSIZE,SDPLUGIN_IMGSIZE,EULER_A,steps,vseed,batch,NULL,0.9,style_ratio,false,"",nullptr,0,0,0,0);
+    if (!seed) seed = std::rand();
+    sample_method_t smpl = (sample_method_t)sampler;
+    sd_image_t* out = txt2img(ctx,prompt.c_str(),nprompt.c_str(),-1,cfg_scale,guidance,0.f,SDPLUGIN_IMGSIZE,SDPLUGIN_IMGSIZE,smpl,steps,seed,batch,NULL,0.9,style_ratio,false,"",nullptr,0,0,0,0);
     if (out) {
         qDebug() << "[SD] Generation has finished!";
         for (int i = 0; i < batch; i++) {
@@ -546,12 +555,16 @@ QString SDPlugin::TextualizeConfig()
     if (dogen) {
         std::string s;
         s += "Image generated with " + model + ", using encoder " + vaemodel;
-        if (!cnmodel.empty()) s += " with control net " + cnmodel;
+        if (!cnmodel.empty()) s += ", with control net " + cnmodel;
+        if (!clipmodel.empty()) s += ", with CLiP " + clipmodel;
+        if (!t5model.empty()) s += ", with T5XXL " + t5model;
+        if (!loradir.empty()) s += ", using path " + loradir + " for LoRAs ";
         s += ".\n";
         s += "Prompt used:\n" + prompt + "\n";
         if (!nprompt.empty()) s += "Negative prompt used:\n" + nprompt + "\n";
         r = QString::fromStdString(s);
-        r += QString::asprintf("cfg_scale = %.3f; style_ratio = %.3f; steps = %d; batch = %d/%d",cfg_scale,style_ratio,steps,curout+1,batch);
+        r += QString::asprintf("cfg_scale = %.2f; style_ratio = %.2f; guidance = %.2f; sampler = %d; steps = %d; seed = %d; batch = %d/%d",
+                               cfg_scale,style_ratio,guidance,sampler,steps,seed,curout+1,batch);
     }
 
     if (doupsc) {
