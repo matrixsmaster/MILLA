@@ -98,6 +98,8 @@ public:
 
     void sanitizeFiles(ProgressCB progress_cb);
 
+    void sanitizeThumbs(ProgressCB progress_cb);
+
     void sanitizeLinks(ProgressCB progress_cb);
 
     void sanitizeTags(ProgressCB progress_cb);

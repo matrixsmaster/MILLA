@@ -1159,22 +1159,28 @@ void MViewer::on_actionSanitize_DB_triggered()
     db.sanitizeFiles(prog_callback);
     prepareLongProcessing(true);
 
-    //step 1. check all links
+    //step 1. check all thumbnails
+    prepareLongProcessing();
+    ui->statusBar->showMessage("Checking thumbs...");
+    db.sanitizeThumbs(prog_callback);
+    prepareLongProcessing(true);
+
+    //step 2. check all links
     prepareLongProcessing();
     ui->statusBar->showMessage("Checking links...");
     db.sanitizeLinks(prog_callback);
     prepareLongProcessing(true);
 
-    //step 2. renew tags ratings
+    //step 3. renew tags ratings
     prepareLongProcessing();
     ui->statusBar->showMessage("Checking tags...");
     db.sanitizeTags(prog_callback);
 
-    //step 3. run various other DB engine-related stuff
+    //step 4. run various other DB engine-related stuff
     ui->statusBar->showMessage("DB maintenance...");
     db.sanitizeDBMeta();
 
-    //step 4. reload cache
+    //step 5. reload cache
     db.invalidateCache();
 
     //process complete

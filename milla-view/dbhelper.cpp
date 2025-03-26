@@ -1,3 +1,4 @@
+#include <QImageReader>
 #include "dbhelper.h"
 #include "mmatcher.h"
 
@@ -873,10 +874,12 @@ bool DBHelper::removeFile(QString const &fn)
 void DBHelper::sanitizeFiles(ProgressCB progress_cb)
 {
     QSqlQuery q;
-    QStringList all = getAllFiles(); //get all known files listed
+
+    //first of all, let's get all known files
+    QStringList all = getAllFiles();
     double prg = 0, dp = 50.f / (double)(all.size());
 
-    //add files with known thumbnails (whos metainfo was never saved)
+    //add files with known thumbnails but without metadata
     q.prepare("SELECT file FROM thumbs");
     if (q.exec()) {
         while (q.next()) {
@@ -894,7 +897,7 @@ void DBHelper::sanitizeFiles(ProgressCB progress_cb)
         if (!fi.exists()) removeFile(i); //if a dead file is detected, remove it
     }
 
-    //as last measure, let's remove all records about zero-length files and files without checksum
+    //let's also remove all records about zero-length files and files without checksum
     q.clear();
     if (!q.exec("SELECT COUNT(file) FROM stats WHERE (length < 1) OR (sha256 IS NULL)") || !q.next()) {
         qDebug() << "[db] ALERT: error while searching for empty records";
@@ -914,6 +917,67 @@ void DBHelper::sanitizeFiles(ProgressCB progress_cb)
         if (progress_cb && !progress_cb(prg)) return;
 
         removeFile(q.value(0).toString());
+    }
+}
+
+void DBHelper::sanitizeThumbs(ProgressCB progress_cb)
+{
+    QSqlQuery q,qa;
+    if (!qa.exec("SELECT COUNT(file) FROM thumbs") || !q.exec("SELECT file, thumb FROM thumbs")) {
+        qDebug() << "[db] ALERT: error while retrieving thumbnails";
+        return;
+    }
+
+    double prg = 0, dp = qa.next()? 50.f / (double)(qa.value(0).toInt()) : 1;
+
+    while (q.next()) {
+        prg += dp;
+        if (progress_cb && !progress_cb(prg)) return;
+
+        // construct a reader out of a temporary QIODevice
+        QByteArray dat = q.value(1).toByteArray();
+        QBuffer buf(&dat);
+        buf.open(QBuffer::ReadOnly);
+        QImageReader thumb(&buf);
+
+        // try to load the thumb (testing for corrupted thumbnails)
+        QImage img;
+        QString fmt = thumb.format();
+        bool ok = thumb.canRead();
+        if (ok) {
+            img = thumb.read();
+            if (img.isNull()) {
+                qDebug() << "[db] Can't read thumbnail: " << thumb.errorString();
+                ok = false;
+            }
+        }
+
+        // remove corrupted thumbs
+        if (!ok) {
+            QSqlQuery qq;
+            qq.prepare("DELETE FROM thumbs WHERE file = :fn");
+            qq.bindValue(":fn",q.value(0).toString());
+            bool ok2 = qq.exec();
+            qDebug() << "[db] Removing unreadable record for " << q.value(0).toString() << " from thumbs: " << ok2;
+            continue;
+        }
+
+        // check if it's a PNG (we used to use that format)
+        if (!fmt.compare("png",Qt::CaseInsensitive) && !img.isNull()) {
+            // convert it to JPG (or whatever is the current thumbnail format of choice)
+            QByteArray arr;
+            QBuffer rbuf(&arr);
+            rbuf.open(QBuffer::WriteOnly);
+            bool ok2 = img.save(&rbuf,MILLA_THUMBNAIL_FMT,MILLA_THUMBNAIL_QUAL);
+            qDebug() << "[db] Converting from PNG to JPG: " << ok2;
+
+            QSqlQuery qq;
+            qq.prepare("UPDATE thumbs SET thumb = :thm WHERE file = :fn");
+            qq.bindValue(":fn",q.value(0).toString());
+            qq.bindValue(":thm",arr);
+            ok2 = qq.exec();
+            qDebug() << "[db] Replacing old thumb: " << ok2;
+        }
     }
 }
 
@@ -1022,7 +1086,7 @@ void DBHelper::sanitizeTags(ProgressCB progress_cb)
 
         if (mod) {
             QSqlQuery wq;
-            QString ln2 = ls.empty()? "" : ln2 = ls.join(',') + ",";
+            QString ln2 = ls.empty()? "" : ls.join(',') + ",";
             wq.prepare("UPDATE stats SET tags = :tg, ntags = :nt WHERE file = :fn");
             wq.bindValue(":tg",ln2);
             wq.bindValue(":nt",ls.size());

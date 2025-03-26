@@ -10,7 +10,7 @@
 #include <functional>
 
 
-#define MILLA_VERSION           "0.6.6"
+#define MILLA_VERSION           "0.7.0"
 #define MILLA_CLI_BANNER        "MILLA:  Qt5-based, AI-enhanced image viewer ver."
 #define MILLA_CLI_COPYRIGHT     "(C) Dmitry 'MatrixS_Master' Solovyev, 2018-2025. All rights reserved."
 #define MILLA_CONFIG_PATH       "/.milla/"
@@ -26,6 +26,8 @@
 #define MILLA_MIN_CORREL_MATCH  0.05
 
 #define MILLA_THUMBNAIL_SIZE    100
+#define MILLA_THUMBNAIL_FMT     "jpg"
+#define MILLA_THUMBNAIL_QUAL    70
 #define MILLA_MAXSHORTLENGTH    24
 #define MILLA_MAXPICSBYTES      (1024*1024*1024)
 

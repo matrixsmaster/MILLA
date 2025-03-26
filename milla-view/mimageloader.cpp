@@ -157,7 +157,7 @@ void MImageLoader::thumb(MImageListRecord &rec, bool force, bool fast)
         QByteArray arr;
         QBuffer dat(&arr);
         dat.open(QBuffer::WriteOnly);
-        if (rec.thumb.save(&dat,"png")) DBHelper::updateThumbnail(rec,arr);
+        if (rec.thumb.save(&dat,MILLA_THUMBNAIL_FMT,MILLA_THUMBNAIL_QUAL)) DBHelper::updateThumbnail(rec,arr);
     }
 }
 
