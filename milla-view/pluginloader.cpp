@@ -138,6 +138,7 @@ void MillaPluginLoader::pluginAction(QString name, QAction* sender)
 
         if (!uiok) {
             qDebug() << "[PLUGINS] Plugin action aborted by user";
+            if (sender->isCheckable()) sender->setChecked(false);
             return;
         }
     }

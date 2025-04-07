@@ -519,8 +519,10 @@ void MViewer::leftImageMetaUpdate()
         if (ok) ui->notes->setPlainText(db.getFileNotes(current_l.filename));
         else ui->notes->clear();
 
-        if (!ui->notes->toPlainText().isEmpty())
+        if (!ui->notes->toPlainText().isEmpty()) {
             ui->tabWidget->setCurrentIndex(MVTAB_NOTES);
+            ui->label->setFocus();
+        }
     }
     kudos(current_l,0);
     ui->radio_settags->setChecked(true);

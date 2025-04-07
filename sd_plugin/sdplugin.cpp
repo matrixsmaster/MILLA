@@ -214,6 +214,7 @@ bool SDPlugin::showUI()
         config_cb("set_event_filter",i); //insert event filter into main window
     }
 
+    ConfigSave(); // save config now in case of crashes
     return true;
 }
 
