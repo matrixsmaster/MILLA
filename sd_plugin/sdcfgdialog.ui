@@ -285,7 +285,11 @@
           </widget>
          </item>
          <item>
-          <widget class="QDoubleSpinBox" name="guidanceK"/>
+          <widget class="QDoubleSpinBox" name="guidanceK">
+           <property name="singleStep">
+            <double>0.500000000000000</double>
+           </property>
+          </widget>
          </item>
         </layout>
        </item>
@@ -302,7 +306,11 @@
           </widget>
          </item>
          <item>
-          <widget class="QDoubleSpinBox" name="strengthK"/>
+          <widget class="QDoubleSpinBox" name="strengthK">
+           <property name="singleStep">
+            <double>0.050000000000000</double>
+           </property>
+          </widget>
          </item>
          <item>
           <widget class="QLabel" name="label_18">
