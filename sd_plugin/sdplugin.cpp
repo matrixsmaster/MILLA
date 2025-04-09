@@ -52,6 +52,7 @@ void SDPlugin::ConfigLoad()
     }
 
     CONFIG_LOAD_INT("SD_dogen",dogen);
+    CONFIG_LOAD_INT("SD_useleft",useleft);
     CONFIG_LOAD_STDSTR("SD_model",model);
     CONFIG_LOAD_STDSTR("SD_vae",vaemodel);
     CONFIG_LOAD_STDSTR("SD_cnet",cnmodel);
@@ -93,6 +94,7 @@ void SDPlugin::ConfigSave()
     }
 
     CONFIG_SAVE_INT("SD_dogen",dogen);
+    CONFIG_SAVE_INT("SD_useleft",useleft);
     CONFIG_SAVE_STDSTR("SD_model",model);
     CONFIG_SAVE_STDSTR("SD_vae",vaemodel);
     CONFIG_SAVE_STDSTR("SD_cnet",cnmodel);
@@ -132,6 +134,7 @@ bool SDPlugin::showUI()
     SDCfgDialog dlg;
 
     dlg.ui->doGen->setChecked(dogen);
+    dlg.ui->useLeft->setChecked(useleft);
     dlg.ui->modelFile->setText(QString::fromStdString(model));
     dlg.ui->vaeFile->setText(QString::fromStdString(vaemodel));
     dlg.ui->cnFile->setText(QString::fromStdString(cnmodel));
@@ -170,6 +173,7 @@ bool SDPlugin::showUI()
     if (skip_gen) return false;
 
     dogen = dlg.ui->doGen->isChecked();
+    useleft = dlg.ui->useLeft->isChecked();
     model = dlg.ui->modelFile->text().toStdString();
     vaemodel = dlg.ui->vaeFile->text().toStdString();
     cnmodel = dlg.ui->cnFile->text().toStdString();
@@ -238,7 +242,14 @@ bool SDPlugin::setParam(QString key, QVariant val)
         if (!val.canConvert(QMetaType::Bool)) return false;
         if (dogen && val.toBool()) {
             qDebug() << "[SD] Run request received";
-            if (skip_gen || !GenerateBatch()) return false;
+            QImage srcimg;
+            if (useleft) {
+                if (!config_cb) return false;
+                QVariant rl(config_cb("get_left_image",QVariant()));
+                if (!rl.canConvert<QPixmap>()) return false;
+                srcimg = rl.value<QPixmap>().toImage();
+            }
+            if (skip_gen || !GenerateBatch(srcimg)) return false;
             //skip_gen = true; // requires reset via showUI()
             return true;
 
@@ -357,15 +368,39 @@ static bool progress_helper(int step, int steps, float /*time*/, void* data)
     return self->progress((float)step / (float)steps * 100.f);
 }
 
-bool SDPlugin::GenerateBatch()
+bool SDPlugin::GenerateBatch(const QImage &in)
 {
     sd_set_log_callback(log_helper,nullptr);
     sd_set_progress_callback(progress_helper,this);
 
+    QImage tmpimg;
+    sd_image_t leftimg,maskimg;
+    std::vector<uint8_t> maskholder;
+    if (useleft) {
+        if (in.isNull()) {
+            qDebug() << "[SD] ERROR: no left image given!";
+            return false;
+        }
+        qDebug() << "[SD] Resizing input image...";
+        tmpimg = in.scaled(QSize(SDPLUGIN_IMGSIZE,SDPLUGIN_IMGSIZE),Qt::KeepAspectRatioByExpanding);
+        tmpimg.convertTo(QImage::Format_RGB888);
+        leftimg.channel = tmpimg.depth() / 8;
+        leftimg.width = tmpimg.width();
+        leftimg.height = tmpimg.height();
+        leftimg.data = (uint8_t*)tmpimg.constBits(); // we ain't gonna change the data
+        maskholder.resize(SDPLUGIN_IMGSIZE*SDPLUGIN_IMGSIZE,255);
+        maskimg.width = SDPLUGIN_IMGSIZE;
+        maskimg.height = SDPLUGIN_IMGSIZE;
+        maskimg.channel = 1;
+        maskimg.data = maskholder.data();
+        qDebug() << "[SD] input and mask images are ready";
+    }
+
     qDebug() << "[SD] Initializing context...";
     std::string bmdl = t5model.empty()? model.c_str() : "";
     std::string dmdl = t5model.empty()? "" : model.c_str();
-    sd_ctx_t* ctx = new_sd_ctx(bmdl.c_str(),clipmodel.c_str(),"",t5model.c_str(),dmdl.c_str(),vaemodel.c_str(),"",cnmodel.c_str(),loradir.c_str(),"","",true,false,true,get_num_physical_cores(),SD_TYPE_COUNT,STD_DEFAULT_RNG,DEFAULT,false,false,false,false);
+    bool vae_decode_only = !useleft;
+    sd_ctx_t* ctx = new_sd_ctx(bmdl.c_str(),clipmodel.c_str(),"",t5model.c_str(),dmdl.c_str(),vaemodel.c_str(),"",cnmodel.c_str(),loradir.c_str(),"","",vae_decode_only,false,true,get_num_physical_cores(),SD_TYPE_COUNT,STD_DEFAULT_RNG,DEFAULT,false,false,false,false);
     if (!ctx) {
         qDebug() << "[SD] ERROR: Unable to create generator context!";
         return false;
@@ -374,7 +409,12 @@ bool SDPlugin::GenerateBatch()
     qDebug() << "[SD] Generating...";
     if (!seed) seed = std::rand();
     sample_method_t smpl = (sample_method_t)sampler;
-    sd_image_t* out = txt2img(ctx,prompt.c_str(),nprompt.c_str(),-1,cfg_scale,guidance,0.f,SDPLUGIN_IMGSIZE,SDPLUGIN_IMGSIZE,smpl,steps,seed,batch,NULL,0.9,style_ratio,false,"",nullptr,0,0,0,0);
+    sd_image_t* out;
+    if (!useleft)
+        out = txt2img(ctx,prompt.c_str(),nprompt.c_str(),-1,cfg_scale,guidance,0.f,SDPLUGIN_IMGSIZE,SDPLUGIN_IMGSIZE,smpl,steps,seed,batch,NULL,0.9,style_ratio,false,"",nullptr,0,0,0,0);
+    else
+        out = img2img(ctx,leftimg,maskimg,prompt.c_str(),nprompt.c_str(),-1,cfg_scale,guidance,0.f,SDPLUGIN_IMGSIZE,SDPLUGIN_IMGSIZE,smpl,steps,0,seed,batch,NULL,0.9,style_ratio,false,"",nullptr,0,0,0,0);
+
     if (out) {
         qDebug() << "[SD] Generation has finished!";
         for (int i = 0; i < batch; i++) {
@@ -406,12 +446,15 @@ bool SDPlugin::GenerateBatch()
 bool SDPlugin::isContinous()
 {
     if (!load_once) return true; // by default, we want the UI to show it as a togglable plugin
+    // if generating - we're going to create a serie of images
     return dogen;
 }
 
 MillaPluginContentType SDPlugin::inputContent()
 {
-    return (!dogen && doupsc)? MILLA_CONTENT_IMAGE : MILLA_CONTENT_NONE;
+    if (!dogen && doupsc) return MILLA_CONTENT_IMAGE;
+    if (dogen && useleft) return MILLA_CONTENT_IMAGE;
+    return MILLA_CONTENT_NONE;
 }
 
 QPixmap SDPlugin::Scaleup(const QImage &in)

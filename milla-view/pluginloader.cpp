@@ -153,6 +153,17 @@ void MillaPluginLoader::pluginAction(QString name, QAction* sender)
     QPixmap out;
     bool skip_convert = false;
 
+    //if generator is continous, check if it is already enabled
+    if (plug->isContinous()) {
+        //if plugin is auto-firing, don't convert anything yet
+        skip_convert = true;
+        if (sender->isChecked()) //check was already toggled before this call
+            startPlugin(plug,sender);
+        else
+            stopPlugin(plug,sender);
+    }
+
+    // decide the action argument based on requested input content
     switch (plug->inputContent()) {
     case MILLA_CONTENT_IMAGE: // Filters or image processors
 
@@ -164,16 +175,6 @@ void MillaPluginLoader::pluginAction(QString name, QAction* sender)
 
     case MILLA_CONTENT_NONE: // Pure generators
     case MILLA_CONTENT_FILE: // File processors
-
-        //if generator is continous, check if it is already enabled
-        if (plug->isContinous()) {
-            //if plugin is auto-firing, don't convert anything yet
-            skip_convert = true;
-            if (sender->isChecked()) //check was already toggled before this call
-                startPlugin(plug,sender);
-            else
-                stopPlugin(plug,sender);
-        }
 
         //fire up the generation process
         res = plug->action(sz);

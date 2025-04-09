@@ -77,6 +77,7 @@ private:
 
     bool dogen = false;
     bool doupsc = false;
+    bool useleft = false;
     std::string model, vaemodel, cnmodel, clipmodel, t5model, loradir, esrgan; // TODO: add controlnet image input
     std::string prompt, nprompt;
     float cfg_scale = 1;
@@ -101,7 +102,7 @@ private:
 
     void ConfigLoad();
     void ConfigSave();
-    bool GenerateBatch();
+    bool GenerateBatch(const QImage &in);
     QPixmap Scaleup(const QImage &in);
     void Cleanup();
     void AutosaveImage(SDOutputRec &rec);
