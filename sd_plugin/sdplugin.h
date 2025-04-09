@@ -83,6 +83,7 @@ private:
     float cfg_scale = 1;
     float style_ratio = 0;
     float guidance = 3.5;
+    float strength = 0.5;
     int steps = 2;
     int batch = 1;
     int seed = 0;

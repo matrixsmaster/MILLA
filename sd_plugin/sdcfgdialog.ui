@@ -279,6 +279,9 @@
            <property name="text">
             <string>Guidance</string>
            </property>
+           <property name="alignment">
+            <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+           </property>
           </widget>
          </item>
          <item>
@@ -287,7 +290,20 @@
         </layout>
        </item>
        <item>
-        <layout class="QHBoxLayout" name="horizontalLayout_2">
+        <layout class="QHBoxLayout" name="horizontalLayout_9">
+         <item>
+          <widget class="QLabel" name="label_20">
+           <property name="text">
+            <string>Strength</string>
+           </property>
+           <property name="alignment">
+            <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QDoubleSpinBox" name="strengthK"/>
+         </item>
          <item>
           <widget class="QLabel" name="label_18">
            <property name="text">
@@ -301,6 +317,10 @@
          <item>
           <widget class="QSpinBox" name="seedVal"/>
          </item>
+        </layout>
+       </item>
+       <item>
+        <layout class="QHBoxLayout" name="horizontalLayout_2">
          <item>
           <widget class="QLabel" name="label_19">
            <property name="text">
@@ -335,10 +355,6 @@
            </item>
           </widget>
          </item>
-        </layout>
-       </item>
-       <item>
-        <layout class="QHBoxLayout" name="horizontalLayout_9">
          <item>
           <widget class="QLabel" name="label_4">
            <property name="maximumSize">

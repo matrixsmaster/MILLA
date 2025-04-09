@@ -64,6 +64,7 @@ void SDPlugin::ConfigLoad()
     CONFIG_LOAD_FLOAT("SD_cfgscale",cfg_scale);
     CONFIG_LOAD_FLOAT("SD_styleratio",style_ratio);
     CONFIG_LOAD_FLOAT("SD_guidance",guidance);
+    CONFIG_LOAD_FLOAT("SD_strength",strength);
     CONFIG_LOAD_INT("SD_sampler",sampler);
     CONFIG_LOAD_INT("SD_steps",steps);
     CONFIG_LOAD_INT("SD_batch",batch);
@@ -106,6 +107,7 @@ void SDPlugin::ConfigSave()
     CONFIG_SAVE_FLOAT("SD_cfgscale",cfg_scale);
     CONFIG_SAVE_FLOAT("SD_styleratio",style_ratio);
     CONFIG_SAVE_FLOAT("SD_guidance",guidance);
+    CONFIG_SAVE_FLOAT("SD_strength",strength);
     CONFIG_SAVE_INT("SD_sampler",sampler);
     CONFIG_SAVE_INT("SD_steps",steps);
     CONFIG_SAVE_INT("SD_batch",batch);
@@ -147,6 +149,7 @@ bool SDPlugin::showUI()
     dlg.ui->styleRatio->setValue(style_ratio);
     dlg.ui->samplerBox->setCurrentIndex(sampler);
     dlg.ui->guidanceK->setValue(guidance);
+    dlg.ui->strengthK->setValue(strength);
     dlg.ui->stepsCnt->setValue(steps);
     dlg.ui->batchCnt->setValue(batch);
 
@@ -185,6 +188,7 @@ bool SDPlugin::showUI()
     cfg_scale = dlg.ui->cfgScale->value();
     style_ratio = dlg.ui->styleRatio->value();
     guidance = dlg.ui->guidanceK->value();
+    strength = dlg.ui->strengthK->value();
     sampler = dlg.ui->samplerBox->currentIndex();
     steps = dlg.ui->stepsCnt->value();
     batch = dlg.ui->batchCnt->value();
@@ -413,7 +417,7 @@ bool SDPlugin::GenerateBatch(const QImage &in)
     if (!useleft)
         out = txt2img(ctx,prompt.c_str(),nprompt.c_str(),-1,cfg_scale,guidance,0.f,SDPLUGIN_IMGSIZE,SDPLUGIN_IMGSIZE,smpl,steps,seed,batch,NULL,0.9,style_ratio,false,"",nullptr,0,0,0,0);
     else
-        out = img2img(ctx,leftimg,maskimg,prompt.c_str(),nprompt.c_str(),-1,cfg_scale,guidance,0.f,SDPLUGIN_IMGSIZE,SDPLUGIN_IMGSIZE,smpl,steps,0,seed,batch,NULL,0.9,style_ratio,false,"",nullptr,0,0,0,0);
+        out = img2img(ctx,leftimg,maskimg,prompt.c_str(),nprompt.c_str(),-1,cfg_scale,guidance,0.f,SDPLUGIN_IMGSIZE,SDPLUGIN_IMGSIZE,smpl,steps,strength,seed,batch,NULL,0.9,style_ratio,false,"",nullptr,0,0,0,0);
 
     if (out) {
         qDebug() << "[SD] Generation has finished!";
