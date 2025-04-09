@@ -52,11 +52,11 @@ bool AnnaPlugin::showUI()
     //and save them
     if (!config_cb) return true;
     QVariant r;
-    r = config_cb("save_key_value","ANNA_fmodel="+QString(config.params.model));
-    r = config_cb("save_key_value","ANNA_fvision="+QString::fromStdString(cfg_extra.vision_file));
-    r = config_cb("save_key_value","ANNA_prefai="+QString::fromStdString(cfg_extra.ai_prefix));
-    r = config_cb("save_key_value","ANNA_prefusr="+QString::fromStdString(cfg_extra.usr_prefix));
-    r = config_cb("save_key_value","ANNA_prompt="+QString(config.params.prompt));
+    r = config_cb("save_key_value","fmodel="+QString(config.params.model));
+    r = config_cb("save_key_value","fvision="+QString::fromStdString(cfg_extra.vision_file));
+    r = config_cb("save_key_value","prefai="+QString::fromStdString(cfg_extra.ai_prefix));
+    r = config_cb("save_key_value","prefusr="+QString::fromStdString(cfg_extra.usr_prefix));
+    r = config_cb("save_key_value","prompt="+QString(config.params.prompt));
     //FIXME: check results??
     qDebug() << "[ANNA] Config saved";
     return true;
@@ -70,21 +70,21 @@ void AnnaPlugin::setConfigCB(PlugConfCB cb)
     //pre-load config (if exists)
     string tmp;
     QVariant r;
-    r = config_cb("load_key_value","ANNA_fmodel");
+    r = config_cb("load_key_value","fmodel");
     if (r.canConvert<QString>()) {
         tmp = r.value<QString>().toStdString();
         if (!tmp.empty()) strncpy(config.params.model,tmp.c_str(),sizeof(config.params.model)-1);
     }
-    r = config_cb("load_key_value","ANNA_fvision");
+    r = config_cb("load_key_value","fvision");
     if (r.canConvert<QString>() && !r.value<QString>().isEmpty())
         cfg_extra.vision_file = r.value<QString>().toStdString();
-    r = config_cb("load_key_value","ANNA_prefai");
+    r = config_cb("load_key_value","prefai");
     if (r.canConvert<QString>() && !r.value<QString>().isEmpty())
         cfg_extra.ai_prefix = r.value<QString>().toStdString();
-    r = config_cb("load_key_value","ANNA_prefusr");
+    r = config_cb("load_key_value","prefusr");
     if (r.canConvert<QString>() && !r.value<QString>().isEmpty())
         cfg_extra.usr_prefix = r.value<QString>().toStdString();
-    r = config_cb("load_key_value","ANNA_prompt");
+    r = config_cb("load_key_value","prompt");
     if (r.canConvert<QString>()) {
         tmp = r.value<QString>().toStdString();
         if (!tmp.empty()) strncpy(config.params.prompt,tmp.c_str(),sizeof(config.params.prompt)-1);

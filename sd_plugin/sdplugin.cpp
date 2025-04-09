@@ -51,38 +51,38 @@ void SDPlugin::ConfigLoad()
         return;
     }
 
-    CONFIG_LOAD_INT("SD_dogen",dogen);
-    CONFIG_LOAD_INT("SD_useleft",useleft);
-    CONFIG_LOAD_STDSTR("SD_model",model);
-    CONFIG_LOAD_STDSTR("SD_vae",vaemodel);
-    CONFIG_LOAD_STDSTR("SD_cnet",cnmodel);
-    CONFIG_LOAD_STDSTR("SD_clip",clipmodel);
-    CONFIG_LOAD_STDSTR("SD_t5xxl",t5model);
-    CONFIG_LOAD_STDSTR("SD_lora",loradir);
-    CONFIG_LOAD_STDSTR("SD_prompt",prompt);
-    CONFIG_LOAD_STDSTR("SD_nprompt",nprompt);
-    CONFIG_LOAD_FLOAT("SD_cfgscale",cfg_scale);
-    CONFIG_LOAD_FLOAT("SD_styleratio",style_ratio);
-    CONFIG_LOAD_FLOAT("SD_guidance",guidance);
-    CONFIG_LOAD_FLOAT("SD_strength",strength);
-    CONFIG_LOAD_INT("SD_sampler",sampler);
-    CONFIG_LOAD_INT("SD_steps",steps);
-    CONFIG_LOAD_INT("SD_batch",batch);
+    CONFIG_LOAD_INT("dogen",dogen);
+    CONFIG_LOAD_INT("useleft",useleft);
+    CONFIG_LOAD_STDSTR("model",model);
+    CONFIG_LOAD_STDSTR("vae",vaemodel);
+    CONFIG_LOAD_STDSTR("cnet",cnmodel);
+    CONFIG_LOAD_STDSTR("clip",clipmodel);
+    CONFIG_LOAD_STDSTR("t5xxl",t5model);
+    CONFIG_LOAD_STDSTR("lora",loradir);
+    CONFIG_LOAD_STDSTR("prompt",prompt);
+    CONFIG_LOAD_STDSTR("nprompt",nprompt);
+    CONFIG_LOAD_FLOAT("cfgscale",cfg_scale);
+    CONFIG_LOAD_FLOAT("styleratio",style_ratio);
+    CONFIG_LOAD_FLOAT("guidance",guidance);
+    CONFIG_LOAD_FLOAT("strength",strength);
+    CONFIG_LOAD_INT("sampler",sampler);
+    CONFIG_LOAD_INT("steps",steps);
+    CONFIG_LOAD_INT("batch",batch);
 
-    CONFIG_LOAD_INT("SD_doupsc",doupsc);
-    CONFIG_LOAD_STDSTR("SD_esrgan",esrgan);
-    CONFIG_LOAD_INT("SD_scalefac",scale_fac);
+    CONFIG_LOAD_INT("doupsc",doupsc);
+    CONFIG_LOAD_STDSTR("esrgan",esrgan);
+    CONFIG_LOAD_INT("scalefac",scale_fac);
 
-    CONFIG_LOAD_INTT("SD_autosave",autosave,sdplug_autosave_t);
-    CONFIG_LOAD_INT("SD_asav_addb",asav_addb);
-    CONFIG_LOAD_INT("SD_asav_match",asav_match);
-    CONFIG_LOAD_INT("SD_asav_addtag",asav_addtag);
-    CONFIG_LOAD_INT("SD_asav_addnote",asav_addnote);
-    CONFIG_LOAD_STR("SD_asav_dir",asav_dir);
-    CONFIG_LOAD_STR("SD_asav_fmt",asav_fmt);
-    CONFIG_LOAD_STR("SD_asav_pat",asav_pat);
-    CONFIG_LOAD_STR("SD_asav_tags",asav_tags);
-    CONFIG_LOAD_STR("SD_asav_notes",asav_notes);
+    CONFIG_LOAD_INTT("autosave",autosave,sdplug_autosave_t);
+    CONFIG_LOAD_INT("asav_addb",asav_addb);
+    CONFIG_LOAD_INT("asav_match",asav_match);
+    CONFIG_LOAD_INT("asav_addtag",asav_addtag);
+    CONFIG_LOAD_INT("asav_addnote",asav_addnote);
+    CONFIG_LOAD_STR("asav_dir",asav_dir);
+    CONFIG_LOAD_STR("asav_fmt",asav_fmt);
+    CONFIG_LOAD_STR("asav_pat",asav_pat);
+    CONFIG_LOAD_STR("asav_tags",asav_tags);
+    CONFIG_LOAD_STR("asav_notes",asav_notes);
 
     qDebug() << "[SD] Config loaded";
 }
@@ -94,38 +94,38 @@ void SDPlugin::ConfigSave()
         return;
     }
 
-    CONFIG_SAVE_INT("SD_dogen",dogen);
-    CONFIG_SAVE_INT("SD_useleft",useleft);
-    CONFIG_SAVE_STDSTR("SD_model",model);
-    CONFIG_SAVE_STDSTR("SD_vae",vaemodel);
-    CONFIG_SAVE_STDSTR("SD_cnet",cnmodel);
-    CONFIG_SAVE_STDSTR("SD_clip",clipmodel);
-    CONFIG_SAVE_STDSTR("SD_t5xxl",t5model);
-    CONFIG_SAVE_STDSTR("SD_lora",loradir);
-    CONFIG_SAVE_STDSTR("SD_prompt",prompt);
-    CONFIG_SAVE_STDSTR("SD_nprompt",nprompt);
-    CONFIG_SAVE_FLOAT("SD_cfgscale",cfg_scale);
-    CONFIG_SAVE_FLOAT("SD_styleratio",style_ratio);
-    CONFIG_SAVE_FLOAT("SD_guidance",guidance);
-    CONFIG_SAVE_FLOAT("SD_strength",strength);
-    CONFIG_SAVE_INT("SD_sampler",sampler);
-    CONFIG_SAVE_INT("SD_steps",steps);
-    CONFIG_SAVE_INT("SD_batch",batch);
+    CONFIG_SAVE_INT("dogen",dogen);
+    CONFIG_SAVE_INT("useleft",useleft);
+    CONFIG_SAVE_STDSTR("model",model);
+    CONFIG_SAVE_STDSTR("vae",vaemodel);
+    CONFIG_SAVE_STDSTR("cnet",cnmodel);
+    CONFIG_SAVE_STDSTR("clip",clipmodel);
+    CONFIG_SAVE_STDSTR("t5xxl",t5model);
+    CONFIG_SAVE_STDSTR("lora",loradir);
+    CONFIG_SAVE_STDSTR("prompt",prompt);
+    CONFIG_SAVE_STDSTR("nprompt",nprompt);
+    CONFIG_SAVE_FLOAT("cfgscale",cfg_scale);
+    CONFIG_SAVE_FLOAT("styleratio",style_ratio);
+    CONFIG_SAVE_FLOAT("guidance",guidance);
+    CONFIG_SAVE_FLOAT("strength",strength);
+    CONFIG_SAVE_INT("sampler",sampler);
+    CONFIG_SAVE_INT("steps",steps);
+    CONFIG_SAVE_INT("batch",batch);
 
-    CONFIG_SAVE_INT("SD_doupsc",doupsc);
-    CONFIG_SAVE_STDSTR("SD_esrgan",esrgan);
-    CONFIG_SAVE_INT("SD_scalefac",scale_fac);
+    CONFIG_SAVE_INT("doupsc",doupsc);
+    CONFIG_SAVE_STDSTR("esrgan",esrgan);
+    CONFIG_SAVE_INT("scalefac",scale_fac);
 
-    CONFIG_SAVE_INT("SD_autosave",autosave);
-    CONFIG_SAVE_INT("SD_asav_addb",asav_addb);
-    CONFIG_SAVE_INT("SD_asav_match",asav_match);
-    CONFIG_SAVE_INT("SD_asav_addtag",asav_addtag);
-    CONFIG_SAVE_INT("SD_asav_addnote",asav_addnote);
-    CONFIG_SAVE_STR("SD_asav_dir",asav_dir);
-    CONFIG_SAVE_STR("SD_asav_fmt",asav_fmt);
-    CONFIG_SAVE_STR("SD_asav_pat",asav_pat);
-    CONFIG_SAVE_STR("SD_asav_tags",asav_tags);
-    CONFIG_SAVE_STR("SD_asav_notes",asav_notes);
+    CONFIG_SAVE_INT("autosave",autosave);
+    CONFIG_SAVE_INT("asav_addb",asav_addb);
+    CONFIG_SAVE_INT("asav_match",asav_match);
+    CONFIG_SAVE_INT("asav_addtag",asav_addtag);
+    CONFIG_SAVE_INT("asav_addnote",asav_addnote);
+    CONFIG_SAVE_STR("asav_dir",asav_dir);
+    CONFIG_SAVE_STR("asav_fmt",asav_fmt);
+    CONFIG_SAVE_STR("asav_pat",asav_pat);
+    CONFIG_SAVE_STR("asav_tags",asav_tags);
+    CONFIG_SAVE_STR("asav_notes",asav_notes);
 
     qDebug() << "[SD] Config saved";
 }

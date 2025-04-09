@@ -38,23 +38,27 @@ MillaPluginLoader::~MillaPluginLoader()
 void MillaPluginLoader::addPluginsToMenu(QMenu &m, ProgressCB pcb)
 {
     for (auto &i : plugins) {
+        // it should be initializable, otherwise we can't use it
         if (!i.second->init()) {
             qDebug() << "[PLUGINS] Unable to initialize plugin " << i.first;
             continue;
         }
 
+        // create a new menu action
         QAction* a = m.addAction(i.second->getPluginName());
         if (!a) {
             qDebug() << "[PLUGINS] Unable to create GUI action";
             break;
         }
 
+        // setup the action with the plugin name, description and checkable status
         actions[i.second->getPluginName()] = a;
         a->setToolTip(i.second->getPluginDesc());
         m.setToolTipsVisible(true);
         if (i.second->isContinous()) a->setCheckable(true);
         i.second->setProgressCB(pcb);
 
+        // connect the new action to plugin action
         connect(a,&QAction::triggered,this,[a,i,this] { this->pluginAction(i.first,a); });
     }
 }
@@ -288,16 +292,17 @@ QVariant MillaPluginLoader::pluginConfigCallback(MillaGenericPlugin* plug, QStri
         return true;
 
     } else if (key == "load_key_value" && val.canConvert<QString>()) {
-        QString res = DBHelper::getExtraStringVal(val.toString());
+        QString key = plug->getPluginName() + "_" + val.toString();
+        QString res = DBHelper::getExtraStringVal(key);
         qDebug() << "[PLUGINS] Plugin " << plug->getPluginName() << " requested a value for " << val.toString() << ": " << res;
         return res;
 
     } else if (key == "save_key_value" && val.canConvert<QString>()) {
         QStringList l = val.toString().split("=");
         if (l.size() != 2) return false;
-
+        QString key = plug->getPluginName() + "_" + l.at(0);
         qDebug() << "[PLUGINS] Plugin " << plug->getPluginName() << " stores a value for " << l.at(0) << ": " << l.at(1);
-        return DBHelper::setExtraStringVal(l.at(0),l.at(1));
+        return DBHelper::setExtraStringVal(key,l.at(1));
 
     } else if (key == "self_disable" && val.isNull()) {
         return stopPlugin(plug,nullptr);
