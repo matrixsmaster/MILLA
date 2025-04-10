@@ -1,12 +1,9 @@
 #include <QDebug>
+#include <QWidget>
 #include <QTextStream>
 #include "lifegenplugin.h"
 #include "dialog.h"
 #include "lifegendlg.h"
-
-#define LIBCODE_TEST
-#include "plugindock.h"
-//#include "qapplication.h"
 
 LifeGenPlugin::LifeGenPlugin(QObject *parent) :
     QObject(parent),
@@ -30,10 +27,19 @@ bool LifeGenPlugin::showUI()
 {
     //LifeCfgDialog dlg;
     LifeGenDlg dlg;
-    PluginDock dock(nullptr,&dlg);
+    //PluginDock dock(nullptr,&dlg);
 
     //if (!dock.exec()) return false;
     //text_life = dlg.getData();
+
+    if (config_cb) {
+        void* ptr = &dlg;
+        QByteArray arr((const char*)&ptr,sizeof(void*));
+        auto r = config_cb("show_dock",QVariant(arr));
+        if (r.isValid() && r.canConvert<QByteArray>()) {
+
+        }
+    }
     return true;
 }
 

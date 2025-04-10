@@ -24,5 +24,3 @@ DESTDIR = ../share/plugins
 
 DISTFILES += \
     lifegenerator.json
-
-QMAKE_LFLAGS += -Wl,--export-dynamic

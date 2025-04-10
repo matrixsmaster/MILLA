@@ -1,4 +1,5 @@
 #include "pluginloader.h"
+#include "plugindock.h"
 #include "mviewer.h"
 
 MillaPluginLoader::MillaPluginLoader() : QObject()
@@ -330,6 +331,12 @@ QVariant MillaPluginLoader::pluginConfigCallback(MillaGenericPlugin* plug, QStri
         if (!wnd) return QVariant();
         wnd->appendNotes(lst.at(1),lst.at(0));
         return QVariant(bool(true));
+
+    } else if (key == "show_dock" && val.canConvert<QByteArray>()) {
+        QWidget* ptr = nullptr;
+        memcpy(&ptr,val.toByteArray().data(),sizeof(void*));
+        PluginDock dock(nullptr,ptr);
+        return QVariant(dock.exec());
     }
     return QVariant();
 }
