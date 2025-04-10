@@ -16,6 +16,7 @@ TEMPLATE = app
 SOURCES += main.cpp\
     mdirectorymodel.cpp \
         mviewer.cpp \
+    plugindock.cpp \
     thumbnailmodel.cpp \
     sresultmodel.cpp \
     searchform.cpp \
@@ -41,6 +42,7 @@ SOURCES += main.cpp\
 
 HEADERS  += mviewer.h \
     mdirectorymodel.h \
+    plugindock.h \
     thumbnailmodel.h \
     sresultmodel.h \
     searchform.h \
@@ -68,6 +70,7 @@ HEADERS  += mviewer.h \
     splashscreen.h
 
 FORMS    += mviewer.ui \
+    plugindock.ui \
     searchform.ui \
     exportform.ui \
     storyselector.ui \
