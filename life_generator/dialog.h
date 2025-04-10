@@ -1,14 +1,14 @@
 #ifndef DIALOG_H
 #define DIALOG_H
 
-#include <QDialog>
+#include <QWidget>
 #include <QStringList>
 
 namespace Ui {
 class LifeCfgDialog;
 }
 
-class LifeCfgDialog : public QDialog
+class LifeCfgDialog : public QWidget
 {
     Q_OBJECT
 
@@ -19,7 +19,6 @@ public:
     QStringList const& getData() { return dat; }
 
 private slots:
-    void on_buttonBox_accepted();
 
     void on_pushButton_clicked();
 

@@ -10,14 +10,19 @@ INCLUDEPATH += ../milla-view
 
 SOURCES += main.cpp\
         dialog.cpp \
+    lifegendlg.cpp \
     lifegenplugin.cpp
 
 HEADERS  += dialog.h \
+    lifegendlg.h \
     lifegenplugin.h
 
-FORMS    += dialog.ui
+FORMS    += dialog.ui \
+    lifegendlg.ui
 
 DESTDIR = ../share/plugins
 
 DISTFILES += \
     lifegenerator.json
+
+QMAKE_LFLAGS += -Wl,--export-dynamic
