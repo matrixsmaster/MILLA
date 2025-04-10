@@ -17,6 +17,7 @@ SOURCES += main.cpp\
     mdirectorymodel.cpp \
         mviewer.cpp \
     plugindock.cpp \
+    testform.cpp \
     thumbnailmodel.cpp \
     sresultmodel.cpp \
     searchform.cpp \
@@ -43,6 +44,7 @@ SOURCES += main.cpp\
 HEADERS  += mviewer.h \
     mdirectorymodel.h \
     plugindock.h \
+    testform.h \
     thumbnailmodel.h \
     sresultmodel.h \
     searchform.h \
@@ -76,7 +78,8 @@ FORMS    += mviewer.ui \
     storyselector.ui \
     listeditor.ui \
     aboutbox.ui \
-    splashscreen.ui
+    splashscreen.ui \
+    testform.ui
 
 CONFIG   += c++14
 QMAKE_CXXFLAGS  += -Wextra -Wno-deprecated-declarations

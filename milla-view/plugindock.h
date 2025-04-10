@@ -2,6 +2,7 @@
 #define PLUGINDOCK_H
 
 #include <QDialog>
+#include "testform.h"
 
 namespace Ui {
 class PluginDock;
@@ -17,6 +18,7 @@ public:
 
 private:
     Ui::PluginDock *ui;
+    TestForm* frm;
 };
 
 #endif // PLUGINDOCK_H

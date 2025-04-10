@@ -67,9 +67,7 @@
   </layout>
  </widget>
  <layoutdefault spacing="6" margin="11"/>
- <resources>
-  <include location="../milla-view/milla-view.qrc"/>
- </resources>
+ <resources/>
  <connections>
   <connection>
    <sender>horizontalSlider</sender>
