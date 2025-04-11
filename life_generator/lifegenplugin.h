@@ -5,6 +5,8 @@
 #include <QPoint>
 #include <QStringList>
 #include "plugins.h"
+#include "plugindock.h"
+#include "lifegendlg.h"
 
 #define LIFEGEN_UPDATE 100
 
@@ -29,7 +31,7 @@ public:
     bool init();
     bool finalize();
 
-    bool showUI(QDialog *dock, QLayout *layout);
+    bool showUI(QDialog *dock);
     void setConfigCB(PlugConfCB cb)        { config_cb = cb; }
     void setProgressCB(ProgressCB)         {}
 
@@ -38,11 +40,16 @@ public:
 
     QVariant action(QVariant in);
 
+    void dockCallback(QString preset, int mode);
+
 private:
     PlugConfCB config_cb = 0;
     QImage field;
+    QString life_file;
     QStringList text_life;
+    LifeGenDlg* dialog = 0;
 
+    void attempLoadFile(QString fn);
     void randomInit(QSize const &sz);
     void imageInit(QSize const &sz, QPixmap const &in);
     void textInit(QSize const &sz);
@@ -52,6 +59,10 @@ private:
     void born(QImage &ref, QPoint const &p);
     void fade(QImage &from, QImage &to, QPoint const &p);
     int neighbours(QPoint const &p);
+
+    bool LoadConfig(QString preset);
+    bool SaveConfig(QString preset);
+    void updateUI();
 };
 
 #endif // LIFEGENPLUGIN_H

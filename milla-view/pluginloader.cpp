@@ -268,7 +268,7 @@ bool MillaPluginLoader::stopPlugin(MillaGenericPlugin* plug, QAction* /*sender*/
 bool MillaPluginLoader::showConfig(MillaGenericPlugin *plug)
 {
     PluginDock dock;
-    return plug->showUI(&dock,dock.getDockLayout());
+    return plug->showUI(&dock);
 }
 
 void MillaPluginLoader::pluginTimedOut(MillaGenericPlugin* plug)

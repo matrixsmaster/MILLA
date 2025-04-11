@@ -24,7 +24,7 @@ public:
     bool init();
     bool finalize();
 
-    bool showUI();
+    bool showUI(QDialog*);
     void setConfigCB(PlugConfCB)           {}
     void setProgressCB(ProgressCB cb)      { progress_cb = cb; }
 

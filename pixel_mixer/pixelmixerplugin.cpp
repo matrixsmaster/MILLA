@@ -25,7 +25,7 @@ bool PixelMixerPlugin::finalize()
     return true;
 }
 
-bool PixelMixerPlugin::showUI()
+bool PixelMixerPlugin::showUI(QDialog*)
 {
     qDebug() << "[PixMix] Showing interface";
     PixMixCfgDialog dlg;

@@ -2,6 +2,7 @@
 #define PLUGINDOCK_H
 
 #include <QDialog>
+#include "shared.h"
 
 namespace Ui {
 class PluginDock;
@@ -15,10 +16,12 @@ public:
     explicit PluginDock(QWidget *parent = nullptr);
     ~PluginDock();
 
-    QLayout *getDockLayout();
+    void addContent(QWidget* child);
+    void setCallbacks(PresetCB cb);
 
 private:
     Ui::PluginDock *ui;
+    PresetCB control_cb;
 };
 
 #endif // PLUGINDOCK_H

@@ -2,10 +2,16 @@
 #include <QDebug>
 #include <QWidget>
 #include <QTextStream>
+#include <QJsonDocument>
+#include <QJsonObject>
 #include "lifegenplugin.h"
-#include "lifegendlg.h"
 #include "ui_lifegendlg.h"
-#include "plugindock.h"
+
+#define STRINGIFY(x) #x
+#define TOSTRING(x) STRINGIFY(x)
+
+#define CONFIG_LOAD_STR(V) if (doc.object().contains("" TOSTRING(V) "")) V = doc.object().value("" TOSTRING(V) "").toString();
+#define CONFIG_SAVE_STR(V) obj["" TOSTRING(V) ""] = V;
 
 LifeGenPlugin::LifeGenPlugin(QObject *parent) :
     QObject(parent),
@@ -25,35 +31,39 @@ bool LifeGenPlugin::finalize()
     return true;
 }
 
-bool LifeGenPlugin::showUI(QDialog* dock, QLayout* layout)
+bool LifeGenPlugin::showUI(QDialog* dock)
 {
-    //if (!config_cb) return true;
-
-    LifeGenDlg* dlg = new LifeGenDlg();
-    //LifeGenDlg dlg;
-
-    //if (config_cb) {
-    //void* ptr = &dlg;
-        //QByteArray arr((const char*)&ptr,sizeof(void*));
-        //auto r = config_cb("show_dock",QVariant(arr));
-        //if (!r.isValid() || !r.canConvert<QByteArray>()) return false;
-
     PluginDock* pdock = dynamic_cast<PluginDock*>(dock);
     if (!pdock) return false;
-    if (layout) layout->addWidget(dlg);
-    pdock->exec();
 
-        QFile f(dlg->ui->lineEdit->text());
-        if (!f.exists()) return false;
+    dialog = new LifeGenDlg();
+    if (LoadConfig(MILLA_PLUG_DEF_PRESET)) updateUI();
+    pdock->addContent(dialog);
+    pdock->setCallbacks([this] (auto s, auto m) { this->dockCallback(s,m); });
 
-        f.open(QIODevice::Text | QIODevice::ReadOnly);
-        QString d = f.readAll();
-        f.close();
+    if (!pdock->exec()) return false;
 
-        d.remove(QChar('\r'));
-        text_life = d.split(QChar('\n'),Qt::SkipEmptyParts);
-    //}
+    life_file = dialog->ui->lineEdit->text();
+    SaveConfig(MILLA_PLUG_DEF_PRESET);
     return true;
+}
+
+void LifeGenPlugin::dockCallback(QString preset, int mode)
+{
+    //
+}
+
+void LifeGenPlugin::attempLoadFile(QString fn)
+{
+    QFile f(fn);
+    if (!f.exists()) return;
+
+    f.open(QIODevice::Text | QIODevice::ReadOnly);
+    QString d = f.readAll();
+    f.close();
+
+    d.remove(QChar('\r'));
+    text_life = d.split(QChar('\n'),Qt::SkipEmptyParts);
 }
 
 QVariant LifeGenPlugin::getParam(QString key)
@@ -240,6 +250,39 @@ int LifeGenPlugin::neighbours(QPoint const &p)
     return n;
 }
 
+bool LifeGenPlugin::LoadConfig(QString preset)
+{
+    if (!config_cb) return false;
+
+    auto data = config_cb("load_key_value",preset);
+    if (!data.canConvert<QString>() || data.value<QString>().isEmpty()) return false;
+
+    QJsonDocument doc = QJsonDocument::fromJson(data.value<QString>().toUtf8());
+    if (!doc.isObject()) return false;
+
+    CONFIG_LOAD_STR(life_file);
+
+    return true;
+}
+
+bool LifeGenPlugin::SaveConfig(QString preset)
+{
+    if (!config_cb) return false;
+
+    QJsonObject obj;
+    CONFIG_SAVE_STR(life_file);
+
+    QJsonDocument doc(obj);
+    config_cb("save_key_value",preset+"="+doc.toJson());
+
+    return true;
+}
+
+void LifeGenPlugin::updateUI()
+{
+    dialog->ui->lineEdit->setText(life_file);
+}
+
 QVariant LifeGenPlugin::action(QVariant in)
 {
     if (!in.canConvert<QSize>()) {
@@ -247,6 +290,8 @@ QVariant LifeGenPlugin::action(QVariant in)
         return QVariant();
     }
     QSize sz = in.value<QSize>();
+
+    if (!life_file.isEmpty()) attempLoadFile(life_file);
 
     if (field.isNull() && !text_life.isEmpty())
         textInit(sz);

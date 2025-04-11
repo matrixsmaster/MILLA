@@ -16,6 +16,13 @@ enum MillaPluginContentType {
     MILLA_CONTENT_NUMTYPES
 };
 
+enum MillaPluginPresetAction {
+    MILLA_PLUGINCB_ADD = 0,
+    MILLA_PLUGINCB_DEL,
+    MILLA_PLUGINCB_APPLY,
+    MILLA_PLUGINCB_NUMACTIONS
+};
+
 class MillaGenericPlugin
 {
 public:
@@ -32,7 +39,7 @@ public:
     virtual bool init() = 0;
     virtual bool finalize() = 0;
 
-    virtual bool showUI(QDialog* dock, QLayout* layout) = 0;
+    virtual bool showUI(QDialog* dock) = 0;
     virtual void setConfigCB(PlugConfCB cb) = 0;
     virtual void setProgressCB(ProgressCB cb) = 0;
 

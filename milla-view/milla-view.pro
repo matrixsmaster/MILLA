@@ -83,6 +83,7 @@ FORMS    += mviewer.ui \
 
 CONFIG   += c++14
 QMAKE_CXXFLAGS  += -Wextra -Wno-deprecated-declarations
+QMAKE_LFLAGS += -Wl,--export-dynamic
 
 RESOURCES += milla-view.qrc
 

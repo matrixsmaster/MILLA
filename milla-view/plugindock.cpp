@@ -13,7 +13,12 @@ PluginDock::~PluginDock()
     delete ui;
 }
 
-QLayout *PluginDock::getDockLayout()
+void PluginDock::addContent(QWidget* child)
 {
-    return ui->internalBox;
+    if (child) ui->internalBox->addWidget(child);
+}
+
+void PluginDock::setCallbacks(PresetCB cb)
+{
+    control_cb = cb;
 }
