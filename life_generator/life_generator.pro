@@ -8,16 +8,15 @@ TEMPLATE = lib
 CONFIG += c++14 plugin
 INCLUDEPATH += ../milla-view
 
-SOURCES += main.cpp\
-        dialog.cpp \
+SOURCES +=\
     lifegendlg.cpp \
     lifegenplugin.cpp
 
-HEADERS  += dialog.h \
+HEADERS  += \
     lifegendlg.h \
     lifegenplugin.h
 
-FORMS    += dialog.ui \
+FORMS    += \
     lifegendlg.ui
 
 DESTDIR = ../share/plugins

@@ -1,9 +1,10 @@
+#include <QFile>
 #include <QDebug>
 #include <QWidget>
 #include <QTextStream>
 #include "lifegenplugin.h"
-#include "dialog.h"
 #include "lifegendlg.h"
+#include "ui_lifegendlg.h"
 
 LifeGenPlugin::LifeGenPlugin(QObject *parent) :
     QObject(parent),
@@ -25,21 +26,27 @@ bool LifeGenPlugin::finalize()
 
 bool LifeGenPlugin::showUI()
 {
-    //LifeCfgDialog dlg;
+    if (!config_cb) return true;
+
+    //LifeGenDlg* dlg = new LifeGenDlg();
     LifeGenDlg dlg;
-    //PluginDock dock(nullptr,&dlg);
 
-    //if (!dock.exec()) return false;
-    //text_life = dlg.getData();
-
-    if (config_cb) {
-        void* ptr = &dlg;
+    //if (config_cb) {
+    void* ptr = &dlg;
         QByteArray arr((const char*)&ptr,sizeof(void*));
         auto r = config_cb("show_dock",QVariant(arr));
-        if (r.isValid() && r.canConvert<QByteArray>()) {
+        if (!r.isValid() || !r.canConvert<QByteArray>()) return false;
 
-        }
-    }
+        QFile f(dlg.ui->lineEdit->text());
+        if (!f.exists()) return false;
+
+        f.open(QIODevice::Text | QIODevice::ReadOnly);
+        QString d = f.readAll();
+        f.close();
+
+        d.remove(QChar('\r'));
+        text_life = d.split(QChar('\n'),Qt::SkipEmptyParts);
+    //}
     return true;
 }
 

@@ -15,8 +15,10 @@ public:
     explicit LifeGenDlg(QWidget *parent = nullptr);
     ~LifeGenDlg();
 
-private:
     Ui::LifeGenDlg *ui;
+
+private slots:
+    void on_pushButton_clicked();
 };
 
 #endif // LIFEGENDLG_H

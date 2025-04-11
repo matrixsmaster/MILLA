@@ -3,12 +3,6 @@
 
 #include <QDialog>
 
-// #ifndef LIBCODE_TEST
-// #  define MYAPP_EXPORT Q_DECL_EXPORT
-// #else
-// #  define MYAPP_EXPORT Q_DECL_IMPORT
-// #endif
-
 namespace Ui {
 class PluginDock;
 }
@@ -23,6 +17,7 @@ public:
 
 private:
     Ui::PluginDock *ui;
+    QWidget* docked;
 };
 
 #endif // PLUGINDOCK_H
