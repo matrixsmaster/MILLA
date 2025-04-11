@@ -24,6 +24,7 @@ public:
     QString getPluginDesc()  { return "A plugin showing Conway's Game Of Life."; }
 
     bool isContinous()       { return true; }
+    bool isPresettable()     { return true; }
 
     MillaPluginContentType inputContent()  { return MILLA_CONTENT_NONE; }
     MillaPluginContentType outputContent() { return MILLA_CONTENT_IMAGE; }

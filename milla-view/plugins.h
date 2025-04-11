@@ -32,6 +32,7 @@ public:
     virtual QString getPluginDesc() = 0;
 
     virtual bool isContinous() = 0;
+    virtual bool isPresettable() = 0;
 
     virtual MillaPluginContentType inputContent() = 0;
     virtual MillaPluginContentType outputContent() = 0;

@@ -160,6 +160,8 @@ public:
 
     static bool setExtraInt(QString const &key, int val);
 
+    static bool delExtraLine(const QString &key);
+
     static QString getDBInfoString();
 
     void invalidateCache();

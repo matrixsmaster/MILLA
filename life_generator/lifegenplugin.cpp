@@ -50,7 +50,22 @@ bool LifeGenPlugin::showUI(QDialog* dock)
 
 void LifeGenPlugin::dockCallback(QString preset, int mode)
 {
-    //
+    switch (mode) {
+    case MILLA_PLUGINCB_ADD:
+        SaveConfig(preset);
+        break;
+
+    case MILLA_PLUGINCB_DEL:
+        if (config_cb) config_cb("delete_key_value",preset);
+        break;
+
+    case MILLA_PLUGINCB_APPLY:
+        LoadConfig(preset);
+        break;
+
+    default:
+        qDebug() << "[LifeGen] Wrong dockCallback mode " << mode;
+    }
 }
 
 void LifeGenPlugin::attempLoadFile(QString fn)
@@ -73,7 +88,6 @@ QVariant LifeGenPlugin::getParam(QString key)
 
     } else if (key == "use_config_cb") {
         return true;
-
     }
     return QVariant();
 }

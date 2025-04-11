@@ -53,7 +53,7 @@ void MillaPluginLoader::addPluginsToMenu(QMenu &m, ProgressCB pcb)
         }
 
         // setup the action with the plugin name, description and checkable status
-        actions[i.second->getPluginName()] = a;
+        actions[i.second] = a;
         a->setToolTip(i.second->getPluginDesc());
         m.setToolTipsVisible(true);
         if (i.second->isContinous()) a->setCheckable(true);
@@ -61,6 +61,24 @@ void MillaPluginLoader::addPluginsToMenu(QMenu &m, ProgressCB pcb)
 
         // connect the new action to plugin action
         connect(a,&QAction::triggered,this,[a,i,this] { this->pluginAction(i.first,a); });
+
+        // check for plugin's ability to work with presets
+        if (i.second->isPresettable())
+            preset_menus[i.second] = new QMenu(i.second->getPluginName()+" presets");
+    }
+
+    updatePresetLists();
+}
+
+void MillaPluginLoader::updatePresetLists()
+{
+    for (auto &i : preset_menus) {
+        i.second->clear();
+        auto lst = listPresetsFor(i.first->getPluginName());
+        for (auto &j : lst) {
+            QAction* a = i.second->addAction(j);
+            connect(a,&QAction::triggered,this,[a,j,this] { this->pluginPresetAction(j,a); });
+        }
     }
 }
 
@@ -72,6 +90,13 @@ QString MillaPluginLoader::listPlugins()
         out += QString::asprintf("%02d) %s: %s\n",n++,i.first.toStdString().c_str(),i.second->getPluginDesc().toStdString().c_str());
     }
     return out;
+}
+
+QStringList MillaPluginLoader::listPresetsFor(QString plugname)
+{
+    QString key = "Preset_" + plugname;
+    QString val = DBHelper::getExtraStringVal(key);
+    return val.split('|');
 }
 
 void MillaPluginLoader::updateSupportedFileFormats(QStringList &lst)
@@ -96,9 +121,9 @@ bool MillaPluginLoader::openFileFormat(QString const &fn)
     if (fmt == formats.end()) return false;
 
     MillaGenericPlugin* plug = fmt->first;
-    if (!plug->setParam("filename",fn) || !actions.count(plug->getPluginName())) return false;
+    if (!plug->setParam("filename",fn) || !actions.count(plug)) return false;
 
-    QAction* act = actions.at(plug->getPluginName());
+    QAction* act = actions.at(plug);
     act->toggle();
     pluginAction(plug->getPluginName(),act);
     if (act->isCheckable() && !act->isChecked()) { //repeat action if it was disabled
@@ -211,6 +236,11 @@ void MillaPluginLoader::pluginAction(QString name, QAction* sender)
     wnd->prepareLongProcessing(true);
 }
 
+void MillaPluginLoader::pluginPresetAction(QString name, QAction *sender)
+{
+    //TODO
+}
+
 bool MillaPluginLoader::startPlugin(MillaGenericPlugin* plug, QAction* sender)
 {
     //startup sequence should NOT be changed in future
@@ -258,7 +288,7 @@ bool MillaPluginLoader::stopPlugin(MillaGenericPlugin* plug, QAction* /*sender*/
     }
 
     //make sure the checkbox is unchecked
-    QAction* a = actions[plug->getPluginName()];
+    QAction* a = actions[plug];
     if (a && a->isCheckable()) a->setChecked(false);
 
     qDebug() << "[PLUGINS] " << plug->getPluginName() << " stopped";
@@ -268,7 +298,14 @@ bool MillaPluginLoader::stopPlugin(MillaGenericPlugin* plug, QAction* /*sender*/
 bool MillaPluginLoader::showConfig(MillaGenericPlugin *plug)
 {
     PluginDock dock;
-    return plug->showUI(&dock);
+    bool r = plug->showUI(&dock);
+
+    QString key = "Preset_" + plug->getPluginName();
+    QString val = dock.getPresets().join('|');
+    DBHelper::setExtraStringVal(key,val);
+    updatePresetLists();
+
+    return r;
 }
 
 void MillaPluginLoader::pluginTimedOut(MillaGenericPlugin* plug)
@@ -311,6 +348,11 @@ QVariant MillaPluginLoader::pluginConfigCallback(MillaGenericPlugin* plug, QStri
         qDebug() << "[PLUGINS] Plugin " << plug->getPluginName() << " stores a value for " << l.at(0) << ": " << l.at(1);
         return DBHelper::setExtraStringVal(key,l.at(1));
 
+    } else if (key == "delete_key_value" && val.canConvert<QString>()) {
+        QString key = plug->getPluginName() + "_" + val.toString();
+        qDebug() << "[PLUGINS] Plugin " << plug->getPluginName() << " deletes key " << val.toString();
+        return DBHelper::delExtraLine(key);
+
     } else if (key == "self_disable" && val.isNull()) {
         return stopPlugin(plug,nullptr);
 
@@ -337,12 +379,6 @@ QVariant MillaPluginLoader::pluginConfigCallback(MillaGenericPlugin* plug, QStri
         if (!wnd) return QVariant();
         wnd->appendNotes(lst.at(1),lst.at(0));
         return QVariant(bool(true));
-
-    /*} else if (key == "show_dock" && val.canConvert<QByteArray>()) {
-        QWidget* ptr = nullptr;
-        memcpy(&ptr,val.toByteArray().data(),sizeof(void*));
-        PluginDock dock(nullptr,ptr);
-        return QVariant(dock.exec());*/
     }
     return QVariant();
 }
