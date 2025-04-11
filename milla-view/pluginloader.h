@@ -67,6 +67,8 @@ private:
     bool startPlugin(MillaGenericPlugin* plug, QAction* sender);
     bool stopPlugin(MillaGenericPlugin* plug, QAction* sender);
 
+    bool showConfig(MillaGenericPlugin* plug);
+
     void pluginAction(QString name, QAction* sender);
     void pluginTimedOut(MillaGenericPlugin* plug);
     QVariant pluginConfigCallback(MillaGenericPlugin* plug, QString const &key, QVariant const &val);

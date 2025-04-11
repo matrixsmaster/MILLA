@@ -29,7 +29,7 @@ public:
     bool init();
     bool finalize();
 
-    bool showUI();
+    bool showUI(QDialog *dock, QLayout *layout);
     void setConfigCB(PlugConfCB cb)        { config_cb = cb; }
     void setProgressCB(ProgressCB)         {}
 

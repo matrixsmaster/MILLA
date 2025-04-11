@@ -5,6 +5,7 @@
 #include "lifegenplugin.h"
 #include "lifegendlg.h"
 #include "ui_lifegendlg.h"
+#include "plugindock.h"
 
 LifeGenPlugin::LifeGenPlugin(QObject *parent) :
     QObject(parent),
@@ -24,20 +25,25 @@ bool LifeGenPlugin::finalize()
     return true;
 }
 
-bool LifeGenPlugin::showUI()
+bool LifeGenPlugin::showUI(QDialog* dock, QLayout* layout)
 {
-    if (!config_cb) return true;
+    //if (!config_cb) return true;
 
-    //LifeGenDlg* dlg = new LifeGenDlg();
-    LifeGenDlg dlg;
+    LifeGenDlg* dlg = new LifeGenDlg();
+    //LifeGenDlg dlg;
 
     //if (config_cb) {
-    void* ptr = &dlg;
-        QByteArray arr((const char*)&ptr,sizeof(void*));
-        auto r = config_cb("show_dock",QVariant(arr));
-        if (!r.isValid() || !r.canConvert<QByteArray>()) return false;
+    //void* ptr = &dlg;
+        //QByteArray arr((const char*)&ptr,sizeof(void*));
+        //auto r = config_cb("show_dock",QVariant(arr));
+        //if (!r.isValid() || !r.canConvert<QByteArray>()) return false;
 
-        QFile f(dlg.ui->lineEdit->text());
+    PluginDock* pdock = dynamic_cast<PluginDock*>(dock);
+    if (!pdock) return false;
+    if (layout) layout->addWidget(dlg);
+    pdock->exec();
+
+        QFile f(dlg->ui->lineEdit->text());
         if (!f.exists()) return false;
 
         f.open(QIODevice::Text | QIODevice::ReadOnly);

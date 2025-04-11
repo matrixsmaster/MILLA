@@ -137,9 +137,9 @@ void MillaPluginLoader::pluginAction(QString name, QAction* sender)
     if (showui) {
         bool uiok = true;
         if (sender->isCheckable())  {
-            if (sender->isChecked()) uiok = plug->showUI();
+            if (sender->isChecked()) uiok = showConfig(plug);
         } else
-            uiok = plug->showUI();
+            uiok = showConfig(plug);
 
         if (!uiok) {
             qDebug() << "[PLUGINS] Plugin action aborted by user";
@@ -265,6 +265,12 @@ bool MillaPluginLoader::stopPlugin(MillaGenericPlugin* plug, QAction* /*sender*/
     return true;
 }
 
+bool MillaPluginLoader::showConfig(MillaGenericPlugin *plug)
+{
+    PluginDock dock;
+    return plug->showUI(&dock,dock.getDockLayout());
+}
+
 void MillaPluginLoader::pluginTimedOut(MillaGenericPlugin* plug)
 {
     //qDebug() << "[PLUGINS] Timeout for " << plug->getPluginName();
@@ -332,11 +338,11 @@ QVariant MillaPluginLoader::pluginConfigCallback(MillaGenericPlugin* plug, QStri
         wnd->appendNotes(lst.at(1),lst.at(0));
         return QVariant(bool(true));
 
-    } else if (key == "show_dock" && val.canConvert<QByteArray>()) {
+    /*} else if (key == "show_dock" && val.canConvert<QByteArray>()) {
         QWidget* ptr = nullptr;
         memcpy(&ptr,val.toByteArray().data(),sizeof(void*));
         PluginDock dock(nullptr,ptr);
-        return QVariant(dock.exec());
+        return QVariant(dock.exec());*/
     }
     return QVariant();
 }

@@ -12,12 +12,13 @@ class PluginDock : public QDialog
     Q_OBJECT
 
 public:
-    explicit PluginDock(QWidget *parent = nullptr, QWidget* child = nullptr);
+    explicit PluginDock(QWidget *parent = nullptr);
     ~PluginDock();
+
+    QLayout *getDockLayout();
 
 private:
     Ui::PluginDock *ui;
-    QWidget* docked;
 };
 
 #endif // PLUGINDOCK_H
