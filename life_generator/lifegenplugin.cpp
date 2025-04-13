@@ -109,6 +109,9 @@ bool LifeGenPlugin::setParam(QString key, QVariant val)
     if (key == "process_started" && val.value<bool>()) {
         field = QImage();
         return true;
+
+    } else if (key == "apply_preset" && val.canConvert<QString>()) {
+        return LoadConfig(val.value<QString>());
     }
     return false;
 }

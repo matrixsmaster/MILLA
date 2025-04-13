@@ -72,8 +72,8 @@ private:
 
     bool showConfig(MillaGenericPlugin* plug);
 
-    void pluginAction(QString name, QAction* sender);
-    void pluginPresetAction(QString name, QAction* sender);
+    void pluginAction(QString name, QAction* sender, bool skip_ui = false);
+    void pluginPresetAction(QString name, MillaGenericPlugin *plug);
     void pluginTimedOut(MillaGenericPlugin* plug);
     QVariant pluginConfigCallback(MillaGenericPlugin* plug, QString const &key, QVariant const &val);
 

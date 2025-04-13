@@ -64,7 +64,14 @@ void MillaPluginLoader::addPluginsToMenu(QMenu &m, ProgressCB pcb)
 
         // check for plugin's ability to work with presets
         if (i.second->isPresettable())
-            preset_menus[i.second] = new QMenu(i.second->getPluginName()+" presets");
+            preset_menus[i.second] = m.addMenu(i.second->getPluginName()+" presets");
+
+        //determine whether plugin should use configuration callbacks
+        QVariant cbf(i.second->getParam("use_config_cb"));
+        if (cbf.canConvert<bool>() && cbf.value<bool>())
+            i.second->setConfigCB([this,i] (auto s, auto v) {
+                return this->pluginConfigCallback(i.second,s,v);
+            });
     }
 
     updatePresetLists();
@@ -78,7 +85,7 @@ void MillaPluginLoader::updatePresetLists()
         for (auto &j : lst) {
             if (j.isEmpty()) continue;
             QAction* a = i.second->addAction(j);
-            connect(a,&QAction::triggered,this,[a,j,this] { this->pluginPresetAction(j,a); });
+            connect(a,&QAction::triggered,this,[i,j,this] { this->pluginPresetAction(j,i.first); });
         }
     }
 }
@@ -134,7 +141,7 @@ bool MillaPluginLoader::openFileFormat(QString const &fn)
     return true;
 }
 
-void MillaPluginLoader::pluginAction(QString name, QAction* sender)
+void MillaPluginLoader::pluginAction(QString name, QAction* sender, bool skip_ui)
 {
     //check validity of both context and plugin
     if (!plugins.count(name) || !sender || !context.valid()) return;
@@ -145,16 +152,9 @@ void MillaPluginLoader::pluginAction(QString name, QAction* sender)
     MViewer* wnd = dynamic_cast<MViewer*>(context.window);
     if (!wnd) return;
 
-    //determine whether plugin should use configuration callbacks
-    QVariant cbf(plug->getParam("use_config_cb"));
-    if (cbf.canConvert<bool>() && cbf.value<bool>())
-        plug->setConfigCB([this,plug] (auto s, auto v) {
-            return this->pluginConfigCallback(plug,s,v);
-        });
-
     //determine if we need to show UI for this plugin now
-    bool showui = true;
-    if (!forceUI) {
+    bool showui = !skip_ui;
+    if (!forceUI && !skip_ui) {
         QVariant g(plug->getParam("show_ui"));
         if (!g.canConvert<bool>() || !g.value<bool>()) showui = false;
     }
@@ -237,9 +237,17 @@ void MillaPluginLoader::pluginAction(QString name, QAction* sender)
     wnd->prepareLongProcessing(true);
 }
 
-void MillaPluginLoader::pluginPresetAction(QString name, QAction *sender)
+void MillaPluginLoader::pluginPresetAction(QString name, MillaGenericPlugin* plug)
 {
-    //TODO
+    if (!plug) return;
+    if (!plug->setParam("apply_preset",name)) return;
+
+    if (actions[plug]->isCheckable()) {
+        // if can be toggled, then stop it first, otherwise simply switch on
+        if (actions[plug]->isChecked()) stopPlugin(plug,nullptr);
+        else actions[plug]->setChecked(true);
+    }
+    pluginAction(plug->getPluginName(),actions[plug],true);
 }
 
 bool MillaPluginLoader::startPlugin(MillaGenericPlugin* plug, QAction* sender)
