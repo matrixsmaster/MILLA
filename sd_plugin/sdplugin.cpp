@@ -1,20 +1,13 @@
 #include <thread>
 #include <QDebug>
 #include <QFileInfo>
+#include <QJsonDocument>
+#include <QJsonObject>
 #include "sdplugin.h"
-#include "sdcfgdialog.h"
+#include "plugindock.h"
 #include "ui_sdcfgdialog.h"
 
-#define CONFIG_SAVE_STR(K,V) config_cb("save_key_value",(K "=")+V);
-#define CONFIG_SAVE_STDSTR(K,V) config_cb("save_key_value",(K "=")+QString::fromStdString(V));
-#define CONFIG_SAVE_INT(K,V) config_cb("save_key_value",(K "=")+QString::asprintf("%d",(V)));
-#define CONFIG_SAVE_FLOAT(K,V) config_cb("save_key_value",(K "=")+QString::asprintf("%.3f",(V)));
-
-#define CONFIG_LOAD_STR(K,V) r = config_cb("load_key_value",K); if (r.canConvert<QString>()) V = r.value<QString>();
-#define CONFIG_LOAD_STDSTR(K,V) r = config_cb("load_key_value",K); if (r.canConvert<QString>()) V = r.value<QString>().toStdString();
-#define CONFIG_LOAD_INT(K,V) r = config_cb("load_key_value",K); if (r.canConvert<QString>()) V = r.value<QString>().toInt();
-#define CONFIG_LOAD_INTT(K,V,T) r = config_cb("load_key_value",K); if (r.canConvert<QString>()) V = (T)(r.value<QString>().toInt());
-#define CONFIG_LOAD_FLOAT(K,V) r = config_cb("load_key_value",K); if (r.canConvert<QString>()) V = r.value<QString>().toFloat();
+#define CONFIG_LOAD_INTT(V,T) if (doc.object().contains("" TOSTRING(V) "")) V = (T)(doc.object().value("" TOSTRING(V) "").toInt());
 
 SDPlugin::SDPlugin() :
     QObject(),
@@ -38,191 +31,229 @@ bool SDPlugin::init()
 bool SDPlugin::finalize()
 {
     qDebug() << "[SD] Finalizing...";
-    ConfigSave();
     Cleanup();
     return true;
 }
 
-void SDPlugin::ConfigLoad()
+bool SDPlugin::LoadConfig(QString preset)
 {
-    QVariant r;
-    if (!config_cb) {
-        qDebug() << "[SD] ERROR: Unable to load configuration!";
-        return;
-    }
+    if (!config_cb) return false;
 
-    CONFIG_LOAD_INT("dogen",dogen);
-    CONFIG_LOAD_INT("useleft",useleft);
-    CONFIG_LOAD_STDSTR("model",model);
-    CONFIG_LOAD_STDSTR("vae",vaemodel);
-    CONFIG_LOAD_STDSTR("cnet",cnmodel);
-    CONFIG_LOAD_STDSTR("clip",clipmodel);
-    CONFIG_LOAD_STDSTR("t5xxl",t5model);
-    CONFIG_LOAD_STDSTR("lora",loradir);
-    CONFIG_LOAD_STDSTR("prompt",prompt);
-    CONFIG_LOAD_STDSTR("nprompt",nprompt);
-    CONFIG_LOAD_FLOAT("cfgscale",cfg_scale);
-    CONFIG_LOAD_FLOAT("styleratio",style_ratio);
-    CONFIG_LOAD_FLOAT("guidance",guidance);
-    CONFIG_LOAD_FLOAT("strength",strength);
-    CONFIG_LOAD_INT("sampler",sampler);
-    CONFIG_LOAD_INT("steps",steps);
-    CONFIG_LOAD_INT("batch",batch);
+    CONFIG_LOAD_PREP(preset);
 
-    CONFIG_LOAD_INT("doupsc",doupsc);
-    CONFIG_LOAD_STDSTR("esrgan",esrgan);
-    CONFIG_LOAD_INT("scalefac",scale_fac);
+    CONFIG_LOAD_INT(dogen);
+    CONFIG_LOAD_INT(useleft);
+    CONFIG_LOAD_STDSTR(model);
+    CONFIG_LOAD_STDSTR(vaemodel);
+    CONFIG_LOAD_STDSTR(cnmodel);
+    CONFIG_LOAD_STDSTR(clipmodel);
+    CONFIG_LOAD_STDSTR(t5model);
+    CONFIG_LOAD_STDSTR(loradir);
+    CONFIG_LOAD_STDSTR(prompt);
+    CONFIG_LOAD_STDSTR(nprompt);
+    CONFIG_LOAD_FLOAT(cfg_scale);
+    CONFIG_LOAD_FLOAT(style_ratio);
+    CONFIG_LOAD_FLOAT(guidance);
+    CONFIG_LOAD_FLOAT(strength);
+    CONFIG_LOAD_INT(sampler);
+    CONFIG_LOAD_INT(steps);
+    CONFIG_LOAD_INT(batch);
 
-    CONFIG_LOAD_INTT("autosave",autosave,sdplug_autosave_t);
-    CONFIG_LOAD_INT("asav_addb",asav_addb);
-    CONFIG_LOAD_INT("asav_match",asav_match);
-    CONFIG_LOAD_INT("asav_addtag",asav_addtag);
-    CONFIG_LOAD_INT("asav_addnote",asav_addnote);
-    CONFIG_LOAD_STR("asav_dir",asav_dir);
-    CONFIG_LOAD_STR("asav_fmt",asav_fmt);
-    CONFIG_LOAD_STR("asav_pat",asav_pat);
-    CONFIG_LOAD_STR("asav_tags",asav_tags);
-    CONFIG_LOAD_STR("asav_notes",asav_notes);
+    CONFIG_LOAD_INT(doupsc);
+    CONFIG_LOAD_STDSTR(esrgan);
+    CONFIG_LOAD_INT(scale_fac);
 
+    CONFIG_LOAD_INTT(autosave,sdplug_autosave_t);
+    CONFIG_LOAD_INT(asav_addb);
+    CONFIG_LOAD_INT(asav_match);
+    CONFIG_LOAD_INT(asav_addtag);
+    CONFIG_LOAD_INT(asav_addnote);
+    CONFIG_LOAD_STR(asav_dir);
+    CONFIG_LOAD_STR(asav_fmt);
+    CONFIG_LOAD_STR(asav_pat);
+    CONFIG_LOAD_STR(asav_tags);
+    CONFIG_LOAD_STR(asav_notes);
+
+    CONFIG_LOAD_DONE(preset);
     qDebug() << "[SD] Config loaded";
+
+    seed = 0; // always reset the seed (if UI is not shown, the last generated seed would stuck)
+    load_once = true;
+    return true;
 }
 
-void SDPlugin::ConfigSave()
+bool SDPlugin::SaveConfig(QString preset)
 {
-    if (!config_cb) {
-        qDebug() << "[SD] ERROR: Unable to save configuration!";
-        return;
-    }
+    if (!config_cb) return false;
 
-    CONFIG_SAVE_INT("dogen",dogen);
-    CONFIG_SAVE_INT("useleft",useleft);
-    CONFIG_SAVE_STDSTR("model",model);
-    CONFIG_SAVE_STDSTR("vae",vaemodel);
-    CONFIG_SAVE_STDSTR("cnet",cnmodel);
-    CONFIG_SAVE_STDSTR("clip",clipmodel);
-    CONFIG_SAVE_STDSTR("t5xxl",t5model);
-    CONFIG_SAVE_STDSTR("lora",loradir);
-    CONFIG_SAVE_STDSTR("prompt",prompt);
-    CONFIG_SAVE_STDSTR("nprompt",nprompt);
-    CONFIG_SAVE_FLOAT("cfgscale",cfg_scale);
-    CONFIG_SAVE_FLOAT("styleratio",style_ratio);
-    CONFIG_SAVE_FLOAT("guidance",guidance);
-    CONFIG_SAVE_FLOAT("strength",strength);
-    CONFIG_SAVE_INT("sampler",sampler);
-    CONFIG_SAVE_INT("steps",steps);
-    CONFIG_SAVE_INT("batch",batch);
+    CONFIG_SAVE_PREP(preset);
 
-    CONFIG_SAVE_INT("doupsc",doupsc);
-    CONFIG_SAVE_STDSTR("esrgan",esrgan);
-    CONFIG_SAVE_INT("scalefac",scale_fac);
+    CONFIG_SAVE_INT(dogen);
+    CONFIG_SAVE_INT(useleft);
+    CONFIG_SAVE_STDSTR(model);
+    CONFIG_SAVE_STDSTR(vaemodel);
+    CONFIG_SAVE_STDSTR(cnmodel);
+    CONFIG_SAVE_STDSTR(clipmodel);
+    CONFIG_SAVE_STDSTR(t5model);
+    CONFIG_SAVE_STDSTR(loradir);
+    CONFIG_SAVE_STDSTR(prompt);
+    CONFIG_SAVE_STDSTR(nprompt);
+    CONFIG_SAVE_FLOAT(cfg_scale);
+    CONFIG_SAVE_FLOAT(style_ratio);
+    CONFIG_SAVE_FLOAT(guidance);
+    CONFIG_SAVE_FLOAT(strength);
+    CONFIG_SAVE_INT(sampler);
+    CONFIG_SAVE_INT(steps);
+    CONFIG_SAVE_INT(batch);
 
-    CONFIG_SAVE_INT("autosave",autosave);
-    CONFIG_SAVE_INT("asav_addb",asav_addb);
-    CONFIG_SAVE_INT("asav_match",asav_match);
-    CONFIG_SAVE_INT("asav_addtag",asav_addtag);
-    CONFIG_SAVE_INT("asav_addnote",asav_addnote);
-    CONFIG_SAVE_STR("asav_dir",asav_dir);
-    CONFIG_SAVE_STR("asav_fmt",asav_fmt);
-    CONFIG_SAVE_STR("asav_pat",asav_pat);
-    CONFIG_SAVE_STR("asav_tags",asav_tags);
-    CONFIG_SAVE_STR("asav_notes",asav_notes);
+    CONFIG_SAVE_INT(doupsc);
+    CONFIG_SAVE_STDSTR(esrgan);
+    CONFIG_SAVE_INT(scale_fac);
 
+    CONFIG_SAVE_INT(autosave);
+    CONFIG_SAVE_INT(asav_addb);
+    CONFIG_SAVE_INT(asav_match);
+    CONFIG_SAVE_INT(asav_addtag);
+    CONFIG_SAVE_INT(asav_addnote);
+    CONFIG_SAVE_STR(asav_dir);
+    CONFIG_SAVE_STR(asav_fmt);
+    CONFIG_SAVE_STR(asav_pat);
+    CONFIG_SAVE_STR(asav_tags);
+    CONFIG_SAVE_STR(asav_notes);
+
+    CONFIG_SAVE_DONE(preset);
     qDebug() << "[SD] Config saved";
+    return true;
 }
 
-bool SDPlugin::showUI()
+void SDPlugin::setConfigUI()
 {
-    qDebug() << "[SD] Showing UI...";
-    SDCfgDialog dlg;
+    dialog->ui->doGen->setChecked(dogen);
+    dialog->ui->useLeft->setChecked(useleft);
+    dialog->ui->modelFile->setText(QString::fromStdString(model));
+    dialog->ui->vaeFile->setText(QString::fromStdString(vaemodel));
+    dialog->ui->cnFile->setText(QString::fromStdString(cnmodel));
+    dialog->ui->clipFile->setText(QString::fromStdString(clipmodel));
+    dialog->ui->t5xxlFile->setText(QString::fromStdString(t5model));
+    dialog->ui->loraDir->setText(QString::fromStdString(loradir));
+    dialog->ui->promptEdit->setPlainText(QString::fromStdString(prompt));
+    dialog->ui->negPromptEdit->setPlainText(QString::fromStdString(nprompt));
+    dialog->ui->cfgScale->setValue(cfg_scale);
+    dialog->ui->styleRatio->setValue(style_ratio);
+    dialog->ui->samplerBox->setCurrentIndex(sampler);
+    dialog->ui->guidanceK->setValue(guidance);
+    dialog->ui->strengthK->setValue(strength);
+    dialog->ui->stepsCnt->setValue(steps);
+    dialog->ui->batchCnt->setValue(batch);
 
-    dlg.ui->doGen->setChecked(dogen);
-    dlg.ui->useLeft->setChecked(useleft);
-    dlg.ui->modelFile->setText(QString::fromStdString(model));
-    dlg.ui->vaeFile->setText(QString::fromStdString(vaemodel));
-    dlg.ui->cnFile->setText(QString::fromStdString(cnmodel));
-    dlg.ui->clipFile->setText(QString::fromStdString(clipmodel));
-    dlg.ui->t5xxlFile->setText(QString::fromStdString(t5model));
-    dlg.ui->loraDir->setText(QString::fromStdString(loradir));
-    dlg.ui->promptEdit->setPlainText(QString::fromStdString(prompt));
-    dlg.ui->negPromptEdit->setPlainText(QString::fromStdString(nprompt));
-    dlg.ui->cfgScale->setValue(cfg_scale);
-    dlg.ui->styleRatio->setValue(style_ratio);
-    dlg.ui->samplerBox->setCurrentIndex(sampler);
-    dlg.ui->guidanceK->setValue(guidance);
-    dlg.ui->strengthK->setValue(strength);
-    dlg.ui->stepsCnt->setValue(steps);
-    dlg.ui->batchCnt->setValue(batch);
-
-    dlg.ui->doUpsc->setChecked(doupsc);
-    dlg.ui->upscModel->setText(QString::fromStdString(esrgan));
-    dlg.ui->upscFactor->setValue(scale_fac);
+    dialog->ui->doUpsc->setChecked(doupsc);
+    dialog->ui->upscModel->setText(QString::fromStdString(esrgan));
+    dialog->ui->upscFactor->setValue(scale_fac);
 
     switch (autosave) {
-        case SDP_ASAV_NONE: dlg.ui->savNone->setChecked(true); break;
-        case SDP_ASAV_ALL: dlg.ui->savAll->setChecked(true); break;
-        case SDP_ASAV_USER: dlg.ui->savUser->setChecked(true); break;
+    case SDP_ASAV_NONE: dialog->ui->savNone->setChecked(true); break;
+    case SDP_ASAV_ALL: dialog->ui->savAll->setChecked(true); break;
+    case SDP_ASAV_USER: dialog->ui->savUser->setChecked(true); break;
     }
-    dlg.ui->savDir->setText(asav_dir);
-    dlg.ui->savFmt->setCurrentText(asav_fmt);
-    dlg.ui->savPat->setText(asav_pat);
-    dlg.ui->savDB->setChecked(asav_addb);
-    dlg.ui->savMatch->setChecked(asav_match);
-    dlg.ui->savAddNote->setChecked(asav_addnote);
-    dlg.ui->savAddTag->setChecked(asav_addtag);
-    dlg.ui->savTags->setText(asav_tags);
-    dlg.ui->savNotes->setPlainText(asav_notes);
+    dialog->ui->savDir->setText(asav_dir);
+    dialog->ui->savFmt->setCurrentText(asav_fmt);
+    dialog->ui->savPat->setText(asav_pat);
+    dialog->ui->savDB->setChecked(asav_addb);
+    dialog->ui->savMatch->setChecked(asav_match);
+    dialog->ui->savAddNote->setChecked(asav_addnote);
+    dialog->ui->savAddTag->setChecked(asav_addtag);
+    dialog->ui->savTags->setText(asav_tags);
+    dialog->ui->savNotes->setPlainText(asav_notes);
+}
 
-    skip_gen = !dlg.exec();
-    if (skip_gen) return false;
+void SDPlugin::getConfigUI()
+{
+    dogen = dialog->ui->doGen->isChecked();
+    useleft = dialog->ui->useLeft->isChecked();
+    model = dialog->ui->modelFile->text().toStdString();
+    vaemodel = dialog->ui->vaeFile->text().toStdString();
+    cnmodel = dialog->ui->cnFile->text().toStdString();
+    clipmodel = dialog->ui->clipFile->text().toStdString();
+    t5model = dialog->ui->t5xxlFile->text().toStdString();
+    loradir = dialog->ui->loraDir->text().toStdString();
+    prompt = dialog->ui->promptEdit->toPlainText().toStdString();
+    nprompt = dialog->ui->negPromptEdit->toPlainText().toStdString();
+    cfg_scale = dialog->ui->cfgScale->value();
+    style_ratio = dialog->ui->styleRatio->value();
+    guidance = dialog->ui->guidanceK->value();
+    strength = dialog->ui->strengthK->value();
+    sampler = dialog->ui->samplerBox->currentIndex();
+    steps = dialog->ui->stepsCnt->value();
+    batch = dialog->ui->batchCnt->value();
+    seed = dialog->ui->seedVal->value();
 
-    dogen = dlg.ui->doGen->isChecked();
-    useleft = dlg.ui->useLeft->isChecked();
-    model = dlg.ui->modelFile->text().toStdString();
-    vaemodel = dlg.ui->vaeFile->text().toStdString();
-    cnmodel = dlg.ui->cnFile->text().toStdString();
-    clipmodel = dlg.ui->clipFile->text().toStdString();
-    t5model = dlg.ui->t5xxlFile->text().toStdString();
-    loradir = dlg.ui->loraDir->text().toStdString();
-    prompt = dlg.ui->promptEdit->toPlainText().toStdString();
-    nprompt = dlg.ui->negPromptEdit->toPlainText().toStdString();
-    cfg_scale = dlg.ui->cfgScale->value();
-    style_ratio = dlg.ui->styleRatio->value();
-    guidance = dlg.ui->guidanceK->value();
-    strength = dlg.ui->strengthK->value();
-    sampler = dlg.ui->samplerBox->currentIndex();
-    steps = dlg.ui->stepsCnt->value();
-    batch = dlg.ui->batchCnt->value();
-    seed = dlg.ui->seedVal->value();
-
-    doupsc = dlg.ui->doUpsc->isChecked();
-    esrgan = dlg.ui->upscModel->text().toStdString();
-    scale_fac = dlg.ui->upscFactor->value();
+    doupsc = dialog->ui->doUpsc->isChecked();
+    esrgan = dialog->ui->upscModel->text().toStdString();
+    scale_fac = dialog->ui->upscFactor->value();
 
     autosave = SDP_ASAV_NONE;
-    if (dlg.ui->savAll->isChecked()) autosave = SDP_ASAV_ALL;
-    if (dlg.ui->savUser->isChecked()) autosave = SDP_ASAV_USER;
-    asav_dir = dlg.ui->savDir->text();
-    asav_fmt = dlg.ui->savFmt->currentText();
-    asav_pat = dlg.ui->savPat->text();
-    asav_addb = dlg.ui->savDB->isChecked();
-    asav_match = dlg.ui->savMatch->isChecked();
-    asav_addnote = dlg.ui->savAddNote->isChecked();
-    asav_addtag = dlg.ui->savAddTag->isChecked();
-    asav_tags = dlg.ui->savTags->text();
-    asav_notes = dlg.ui->savNotes->toPlainText();
+    if (dialog->ui->savAll->isChecked()) autosave = SDP_ASAV_ALL;
+    if (dialog->ui->savUser->isChecked()) autosave = SDP_ASAV_USER;
+    asav_dir = dialog->ui->savDir->text();
+    asav_fmt = dialog->ui->savFmt->currentText();
+    asav_pat = dialog->ui->savPat->text();
+    asav_addb = dialog->ui->savDB->isChecked();
+    asav_match = dialog->ui->savMatch->isChecked();
+    asav_addnote = dialog->ui->savAddNote->isChecked();
+    asav_addtag = dialog->ui->savAddTag->isChecked();
+    asav_tags = dialog->ui->savTags->text();
+    asav_notes = dialog->ui->savNotes->toPlainText();
+}
 
+bool SDPlugin::showUI(QDialog* dock)
+{
+    PluginDock* pdock = dynamic_cast<PluginDock*>(dock);
+    if (!pdock) return false;
+
+    dialog = new SDCfgDialog();
+    if (LoadConfig(MILLA_PLUG_DEF_PRESET)) setConfigUI();
+    pdock->addContent(dialog);
+    pdock->setCallbacks([this] (auto s, auto m) { this->dockCallback(s,m); });
+
+    skip_gen = !pdock->exec();
+    if (skip_gen) return false;
+
+    getConfigUI();
     //TODO: validate autosave pattern against SDPLUGIN_ASAVE_REGEX, maybe?
+    SaveConfig(MILLA_PLUG_DEF_PRESET);
 
+    return true;
+}
+
+bool SDPlugin::RunStop(bool start)
+{
+    if (!start) {
+        qDebug() << "[SD] Stop request received";
+        if (!self_stop) Cleanup();
+        self_stop = false;
+        return true;
+    }
+
+    if (!dogen) return true;
+
+    qDebug() << "[SD] Run request received";
     outputs.clear();
     curout = 0;
+
+    QImage srcimg;
+    if (useleft) {
+        if (!config_cb) return false;
+        QVariant rl(config_cb("get_left_image",QVariant()));
+        if (!rl.canConvert<QPixmap>()) return false;
+        srcimg = rl.value<QPixmap>().toImage();
+    }
+    if (skip_gen || !GenerateBatch(srcimg)) return false;
 
     if (config_cb && dogen) {
         QVariant i;
         i.setValue(QObjectPtr(this));
         config_cb("set_event_filter",i); //insert event filter into main window
     }
-
-    ConfigSave(); // save config now in case of crashes
     return true;
 }
 
@@ -244,37 +275,12 @@ bool SDPlugin::setParam(QString key, QVariant val)
     qDebug() << "[SD] parameter " << key << " sent";
     if (key == "process_started") {
         if (!val.canConvert(QMetaType::Bool)) return false;
-        if (dogen && val.toBool()) {
-            qDebug() << "[SD] Run request received";
-            QImage srcimg;
-            if (useleft) {
-                if (!config_cb) return false;
-                QVariant rl(config_cb("get_left_image",QVariant()));
-                if (!rl.canConvert<QPixmap>()) return false;
-                srcimg = rl.value<QPixmap>().toImage();
-            }
-            if (skip_gen || !GenerateBatch(srcimg)) return false;
-            //skip_gen = true; // requires reset via showUI()
-            return true;
+        return RunStop(val.toBool());
 
-        } else if (!val.toBool()) {
-            qDebug() << "[SD] Stop request received";
-            if (!self_stop) Cleanup();
-            self_stop = false;
-            return true;
-        }
+    } else if (key == "apply_preset" && val.canConvert<QString>()) {
+        return LoadConfig(val.value<QString>());
     }
     return false;
-}
-
-void SDPlugin::setConfigCB(PlugConfCB cb)
-{
-    config_cb = cb;
-    if (!cb) return;
-
-    //load previous settings
-    if (!load_once) ConfigLoad();
-    load_once = true;
 }
 
 QVariant SDPlugin::action(QVariant in)
@@ -334,7 +340,7 @@ bool SDPlugin::eventFilter(QObject *obj, QEvent *event)
                 break;
 
             case Qt::Key_PageUp:
-                if (curout >= 0) curout--;
+                if (curout > 0) curout--;
                 break;
 
             case Qt::Key_PageDown:
@@ -357,6 +363,28 @@ bool SDPlugin::progress(double val)
 {
     if (progress_cb) return progress_cb(val);
     return true;
+}
+
+void SDPlugin::dockCallback(QString preset, int mode)
+{
+    switch (mode) {
+    case MILLA_PLUGINCB_ADD:
+        getConfigUI();
+        SaveConfig(preset);
+        break;
+
+    case MILLA_PLUGINCB_DEL:
+        if (config_cb) config_cb("delete_key_value",preset);
+        break;
+
+    case MILLA_PLUGINCB_APPLY:
+        LoadConfig(preset);
+        setConfigUI();
+        break;
+
+    default:
+        qDebug() << "[ANNA] Wrong dockCallback mode " << mode;
+    }
 }
 
 static void log_helper(sd_log_level_t level, const char* text, void* /*data*/)

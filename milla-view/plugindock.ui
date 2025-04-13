@@ -11,7 +11,11 @@
    </rect>
   </property>
   <property name="windowTitle">
-   <string>Dialog</string>
+   <string>Plugin</string>
+  </property>
+  <property name="windowIcon">
+   <iconset resource="milla-view.qrc">
+    <normaloff>:/milla-icon.png</normaloff>:/milla-icon.png</iconset>
   </property>
   <layout class="QVBoxLayout" name="verticalLayout_2">
    <item>
@@ -87,7 +91,9 @@
    </item>
   </layout>
  </widget>
- <resources/>
+ <resources>
+  <include location="milla-view.qrc"/>
+ </resources>
  <connections>
   <connection>
    <sender>buttonBox</sender>

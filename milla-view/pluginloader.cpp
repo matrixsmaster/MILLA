@@ -131,13 +131,11 @@ bool MillaPluginLoader::openFileFormat(QString const &fn)
     MillaGenericPlugin* plug = fmt->first;
     if (!plug->setParam("filename",fn) || !actions.count(plug)) return false;
 
-    QAction* act = actions.at(plug);
-    act->toggle();
-    pluginAction(plug->getPluginName(),act);
-    if (act->isCheckable() && !act->isChecked()) { //repeat action if it was disabled
-        act->toggle();
-        pluginAction(plug->getPluginName(),act);
-    }
+    // if can be toggled, then stop it first
+    if (actions[plug]->isChecked()) stopPlugin(plug,nullptr);
+    actions[plug]->setChecked(true);
+    pluginAction(plug->getPluginName(),actions[plug]);
+
     return true;
 }
 
@@ -243,9 +241,9 @@ void MillaPluginLoader::pluginPresetAction(QString name, MillaGenericPlugin* plu
     if (!plug->setParam("apply_preset",name)) return;
 
     if (actions[plug]->isCheckable()) {
-        // if can be toggled, then stop it first, otherwise simply switch on
+        // if can be toggled, then stop it first
         if (actions[plug]->isChecked()) stopPlugin(plug,nullptr);
-        else actions[plug]->setChecked(true);
+        actions[plug]->setChecked(true);
     }
     pluginAction(plug->getPluginName(),actions[plug],true);
 }
@@ -306,7 +304,7 @@ bool MillaPluginLoader::stopPlugin(MillaGenericPlugin* plug, QAction* /*sender*/
 
 bool MillaPluginLoader::showConfig(MillaGenericPlugin *plug)
 {
-    PluginDock dock;
+    PluginDock dock(nullptr,plug->getPluginName());
     dock.setPresets(listPresetsFor(plug->getPluginName()));
     bool r = plug->showUI(&dock);
 

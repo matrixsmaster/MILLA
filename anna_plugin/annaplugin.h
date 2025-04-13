@@ -40,7 +40,7 @@ public:
     bool finalize();
 
     bool showUI(QDialog* dock);
-    void setConfigCB(PlugConfCB cb);
+    void setConfigCB(PlugConfCB cb)               { config_cb = cb; }
     void setProgressCB(ProgressCB cb)             { progress_cb = cb; }
 
     QVariant getParam(QString key);

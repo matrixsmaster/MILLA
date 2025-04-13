@@ -6,7 +6,6 @@
 #include <future>
 #include <chrono>
 #include "annaplugin.h"
-#include "annacfgdialog.h"
 #include "plugindock.h"
 
 using namespace std;
@@ -87,11 +86,6 @@ void AnnaPlugin::dockCallback(QString preset, int mode)
     }
 }
 
-void AnnaPlugin::setConfigCB(PlugConfCB cb)
-{
-    config_cb = cb;
-}
-
 QVariant AnnaPlugin::getParam(QString key)
 {
     qDebug() << "[ANNA] requested parameter " << key;
@@ -115,6 +109,10 @@ bool AnnaPlugin::setParam(QString key, QVariant val)
             }
         }
         return true;
+
+    } else if (key == "apply_preset" && val.canConvert<QString>()) {
+        return LoadConfig(val.value<QString>());
+
     }
     return false;
 }

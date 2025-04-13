@@ -5,6 +5,7 @@
 #include <thread>
 #include <mutex>
 #include "plugins.h"
+#include "sdcfgdialog.h"
 #include "stable-diffusion.h"
 
 #define SDPLUGIN_IMGSIZE 512
@@ -45,14 +46,16 @@ public:
     QString getPluginDesc()  { return "Stable Diffusion plugin for all your image generation/scaling needs."; }
 
     bool isContinous();
+    bool isPresettable()     { return true; }
+
     MillaPluginContentType inputContent();
     MillaPluginContentType outputContent() { return MILLA_CONTENT_IMAGE; }
 
     bool init();
     bool finalize();
 
-    bool showUI();
-    void setConfigCB(PlugConfCB cb);
+    bool showUI(QDialog* dock);
+    void setConfigCB(PlugConfCB cb)        { config_cb = cb; }
     void setProgressCB(ProgressCB cb)      { progress_cb = cb; }
 
     QVariant getParam(QString key);
@@ -61,6 +64,7 @@ public:
     QVariant action(QVariant in);
 
     bool progress(double val);
+    void dockCallback(QString preset, int mode);
 
 protected:
     bool eventFilter(QObject *obj, QEvent *event);
@@ -68,6 +72,7 @@ protected:
 private:
     PlugConfCB config_cb = nullptr;
     ProgressCB progress_cb = nullptr;
+    SDCfgDialog* dialog = nullptr;
 
     bool load_once = false;
     bool skip_gen = false; //FIXME: do we still need it, or the new abort-by-UI-Cancel is enough
@@ -101,8 +106,12 @@ private:
     int delay = SDPLUGIN_DEF_DELAY;
     std::mutex out_mutex;
 
-    void ConfigLoad();
-    void ConfigSave();
+    bool LoadConfig(QString preset);
+    bool SaveConfig(QString preset);
+    void getConfigUI();
+    void setConfigUI();
+
+    bool RunStop(bool start);
     bool GenerateBatch(const QImage &in);
     QPixmap Scaleup(const QImage &in);
     void Cleanup();

@@ -2,11 +2,12 @@
 #include "plugindock.h"
 #include "ui_plugindock.h"
 
-PluginDock::PluginDock(QWidget *parent)
+PluginDock::PluginDock(QWidget *parent, QString title)
     : QDialog(parent)
     , ui(new Ui::PluginDock)
 {
     ui->setupUi(this);
+    if (!title.isEmpty()) setWindowTitle(title);
 }
 
 PluginDock::~PluginDock()

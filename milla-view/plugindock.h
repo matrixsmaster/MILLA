@@ -2,6 +2,7 @@
 #define PLUGINDOCK_H
 
 #include <QDialog>
+#include <QString>
 #include "shared.h"
 
 namespace Ui {
@@ -13,7 +14,7 @@ class PluginDock : public QDialog
     Q_OBJECT
 
 public:
-    explicit PluginDock(QWidget *parent = nullptr);
+    explicit PluginDock(QWidget *parent = nullptr, QString title = "");
     ~PluginDock();
 
     void addContent(QWidget* child);

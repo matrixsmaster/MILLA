@@ -22,8 +22,13 @@
     QJsonDocument doc(obj); \
     config_cb("save_key_value",(P)+"="+doc.toJson());
 
+#define CONFIG_LOAD_INT(V) if (doc.object().contains("" TOSTRING(V) "")) V = doc.object().value("" TOSTRING(V) "").toInt();
+#define CONFIG_LOAD_FLOAT(V) if (doc.object().contains("" TOSTRING(V) "")) V = doc.object().value("" TOSTRING(V) "").toDouble();
 #define CONFIG_LOAD_STR(V) if (doc.object().contains("" TOSTRING(V) "")) V = doc.object().value("" TOSTRING(V) "").toString();
 #define CONFIG_LOAD_STDSTR(V) if (doc.object().contains("" TOSTRING(V) "")) V = doc.object().value("" TOSTRING(V) "").toString().toStdString();
+
+#define CONFIG_SAVE_INT(V) obj["" TOSTRING(V) ""] = (int)(V);
+#define CONFIG_SAVE_FLOAT(V) obj["" TOSTRING(V) ""] = (double)(V);
 #define CONFIG_SAVE_STR(V) obj["" TOSTRING(V) ""] = V;
 #define CONFIG_SAVE_STDSTR(V) obj["" TOSTRING(V) ""] = QString::fromStdString(V);
 

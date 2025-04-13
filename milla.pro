@@ -6,5 +6,5 @@ SUBDIRS     = milla-view \
     cam_plugin \
     mov_plugin \
     anna_plugin \
-#    sd_plugin \
+    sd_plugin \
 #    zip_plugin
