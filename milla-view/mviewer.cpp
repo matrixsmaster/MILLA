@@ -2078,9 +2078,6 @@ void MViewer::on_actionMove_to_memory_triggered()
 
 void MViewer::on_actionStop_all_triggered()
 {
-    //FIXME: debug test only
-    PluginDock dock;
-    dock.exec();
     plugins.stopAllPlugins();
 }
 

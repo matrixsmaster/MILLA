@@ -27,7 +27,8 @@ void PluginDock::setCallbacks(PresetCB cb)
 void PluginDock::setPresets(QStringList lst)
 {
     ui->presetName->clear();
-    ui->presetName->addItems(lst);
+    if (lst.isEmpty()) ui->presetName->addItem(MILLA_PLUG_DEF_PRESET);
+    else ui->presetName->addItems(lst);
     ui->presetName->setCurrentText(MILLA_PLUG_DEF_PRESET);
 }
 
@@ -42,12 +43,16 @@ void PluginDock::on_addPreset_clicked()
 {
     if (!control_cb) return;
     control_cb(ui->presetName->currentText(),MILLA_PLUGINCB_ADD);
+    if (ui->presetName->findText(ui->presetName->currentText()) < 0)
+        ui->presetName->addItem(ui->presetName->currentText());
 }
 
 void PluginDock::on_delPreset_clicked()
 {
     if (!control_cb) return;
     control_cb(ui->presetName->currentText(),MILLA_PLUGINCB_DEL);
+    int idx = ui->presetName->findText(ui->presetName->currentText());
+    if (idx >= 0) ui->presetName->removeItem(idx);
 }
 
 void PluginDock::on_presetName_currentIndexChanged(int index)

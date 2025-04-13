@@ -37,21 +37,32 @@ bool LifeGenPlugin::showUI(QDialog* dock)
     if (!pdock) return false;
 
     dialog = new LifeGenDlg();
-    if (LoadConfig(MILLA_PLUG_DEF_PRESET)) updateUI();
+    if (LoadConfig(MILLA_PLUG_DEF_PRESET)) setConfigUI();
     pdock->addContent(dialog);
     pdock->setCallbacks([this] (auto s, auto m) { this->dockCallback(s,m); });
 
     if (!pdock->exec()) return false;
 
-    life_file = dialog->ui->lineEdit->text();
+    getConfigUI();
     SaveConfig(MILLA_PLUG_DEF_PRESET);
     return true;
+}
+
+void LifeGenPlugin::getConfigUI()
+{
+    life_file = dialog->ui->lineEdit->text();
+}
+
+void LifeGenPlugin::setConfigUI()
+{
+    dialog->ui->lineEdit->setText(life_file);
 }
 
 void LifeGenPlugin::dockCallback(QString preset, int mode)
 {
     switch (mode) {
     case MILLA_PLUGINCB_ADD:
+        getConfigUI();
         SaveConfig(preset);
         break;
 
@@ -61,6 +72,7 @@ void LifeGenPlugin::dockCallback(QString preset, int mode)
 
     case MILLA_PLUGINCB_APPLY:
         LoadConfig(preset);
+        setConfigUI();
         break;
 
     default:
@@ -292,11 +304,6 @@ bool LifeGenPlugin::SaveConfig(QString preset)
     return true;
 }
 
-void LifeGenPlugin::updateUI()
-{
-    dialog->ui->lineEdit->setText(life_file);
-}
-
 QVariant LifeGenPlugin::action(QVariant in)
 {
     if (!in.canConvert<QSize>()) {
@@ -305,10 +312,10 @@ QVariant LifeGenPlugin::action(QVariant in)
     }
     QSize sz = in.value<QSize>();
 
-    if (!life_file.isEmpty()) attempLoadFile(life_file);
-
-    if (field.isNull() && !text_life.isEmpty())
+    if (field.isNull() && !life_file.isEmpty()) {
+        attempLoadFile(life_file);
         textInit(sz);
+    }
 
     if (field.isNull() && config_cb) {
         QVariant r(config_cb("get_left_image",QVariant()));

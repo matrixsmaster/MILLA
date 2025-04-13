@@ -76,6 +76,7 @@ void MillaPluginLoader::updatePresetLists()
         i.second->clear();
         auto lst = listPresetsFor(i.first->getPluginName());
         for (auto &j : lst) {
+            if (j.isEmpty()) continue;
             QAction* a = i.second->addAction(j);
             connect(a,&QAction::triggered,this,[a,j,this] { this->pluginPresetAction(j,a); });
         }
@@ -96,7 +97,7 @@ QStringList MillaPluginLoader::listPresetsFor(QString plugname)
 {
     QString key = "Preset_" + plugname;
     QString val = DBHelper::getExtraStringVal(key);
-    return val.split('|');
+    return val.split('|',Qt::SkipEmptyParts);
 }
 
 void MillaPluginLoader::updateSupportedFileFormats(QStringList &lst)
@@ -298,6 +299,7 @@ bool MillaPluginLoader::stopPlugin(MillaGenericPlugin* plug, QAction* /*sender*/
 bool MillaPluginLoader::showConfig(MillaGenericPlugin *plug)
 {
     PluginDock dock;
+    dock.setPresets(listPresetsFor(plug->getPluginName()));
     bool r = plug->showUI(&dock);
 
     QString key = "Preset_" + plug->getPluginName();

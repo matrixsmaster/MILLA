@@ -63,7 +63,8 @@ private:
 
     bool LoadConfig(QString preset);
     bool SaveConfig(QString preset);
-    void updateUI();
+    void getConfigUI();
+    void setConfigUI();
 };
 
 #endif // LIFEGENPLUGIN_H
