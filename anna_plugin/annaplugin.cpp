@@ -1,12 +1,21 @@
 #include <QDebug>
 #include <QTextStream>
+#include <QJsonDocument>
+#include <QJsonObject>
 #include <functional>
 #include <future>
 #include <chrono>
 #include "annaplugin.h"
 #include "annacfgdialog.h"
+#include "plugindock.h"
 
 using namespace std;
+
+#define CONFIG_LOAD_CHARSTR(V) do { \
+    string tmp; \
+    if (doc.object().contains("" TOSTRING(V) "")) tmp = doc.object().value("" TOSTRING(V) "").toString().toStdString(); \
+    if (!tmp.empty()) strncpy(V,tmp.c_str(),sizeof(V)-1); \
+} while (0)
 
 AnnaPlugin::AnnaPlugin() :
     QObject(),
@@ -38,58 +47,49 @@ bool AnnaPlugin::finalize()
     return true;
 }
 
-bool AnnaPlugin::showUI()
+bool AnnaPlugin::showUI(QDialog *dock)
 {
-    qDebug() << "[ANNA] Showing interface...";
-    AnnaCfgDialog dlg;
-    dlg.loadConfig(&config);
-    if (!dlg.exec()) return false;
+    PluginDock* pdock = dynamic_cast<PluginDock*>(dock);
+    if (!pdock) return false;
 
-    //set some config options
-    dlg.updateConfig(&config);
-    qDebug() << "[ANNA] Config updated";
+    dialog = new AnnaCfgDialog();
+    if (LoadConfig(MILLA_PLUG_DEF_PRESET)) dialog->loadConfig(&config);
+    pdock->addContent(dialog);
+    pdock->setCallbacks([this] (auto s, auto m) { this->dockCallback(s,m); });
 
-    //and save them
-    if (!config_cb) return true;
-    QVariant r;
-    r = config_cb("save_key_value","fmodel="+QString(config.params.model));
-    r = config_cb("save_key_value","fvision="+QString::fromStdString(cfg_extra.vision_file));
-    r = config_cb("save_key_value","prefai="+QString::fromStdString(cfg_extra.ai_prefix));
-    r = config_cb("save_key_value","prefusr="+QString::fromStdString(cfg_extra.usr_prefix));
-    r = config_cb("save_key_value","prompt="+QString(config.params.prompt));
-    //FIXME: check results??
-    qDebug() << "[ANNA] Config saved";
+    if (!pdock->exec()) return false;
+
+    dialog->updateConfig(&config);
+    SaveConfig(MILLA_PLUG_DEF_PRESET);
+
     return true;
+}
+
+void AnnaPlugin::dockCallback(QString preset, int mode)
+{
+    switch (mode) {
+    case MILLA_PLUGINCB_ADD:
+        dialog->updateConfig(&config);
+        SaveConfig(preset);
+        break;
+
+    case MILLA_PLUGINCB_DEL:
+        if (config_cb) config_cb("delete_key_value",preset);
+        break;
+
+    case MILLA_PLUGINCB_APPLY:
+        LoadConfig(preset);
+        dialog->loadConfig(&config);
+        break;
+
+    default:
+        qDebug() << "[ANNA] Wrong dockCallback mode " << mode;
+    }
 }
 
 void AnnaPlugin::setConfigCB(PlugConfCB cb)
 {
     config_cb = cb;
-    if (!cb) return;
-
-    //pre-load config (if exists)
-    string tmp;
-    QVariant r;
-    r = config_cb("load_key_value","fmodel");
-    if (r.canConvert<QString>()) {
-        tmp = r.value<QString>().toStdString();
-        if (!tmp.empty()) strncpy(config.params.model,tmp.c_str(),sizeof(config.params.model)-1);
-    }
-    r = config_cb("load_key_value","fvision");
-    if (r.canConvert<QString>() && !r.value<QString>().isEmpty())
-        cfg_extra.vision_file = r.value<QString>().toStdString();
-    r = config_cb("load_key_value","prefai");
-    if (r.canConvert<QString>() && !r.value<QString>().isEmpty())
-        cfg_extra.ai_prefix = r.value<QString>().toStdString();
-    r = config_cb("load_key_value","prefusr");
-    if (r.canConvert<QString>() && !r.value<QString>().isEmpty())
-        cfg_extra.usr_prefix = r.value<QString>().toStdString();
-    r = config_cb("load_key_value","prompt");
-    if (r.canConvert<QString>()) {
-        tmp = r.value<QString>().toStdString();
-        if (!tmp.empty()) strncpy(config.params.prompt,tmp.c_str(),sizeof(config.params.prompt)-1);
-    }
-    qDebug() << "[ANNA] Config preloaded";
 }
 
 QVariant AnnaPlugin::getParam(QString key)
@@ -174,6 +174,38 @@ QVariant AnnaPlugin::action(QVariant in)
         qDebug() << "[ANNA] Failed to generate";
 
     return QVariant();
+}
+
+bool AnnaPlugin::LoadConfig(QString preset)
+{
+    if (!config_cb) return false;
+
+    CONFIG_LOAD_PREP(preset);
+    CONFIG_LOAD_CHARSTR(config.params.model);
+    CONFIG_LOAD_CHARSTR(config.params.prompt);
+    CONFIG_LOAD_STDSTR(cfg_extra.vision_file);
+    CONFIG_LOAD_STDSTR(cfg_extra.ai_prefix);
+    CONFIG_LOAD_STDSTR(cfg_extra.usr_prefix);
+    CONFIG_LOAD_DONE(preset);
+
+    qDebug() << "[ANNA] Config loaded";
+    return true;
+}
+
+bool AnnaPlugin::SaveConfig(QString preset)
+{
+    if (!config_cb) return false;
+
+    CONFIG_SAVE_PREP(preset);
+    CONFIG_SAVE_STDSTR(config.params.model);
+    CONFIG_SAVE_STDSTR(config.params.prompt);
+    CONFIG_SAVE_STDSTR(cfg_extra.vision_file);
+    CONFIG_SAVE_STDSTR(cfg_extra.ai_prefix);
+    CONFIG_SAVE_STDSTR(cfg_extra.usr_prefix);
+    CONFIG_SAVE_DONE(preset);
+
+    qDebug() << "[ANNA] Config saved";
+    return true;
 }
 
 void AnnaPlugin::DefaultConfig()

@@ -1,14 +1,14 @@
 #ifndef ANNACFGDIALOG_H
 #define ANNACFGDIALOG_H
 
-#include <QDialog>
+#include <QWidget>
 #include "brain.h"
 
 namespace Ui {
 class AnnaCfgDialog;
 }
 
-class AnnaCfgDialog : public QDialog
+class AnnaCfgDialog : public QWidget
 {
     Q_OBJECT
 

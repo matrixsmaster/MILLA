@@ -310,10 +310,12 @@ bool MillaPluginLoader::showConfig(MillaGenericPlugin *plug)
     dock.setPresets(listPresetsFor(plug->getPluginName()));
     bool r = plug->showUI(&dock);
 
-    QString key = "Preset_" + plug->getPluginName();
-    QString val = dock.getPresets().join('|');
-    DBHelper::setExtraStringVal(key,val);
-    updatePresetLists();
+    if (plug->isPresettable()) {
+        QString key = "Preset_" + plug->getPluginName();
+        QString val = dock.getPresets().join('|');
+        DBHelper::setExtraStringVal(key,val);
+        updatePresetLists();
+    }
 
     return r;
 }

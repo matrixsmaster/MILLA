@@ -42,7 +42,7 @@ bool CameraPlugin::finalize()
     return true;
 }
 
-bool CameraPlugin::showUI()
+bool CameraPlugin::showUI(QDialog *)
 {
     CamCfgDialog dlg;
     dlg.setMaxID(maxcamnum-1);

@@ -6,6 +6,27 @@
 #define MILLA_PLUGIN_RELPATH "../share/plugins"
 #define MILLA_PLUGIN_LID "org.MatrixS_Master.MILLA.Plugins.Generic"
 
+#define STRINGIFY(x) #x
+#define TOSTRING(x) STRINGIFY(x)
+
+#define CONFIG_LOAD_PREP(P) \
+    auto data = config_cb("load_key_value",preset); \
+    if (!data.canConvert<QString>() || data.value<QString>().isEmpty()) return false; \
+    QJsonDocument doc = QJsonDocument::fromJson(data.value<QString>().toUtf8()); \
+    if (!doc.isObject()) return false;
+
+#define CONFIG_LOAD_DONE(P)
+
+#define CONFIG_SAVE_PREP(P) QJsonObject obj
+#define CONFIG_SAVE_DONE(P) \
+    QJsonDocument doc(obj); \
+    config_cb("save_key_value",(P)+"="+doc.toJson());
+
+#define CONFIG_LOAD_STR(V) if (doc.object().contains("" TOSTRING(V) "")) V = doc.object().value("" TOSTRING(V) "").toString();
+#define CONFIG_LOAD_STDSTR(V) if (doc.object().contains("" TOSTRING(V) "")) V = doc.object().value("" TOSTRING(V) "").toString().toStdString();
+#define CONFIG_SAVE_STR(V) obj["" TOSTRING(V) ""] = V;
+#define CONFIG_SAVE_STDSTR(V) obj["" TOSTRING(V) ""] = QString::fromStdString(V);
+
 enum MillaPluginContentType {
     MILLA_CONTENT_NONE = 0,
     MILLA_CONTENT_IMAGE,

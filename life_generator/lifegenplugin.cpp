@@ -7,12 +7,6 @@
 #include "lifegenplugin.h"
 #include "ui_lifegendlg.h"
 
-#define STRINGIFY(x) #x
-#define TOSTRING(x) STRINGIFY(x)
-
-#define CONFIG_LOAD_STR(V) if (doc.object().contains("" TOSTRING(V) "")) V = doc.object().value("" TOSTRING(V) "").toString();
-#define CONFIG_SAVE_STR(V) obj["" TOSTRING(V) ""] = V;
-
 LifeGenPlugin::LifeGenPlugin(QObject *parent) :
     QObject(parent),
     MillaGenericPlugin()
@@ -283,13 +277,9 @@ bool LifeGenPlugin::LoadConfig(QString preset)
 {
     if (!config_cb) return false;
 
-    auto data = config_cb("load_key_value",preset);
-    if (!data.canConvert<QString>() || data.value<QString>().isEmpty()) return false;
-
-    QJsonDocument doc = QJsonDocument::fromJson(data.value<QString>().toUtf8());
-    if (!doc.isObject()) return false;
-
+    CONFIG_LOAD_PREP(preset);
     CONFIG_LOAD_STR(life_file);
+    CONFIG_LOAD_DONE(preset);
 
     return true;
 }
@@ -298,11 +288,9 @@ bool LifeGenPlugin::SaveConfig(QString preset)
 {
     if (!config_cb) return false;
 
-    QJsonObject obj;
+    CONFIG_SAVE_PREP(preset);
     CONFIG_SAVE_STR(life_file);
-
-    QJsonDocument doc(obj);
-    config_cb("save_key_value",preset+"="+doc.toJson());
+    CONFIG_SAVE_DONE(preset);
 
     return true;
 }
