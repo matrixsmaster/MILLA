@@ -21,7 +21,7 @@
    <item>
     <widget class="QTabWidget" name="tabWidget">
      <property name="currentIndex">
-      <number>0</number>
+      <number>1</number>
      </property>
      <widget class="QWidget" name="tabGen">
       <attribute name="title">
@@ -438,6 +438,101 @@
        </item>
       </layout>
      </widget>
+     <widget class="QWidget" name="tabTrees">
+      <attribute name="title">
+       <string>Trees</string>
+      </attribute>
+      <layout class="QVBoxLayout" name="verticalLayout_7">
+       <item>
+        <widget class="QCheckBox" name="checkBox">
+         <property name="text">
+          <string>Use decision tree generator</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QTableWidget" name="tableWidget">
+         <attribute name="horizontalHeaderDefaultSectionSize">
+          <number>80</number>
+         </attribute>
+         <column>
+          <property name="text">
+           <string>N</string>
+          </property>
+         </column>
+         <column>
+          <property name="text">
+           <string>Batch</string>
+          </property>
+         </column>
+         <column>
+          <property name="text">
+           <string>Steps</string>
+          </property>
+         </column>
+         <column>
+          <property name="text">
+           <string>Strength</string>
+          </property>
+         </column>
+         <column>
+          <property name="text">
+           <string>Cfg_scale</string>
+          </property>
+         </column>
+         <column>
+          <property name="text">
+           <string>Style_ratio</string>
+          </property>
+         </column>
+         <column>
+          <property name="text">
+           <string>Guidance</string>
+          </property>
+         </column>
+        </widget>
+       </item>
+       <item>
+        <layout class="QHBoxLayout" name="horizontalLayout_11">
+         <item>
+          <widget class="QPushButton" name="pushButton_6">
+           <property name="text">
+            <string>Add step</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QPushButton" name="pushButton_7">
+           <property name="text">
+            <string>Del step</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QPushButton" name="pushButton_11">
+           <property name="text">
+            <string>Move up</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QPushButton" name="pushButton_12">
+           <property name="text">
+            <string>Move down</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QPushButton" name="pushButton_13">
+           <property name="text">
+            <string>Clear</string>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </item>
+      </layout>
+     </widget>
      <widget class="QWidget" name="tabScale">
       <attribute name="title">
        <string>Upscale</string>
@@ -534,7 +629,7 @@
           <item>
            <widget class="QRadioButton" name="savUser">
             <property name="text">
-             <string>Save user-selected images (hotkey: spacebar)</string>
+             <string>Save user-selected images</string>
             </property>
            </widget>
           </item>
@@ -659,6 +754,55 @@
           <widget class="QPlainTextEdit" name="savNotes"/>
          </item>
         </layout>
+       </item>
+      </layout>
+     </widget>
+     <widget class="QWidget" name="tabHotkeys">
+      <attribute name="title">
+       <string>Hotkeys</string>
+      </attribute>
+      <layout class="QGridLayout" name="gridLayout_2">
+       <item row="0" column="0">
+        <widget class="QLabel" name="label_21">
+         <property name="text">
+          <string>Autosave selected image (if enabled)</string>
+         </property>
+        </widget>
+       </item>
+       <item row="0" column="1">
+        <widget class="QKeySequenceEdit" name="keySequenceEdit">
+         <property name="keySequence">
+          <string>Space</string>
+         </property>
+        </widget>
+       </item>
+       <item row="1" column="0">
+        <widget class="QLabel" name="label_23">
+         <property name="text">
+          <string>Autosave all images (if configured)</string>
+         </property>
+        </widget>
+       </item>
+       <item row="1" column="1">
+        <widget class="QKeySequenceEdit" name="keySequenceEdit_2">
+         <property name="keySequence">
+          <string>Ctrl+Space</string>
+         </property>
+        </widget>
+       </item>
+       <item row="2" column="0">
+        <widget class="QLabel" name="label_22">
+         <property name="text">
+          <string>Move to next step in decision tree</string>
+         </property>
+        </widget>
+       </item>
+       <item row="2" column="1">
+        <widget class="QKeySequenceEdit" name="keySequenceEdit_3">
+         <property name="keySequence">
+          <string>Return</string>
+         </property>
+        </widget>
        </item>
       </layout>
      </widget>
