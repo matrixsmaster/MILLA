@@ -4,7 +4,7 @@
 #include "annaplugin.h"
 
 AnnaCfgDialog::AnnaCfgDialog(QWidget *parent) :
-    QDialog(parent),
+    QWidget(parent),
     ui(new Ui::AnnaCfgDialog)
 {
     ui->setupUi(this);

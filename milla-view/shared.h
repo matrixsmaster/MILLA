@@ -10,7 +10,7 @@
 #include <functional>
 
 
-#define MILLA_VERSION           "0.7.2"
+#define MILLA_VERSION           "0.8.0-RC1"
 #define MILLA_CLI_BANNER        "MILLA:  Qt5-based, AI-enhanced image viewer ver."
 #define MILLA_CLI_COPYRIGHT     "(C) Dmitry 'MatrixS_Master' Solovyev, 2018-2025. All rights reserved."
 #define MILLA_CONFIG_PATH       "/.milla/"
@@ -37,9 +37,12 @@
 #define MILLA_OPEN_LIST         "Text list files"
 #define MILLA_SAVE_FILE         "Supported formats (*.png *.jpg *.bmp)"
 
+// TODO: rename FACE_CASCADE_FILE to MILLA_FACE_CASCADE; delete colornet
 #define FACE_CASCADE_FILE       "/../share/face_cascade.xml"
 #define COLORIZATION_NET_FILE   "/../share/colors.prototxt"
 #define COLORIZATION_NET_WEIGHT "/../share/colors.caffemodel"
+
+#define MILLA_PLUG_DEF_PRESET   "LastUsed"
 
 
 typedef std::map<QString,std::pair<unsigned,Qt::CheckState>> MTagCache;
@@ -49,6 +52,7 @@ typedef std::function<bool(double)> ProgressCB;
 typedef std::function<QVariant(QString,QVariant)> PlugConfCB;
 typedef std::function<void(QString)> LoadFileCB;
 typedef std::function<int(QString)> UserActionCB;
+typedef std::function<void(QString,int)> PresetCB;
 
 struct MImageListRecord {
     QString filename, fnshort;

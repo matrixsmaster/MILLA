@@ -33,7 +33,7 @@ bool MovPlugin::finalize()
     return true;
 }
 
-bool MovPlugin::showUI()
+bool MovPlugin::showUI(QDialog *)
 {
     MovCfgDialog dlg;
     if (!dlg.exec()) return false;

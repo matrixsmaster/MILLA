@@ -1,7 +1,11 @@
+#include <QFile>
 #include <QDebug>
+#include <QWidget>
 #include <QTextStream>
+#include <QJsonDocument>
+#include <QJsonObject>
 #include "lifegenplugin.h"
-#include "dialog.h"
+#include "ui_lifegendlg.h"
 
 LifeGenPlugin::LifeGenPlugin(QObject *parent) :
     QObject(parent),
@@ -21,12 +25,66 @@ bool LifeGenPlugin::finalize()
     return true;
 }
 
-bool LifeGenPlugin::showUI()
+bool LifeGenPlugin::showUI(QDialog* dock)
 {
-    LifeCfgDialog dlg;
-    if (!dlg.exec()) return false;
-    text_life = dlg.getData();
+    PluginDock* pdock = dynamic_cast<PluginDock*>(dock);
+    if (!pdock) return false;
+
+    dialog = new LifeGenDlg();
+    if (LoadConfig(MILLA_PLUG_DEF_PRESET)) setConfigUI();
+    pdock->addContent(dialog);
+    pdock->setCallbacks([this] (auto s, auto m) { this->dockCallback(s,m); });
+
+    if (!pdock->exec()) return false;
+
+    getConfigUI();
+    SaveConfig(MILLA_PLUG_DEF_PRESET);
     return true;
+}
+
+void LifeGenPlugin::getConfigUI()
+{
+    life_file = dialog->ui->lineEdit->text();
+}
+
+void LifeGenPlugin::setConfigUI()
+{
+    dialog->ui->lineEdit->setText(life_file);
+}
+
+void LifeGenPlugin::dockCallback(QString preset, int mode)
+{
+    switch (mode) {
+    case MILLA_PLUGINCB_ADD:
+        getConfigUI();
+        SaveConfig(preset);
+        break;
+
+    case MILLA_PLUGINCB_DEL:
+        if (config_cb) config_cb("delete_key_value",preset);
+        break;
+
+    case MILLA_PLUGINCB_APPLY:
+        LoadConfig(preset);
+        setConfigUI();
+        break;
+
+    default:
+        qDebug() << "[LifeGen] Wrong dockCallback mode " << mode;
+    }
+}
+
+void LifeGenPlugin::attempLoadFile(QString fn)
+{
+    QFile f(fn);
+    if (!f.exists()) return;
+
+    f.open(QIODevice::Text | QIODevice::ReadOnly);
+    QString d = f.readAll();
+    f.close();
+
+    d.remove(QChar('\r'));
+    text_life = d.split(QChar('\n'),Qt::SkipEmptyParts);
 }
 
 QVariant LifeGenPlugin::getParam(QString key)
@@ -36,7 +94,6 @@ QVariant LifeGenPlugin::getParam(QString key)
 
     } else if (key == "use_config_cb") {
         return true;
-
     }
     return QVariant();
 }
@@ -46,6 +103,9 @@ bool LifeGenPlugin::setParam(QString key, QVariant val)
     if (key == "process_started" && val.value<bool>()) {
         field = QImage();
         return true;
+
+    } else if (key == "apply_preset" && val.canConvert<QString>()) {
+        return LoadConfig(val.value<QString>());
     }
     return false;
 }
@@ -213,6 +273,28 @@ int LifeGenPlugin::neighbours(QPoint const &p)
     return n;
 }
 
+bool LifeGenPlugin::LoadConfig(QString preset)
+{
+    if (!config_cb) return false;
+
+    CONFIG_LOAD_PREP(preset);
+    CONFIG_LOAD_STR(life_file);
+    CONFIG_LOAD_DONE(preset);
+
+    return true;
+}
+
+bool LifeGenPlugin::SaveConfig(QString preset)
+{
+    if (!config_cb) return false;
+
+    CONFIG_SAVE_PREP(preset);
+    CONFIG_SAVE_STR(life_file);
+    CONFIG_SAVE_DONE(preset);
+
+    return true;
+}
+
 QVariant LifeGenPlugin::action(QVariant in)
 {
     if (!in.canConvert<QSize>()) {
@@ -221,8 +303,10 @@ QVariant LifeGenPlugin::action(QVariant in)
     }
     QSize sz = in.value<QSize>();
 
-    if (field.isNull() && !text_life.isEmpty())
+    if (field.isNull() && !life_file.isEmpty()) {
+        attempLoadFile(life_file);
         textInit(sz);
+    }
 
     if (field.isNull() && config_cb) {
         QVariant r(config_cb("get_left_image",QVariant()));

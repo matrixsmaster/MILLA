@@ -3,7 +3,7 @@
 #include "ui_sdcfgdialog.h"
 
 SDCfgDialog::SDCfgDialog(QWidget *parent)
-    : QDialog(parent)
+    : QWidget(parent)
     , ui(new Ui::SDCfgDialog)
 {
     ui->setupUi(this);

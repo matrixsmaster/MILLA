@@ -1565,6 +1565,17 @@ bool DBHelper::setExtraInt(QString const &key, int val)
     return ok;
 }
 
+bool DBHelper::delExtraLine(QString const &key)
+{
+    QSqlQuery q;
+    q.prepare("DELETE FROM extras WHERE key = :k");
+    q.bindValue(":k",key);
+    bool ok = q.exec();
+
+    qDebug() << "[db] Deleting extra key" << key << ":" << ok;
+    return ok;
+}
+
 QString DBHelper::getDBInfoString()
 {
     QSqlQuery q;

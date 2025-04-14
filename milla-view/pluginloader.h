@@ -45,6 +45,8 @@ public:
 
     QString listPlugins();
 
+    QStringList listPresetsFor(QString plugname);
+
     void updateSupportedFileFormats(QStringList &lst);
 
     bool openFileFormat(QString const &fn);
@@ -59,7 +61,8 @@ private:
     bool forceUI = false;
 
     std::map<QString,MillaGenericPlugin*> plugins;
-    std::map<QString,QAction*> actions;
+    std::map<MillaGenericPlugin*,QAction*> actions;
+    std::map<MillaGenericPlugin*,QMenu*> preset_menus;
     std::map<MillaGenericPlugin*,QTimer> timers;
     std::map<MillaGenericPlugin*,std::pair<QObjectPtr,QObjectPtr>> filters;
     std::map<MillaGenericPlugin*,QStringList> formats;
@@ -67,9 +70,14 @@ private:
     bool startPlugin(MillaGenericPlugin* plug, QAction* sender);
     bool stopPlugin(MillaGenericPlugin* plug, QAction* sender);
 
-    void pluginAction(QString name, QAction* sender);
+    bool showConfig(MillaGenericPlugin* plug);
+
+    void pluginAction(QString name, QAction* sender, bool skip_ui = false);
+    void pluginPresetAction(QString name, MillaGenericPlugin *plug);
     void pluginTimedOut(MillaGenericPlugin* plug);
     QVariant pluginConfigCallback(MillaGenericPlugin* plug, QString const &key, QVariant const &val);
+
+    void updatePresetLists();
 };
 
 #endif // MILLAPLUGINLOADER_H

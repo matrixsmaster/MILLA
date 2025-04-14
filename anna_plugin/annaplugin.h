@@ -4,6 +4,7 @@
 #include "plugins.h"
 #include "brain.h"
 //#include "netclient.h"
+#include "annacfgdialog.h"
 
 #define AP_DEFAULT_CONTEXT 4096
 #define AP_DEFAULT_BATCH 512
@@ -30,6 +31,7 @@ public:
     QString getPluginDesc()  { return "Integration plugin for ANNA project. Run LLMs and VLMs inside MILLA."; }
 
     bool isContinous()                            { return false; }
+    bool isPresettable()                          { return true; }
 
     MillaPluginContentType inputContent()         { return cin; }
     MillaPluginContentType outputContent()        { return cout; }
@@ -37,14 +39,16 @@ public:
     bool init();
     bool finalize();
 
-    bool showUI();
-    void setConfigCB(PlugConfCB cb);
+    bool showUI(QDialog* dock);
+    void setConfigCB(PlugConfCB cb)               { config_cb = cb; }
     void setProgressCB(ProgressCB cb)             { progress_cb = cb; }
 
     QVariant getParam(QString key);
     bool setParam(QString key, QVariant val);
 
     QVariant action(QVariant in);
+
+    void dockCallback(QString preset, int mode);
 
 private:
     MillaPluginContentType cin = MILLA_CONTENT_IMAGE;
@@ -54,6 +58,10 @@ private:
     AnnaBrain* brain = nullptr;
     AnnaConfig config;
     AnnaPluginExtra cfg_extra;
+    AnnaCfgDialog* dialog = nullptr;
+
+    bool LoadConfig(QString preset);
+    bool SaveConfig(QString preset);
 
     void DefaultConfig();
     bool Generate(bool no_sample);

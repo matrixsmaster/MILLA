@@ -22,6 +22,7 @@ public:
     QString getPluginDesc()  { return "A simple plugin to capture web camera video stream."; }
 
     bool isContinous()       { return true; }
+    bool isPresettable()     { return false; }
 
     MillaPluginContentType inputContent()  { return MILLA_CONTENT_NONE; }
     MillaPluginContentType outputContent() { return MILLA_CONTENT_IMAGE; }
@@ -29,7 +30,7 @@ public:
     bool init();
     bool finalize();
 
-    bool showUI();
+    bool showUI(QDialog*);
     void setConfigCB(PlugConfCB)           {}
     void setProgressCB(ProgressCB)         {}
 

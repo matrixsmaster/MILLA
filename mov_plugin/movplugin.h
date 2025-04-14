@@ -25,6 +25,7 @@ public:
     QString getPluginDesc()  { return "A silent animated clip player."; }
 
     bool isContinous()       { return true; }
+    bool isPresettable()     { return false; }
 
     MillaPluginContentType inputContent()  { return MILLA_CONTENT_FILE; }
     MillaPluginContentType outputContent() { return MILLA_CONTENT_IMAGE; }
@@ -32,7 +33,7 @@ public:
     bool init();
     bool finalize();
 
-    bool showUI();
+    bool showUI(QDialog*);
     void setConfigCB(PlugConfCB cb)        { config_cb = cb; }
     void setProgressCB(ProgressCB)         {}
 

@@ -16,6 +16,8 @@ TEMPLATE = app
 SOURCES += main.cpp\
     mdirectorymodel.cpp \
         mviewer.cpp \
+    plugindock.cpp \
+    testform.cpp \
     thumbnailmodel.cpp \
     sresultmodel.cpp \
     searchform.cpp \
@@ -41,6 +43,8 @@ SOURCES += main.cpp\
 
 HEADERS  += mviewer.h \
     mdirectorymodel.h \
+    plugindock.h \
+    testform.h \
     thumbnailmodel.h \
     sresultmodel.h \
     searchform.h \
@@ -68,15 +72,18 @@ HEADERS  += mviewer.h \
     splashscreen.h
 
 FORMS    += mviewer.ui \
+    plugindock.ui \
     searchform.ui \
     exportform.ui \
     storyselector.ui \
     listeditor.ui \
     aboutbox.ui \
-    splashscreen.ui
+    splashscreen.ui \
+    testform.ui
 
 CONFIG   += c++14
 QMAKE_CXXFLAGS  += -Wextra -Wno-deprecated-declarations
+QMAKE_LFLAGS += -Wl,--export-dynamic
 
 RESOURCES += milla-view.qrc
 

@@ -3,6 +3,7 @@
 #include "searchform.h"
 #include "aboutbox.h"
 #include "splashscreen.h"
+#include "plugindock.h"
 
 MViewer::MViewer(QWidget *parent) : QMainWindow(parent)
 {

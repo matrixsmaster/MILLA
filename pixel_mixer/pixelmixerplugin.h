@@ -17,6 +17,7 @@ public:
     QString getPluginDesc()  { return "A simple plugin mostly for testing purpose."; }
 
     bool isContinous()       { return false; }
+    bool isPresettable()     { return false; }
 
     MillaPluginContentType inputContent()  { return MILLA_CONTENT_IMAGE; }
     MillaPluginContentType outputContent() { return MILLA_CONTENT_IMAGE; }
@@ -24,7 +25,7 @@ public:
     bool init();
     bool finalize();
 
-    bool showUI();
+    bool showUI(QDialog*);
     void setConfigCB(PlugConfCB)           {}
     void setProgressCB(ProgressCB cb)      { progress_cb = cb; }
 

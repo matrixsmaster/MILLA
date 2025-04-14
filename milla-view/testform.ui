@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>AnnaCfgDialog</class>
- <widget class="QWidget" name="AnnaCfgDialog">
+ <class>TestForm</class>
+ <widget class="QWidget" name="TestForm">
   <property name="geometry">
    <rect>
     <x>0</x>
@@ -11,55 +11,10 @@
    </rect>
   </property>
   <property name="windowTitle">
-   <string>ANNA configuration</string>
+   <string>Form</string>
   </property>
-  <property name="windowIcon">
-   <iconset>
-    <normaloff>:/milla-icon.png</normaloff>:/milla-icon.png</iconset>
-  </property>
-  <layout class="QGridLayout" name="gridLayout">
-   <item row="4" column="0">
-    <layout class="QHBoxLayout" name="horizontalLayout_5">
-     <item>
-      <widget class="QLabel" name="label_5">
-       <property name="text">
-        <string>Prompt</string>
-       </property>
-      </widget>
-     </item>
-     <item>
-      <widget class="QPlainTextEdit" name="prompt"/>
-     </item>
-    </layout>
-   </item>
-   <item row="3" column="0">
-    <layout class="QHBoxLayout" name="horizontalLayout_4">
-     <item>
-      <widget class="QLabel" name="label_4">
-       <property name="minimumSize">
-        <size>
-         <width>100</width>
-         <height>0</height>
-        </size>
-       </property>
-       <property name="text">
-        <string>User prefix</string>
-       </property>
-      </widget>
-     </item>
-     <item>
-      <widget class="QLineEdit" name="prefUsr">
-       <property name="maximumSize">
-        <size>
-         <width>65536</width>
-         <height>65536</height>
-        </size>
-       </property>
-      </widget>
-     </item>
-    </layout>
-   </item>
-   <item row="0" column="0">
+  <layout class="QVBoxLayout" name="verticalLayout">
+   <item>
     <layout class="QHBoxLayout" name="horizontalLayout">
      <item>
       <widget class="QLabel" name="label">
@@ -105,7 +60,7 @@
      </item>
     </layout>
    </item>
-   <item row="1" column="0">
+   <item>
     <layout class="QHBoxLayout" name="horizontalLayout_2">
      <item>
       <widget class="QLabel" name="label_2">
@@ -145,7 +100,34 @@
      </item>
     </layout>
    </item>
-   <item row="2" column="0">
+   <item>
+    <layout class="QHBoxLayout" name="horizontalLayout_4">
+     <item>
+      <widget class="QLabel" name="label_4">
+       <property name="minimumSize">
+        <size>
+         <width>100</width>
+         <height>0</height>
+        </size>
+       </property>
+       <property name="text">
+        <string>User prefix</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QLineEdit" name="prefUsr">
+       <property name="maximumSize">
+        <size>
+         <width>65536</width>
+         <height>65536</height>
+        </size>
+       </property>
+      </widget>
+     </item>
+    </layout>
+   </item>
+   <item>
     <layout class="QHBoxLayout" name="horizontalLayout_3">
      <item>
       <widget class="QLabel" name="label_3">
@@ -172,12 +154,22 @@
      </item>
     </layout>
    </item>
+   <item>
+    <layout class="QHBoxLayout" name="horizontalLayout_5">
+     <item>
+      <widget class="QLabel" name="label_5">
+       <property name="text">
+        <string>Prompt</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPlainTextEdit" name="prompt"/>
+     </item>
+    </layout>
+   </item>
   </layout>
  </widget>
  <resources/>
  <connections/>
- <slots>
-  <slot>accept()</slot>
-  <slot>reject()</slot>
- </slots>
 </ui>
