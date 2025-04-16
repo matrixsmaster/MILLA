@@ -1476,7 +1476,7 @@ sd_image_t* generate_image(sd_ctx_t* sd_ctx,
         LOG_INFO("sampling completed, taking %.2fs", (sampling_end - sampling_start) * 1.0f / 1000);
         final_latents.push_back(x_0);
 
-        if (!pretty_progress(b,batch_count,0)) batch_count = b+1; // stop at this count
+        if (!pretty_progress(b,batch_count,0)) break;
     }
 
     if (sd_ctx->sd->free_params_immediately) {
@@ -1509,6 +1509,7 @@ sd_image_t* generate_image(sd_ctx_t* sd_ctx,
         ggml_free(work_ctx);
         return NULL;
     }
+    memset(result_images,0,batch_count*sizeof(sd_image_t));
 
     for (size_t i = 0; i < decoded_images.size(); i++) {
         result_images[i].width   = width;
