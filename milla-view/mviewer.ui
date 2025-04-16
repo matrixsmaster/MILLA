@@ -3141,9 +3141,6 @@
    <property name="text">
     <string>Import metadata</string>
    </property>
-   <property name="shortcut">
-    <string>Ctrl+I</string>
-   </property>
   </action>
   <action name="actionUpdate_thumbnails">
    <property name="text">

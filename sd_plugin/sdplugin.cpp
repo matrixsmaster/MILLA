@@ -383,7 +383,7 @@ void SDPlugin::dockCallback(QString preset, int mode)
         break;
 
     default:
-        qDebug() << "[ANNA] Wrong dockCallback mode " << mode;
+        qDebug() << "[SDPlugin] Wrong dockCallback mode " << mode;
     }
 }
 

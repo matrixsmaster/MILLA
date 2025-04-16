@@ -848,9 +848,7 @@ public:
         struct ggml_tensor* denoised = ggml_dup_tensor(work_ctx, x);
 
         auto denoise = [&](ggml_tensor* input, float sigma, int step) -> ggml_tensor* {
-            if (step == 1) {
-                pretty_progress(0, (int)steps, 0);
-            }
+            if (!pretty_progress(step-1,(int)steps,0)) return nullptr;
             int64_t t0 = ggml_time_us();
 
             std::vector<float> scaling = denoiser->get_scalings(sigma);
@@ -1477,6 +1475,8 @@ sd_image_t* generate_image(sd_ctx_t* sd_ctx,
         int64_t sampling_end = ggml_time_ms();
         LOG_INFO("sampling completed, taking %.2fs", (sampling_end - sampling_start) * 1.0f / 1000);
         final_latents.push_back(x_0);
+
+        if (!pretty_progress(b,batch_count,0)) batch_count = b+1; // stop at this count
     }
 
     if (sd_ctx->sd->free_params_immediately) {

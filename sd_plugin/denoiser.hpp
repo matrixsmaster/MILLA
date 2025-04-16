@@ -488,6 +488,7 @@ static void sample_k_diffusion(sample_method_t method,
 
                 // denoise
                 ggml_tensor* denoised = model(x, sigma, i + 1);
+                if (!denoised) break;
 
                 // d = (x - denoised) / sigma
                 {
@@ -541,6 +542,7 @@ static void sample_k_diffusion(sample_method_t method,
 
                 // denoise
                 ggml_tensor* denoised = model(x, sigma, i + 1);
+                if (!denoised) break;
 
                 // d = (x - denoised) / sigma
                 {
@@ -572,6 +574,7 @@ static void sample_k_diffusion(sample_method_t method,
             for (int i = 0; i < steps; i++) {
                 // denoise
                 ggml_tensor* denoised = model(x, sigmas[i], -(i + 1));
+                if (!denoised) break;
 
                 // d = (x - denoised) / sigma
                 {
@@ -606,6 +609,7 @@ static void sample_k_diffusion(sample_method_t method,
                     }
 
                     ggml_tensor* denoised = model(x2, sigmas[i + 1], i + 1);
+                    if (!denoised) break;
                     float* vec_denoised   = (float*)denoised->data;
                     for (int j = 0; j < ggml_nelements(x); j++) {
                         float d2 = (vec_x2[j] - vec_denoised[j]) / sigmas[i + 1];
@@ -622,6 +626,7 @@ static void sample_k_diffusion(sample_method_t method,
             for (int i = 0; i < steps; i++) {
                 // denoise
                 ggml_tensor* denoised = model(x, sigmas[i], i + 1);
+                if (!denoised) break;
 
                 // d = (x - denoised) / sigma
                 {
@@ -658,6 +663,7 @@ static void sample_k_diffusion(sample_method_t method,
                     }
 
                     ggml_tensor* denoised = model(x2, sigma_mid, i + 1);
+                    if (!denoised) break;
                     float* vec_denoised   = (float*)denoised->data;
                     for (int j = 0; j < ggml_nelements(x); j++) {
                         float d2 = (vec_x2[j] - vec_denoised[j]) / sigma_mid;
@@ -675,6 +681,7 @@ static void sample_k_diffusion(sample_method_t method,
             for (int i = 0; i < steps; i++) {
                 // denoise
                 ggml_tensor* denoised = model(x, sigmas[i], i + 1);
+                if (!denoised) break;
 
                 // get_ancestral_step
                 float sigma_up   = std::min(sigmas[i + 1],
@@ -719,6 +726,7 @@ static void sample_k_diffusion(sample_method_t method,
                     }
 
                     ggml_tensor* denoised = model(x2, sigmas[i + 1], i + 1);
+                    if (!denoised) break;
 
                     // Second half-step
                     for (int j = 0; j < ggml_nelements(x); j++) {
@@ -749,6 +757,7 @@ static void sample_k_diffusion(sample_method_t method,
             for (int i = 0; i < steps; i++) {
                 // denoise
                 ggml_tensor* denoised = model(x, sigmas[i], i + 1);
+                if (!denoised) break;
 
                 float t                 = t_fn(sigmas[i]);
                 float t_next            = t_fn(sigmas[i + 1]);
@@ -788,6 +797,7 @@ static void sample_k_diffusion(sample_method_t method,
             for (int i = 0; i < steps; i++) {
                 // denoise
                 ggml_tensor* denoised = model(x, sigmas[i], i + 1);
+                if (!denoised) break;
 
                 float t                 = t_fn(sigmas[i]);
                 float t_next            = t_fn(sigmas[i + 1]);
@@ -838,6 +848,7 @@ static void sample_k_diffusion(sample_method_t method,
 
                 // Denoising step
                 ggml_tensor* denoised = model(x_cur, sigma, i + 1);
+                if (!denoised) break;
                 float* vec_denoised   = (float*)denoised->data;
                 // d_cur = (x_cur - denoised) / sigma
                 struct ggml_tensor* d_cur = ggml_dup_tensor(work_ctx, x_cur);
@@ -981,6 +992,7 @@ static void sample_k_diffusion(sample_method_t method,
 
                 // denoise
                 ggml_tensor* denoised = model(x, sigma, i + 1);
+                if (!denoised) break;
 
                 // x = denoised
                 {

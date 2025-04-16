@@ -186,9 +186,13 @@ void MillaPluginLoader::pluginAction(QString name, QAction* sender, bool skip_ui
     if (plug->isContinous()) {
         //if plugin is auto-firing, don't convert anything yet
         skip_convert = true;
-        if (sender->isChecked()) //check was already toggled before this call
+        if (sender->isChecked()) { //check was already toggled before this call
+            // make sure all other continuous plugins are disabled first
+            for (auto &i : plugins) {
+                if (i.second != plug && i.second->isContinous()) stopPlugin(i.second,nullptr);
+            }
             startPlugin(plug,sender);
-        else
+        } else
             stopPlugin(plug,sender);
     }
 
