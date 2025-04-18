@@ -11,7 +11,7 @@ QString MImpExpModule::tagsLineConvert(QString in, bool encode)
 {
     if (in.isEmpty() || foreign_cache->empty()) return in;
 
-    QStringList lin = in.split(',',QString::SkipEmptyParts);
+    QStringList lin = in.split(',',Qt::SkipEmptyParts);
     QString out;
     QTextStream x(&out);
     for (auto &i : lin) {
@@ -255,7 +255,7 @@ bool MImpExpModule::dataImport(ExportFormData const &d, QTextStream &f, InitRecC
         }
 
         //now actually extract fields - split the line by separators
-        QStringList sl = s.split(d.separator,QString::SkipEmptyParts);
+        QStringList sl = s.split(d.separator,Qt::SkipEmptyParts);
         checkBalance(sl,'\"');
         if (sl.length() != m) {
             qDebug() << "[IMPEXP] ALERT: Import error: fields count doesn't match!";

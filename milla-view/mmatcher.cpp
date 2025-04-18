@@ -57,7 +57,7 @@ QStringList MMatcher::GlobalMatcher(ProgressCB cb)
     targets.clear();
 
     QStringList all = DBHelper::getAllFiles();
-    QSet<QString> blackl = QSet<QString>::fromList(DBHelper::getExtraStringVal(DBF_EXTRA_EXCLUSION_LIST).split(';',QString::SkipEmptyParts));
+    QSet<QString> blackl = QSet<QString>::fromList(DBHelper::getExtraStringVal(DBF_EXTRA_EXCLUSION_LIST).split(';',Qt::SkipEmptyParts));
 
     MImageExtras cur;
     MImageListRecord rec;

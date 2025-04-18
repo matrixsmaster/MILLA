@@ -246,7 +246,7 @@ MImageExtras DBHelper::getExtrasFromDB(QString const &fn)
 
     res.picsize = QSize(q.value(0).toUInt(), q.value(1).toUInt());
     res.color = !(q.value(2).toInt());
-    QStringList flst = q.value(4).toString().split(',',QString::SkipEmptyParts);
+    QStringList flst = q.value(4).toString().split(',',Qt::SkipEmptyParts);
     for (auto k = flst.begin(); k != flst.end();) {
         MROI r;
         r.kind = MROI_FACE_FRONTAL;
@@ -381,7 +381,7 @@ MTagsCheckList DBHelper::getFileTags(QString const &fn)
         qq.prepare("SELECT tags FROM stats WHERE file = :fn");
         qq.bindValue(":fn",fn);
         if (qq.exec() && qq.next())
-            tlst = qq.value(0).toString().split(',',QString::SkipEmptyParts);
+            tlst = qq.value(0).toString().split(',',Qt::SkipEmptyParts);
     }
 
     bool c;
@@ -625,7 +625,7 @@ QStringList DBHelper::tagSearch(MTagCache const &cache, QList<MImageListRecord>*
         while (q.next()) {
             //qDebug() << "TAG " << i.second.first << " FOUND: " << q.value(0).toString();
             QList<int> l;
-            QStringList _l = q.value(1).toString().split(",",QString::SkipEmptyParts);
+            QStringList _l = q.value(1).toString().split(",",Qt::SkipEmptyParts);
             for (auto &j : _l) l.push_back(j.toInt());
             targ[q.value(0).toString()] = std::pair<QList<int>,int> (l,q.value(2).toInt());
         }
@@ -679,7 +679,7 @@ QStringList DBHelper::tagSearch(MTagCache const &cache, QList<MImageListRecord>*
 void DBHelper::initParametricSearch(QList<MImageListRecord> const &from)
 {
     searchlist.clear();
-    QSet<QString> blackl = QSet<QString>::fromList(getExtraStringVal(DBF_EXTRA_EXCLUSION_LIST).split(';',QString::SkipEmptyParts));
+    QSet<QString> blackl = QSet<QString>::fromList(getExtraStringVal(DBF_EXTRA_EXCLUSION_LIST).split(';',Qt::SkipEmptyParts));
 
     MImageListRecord r;
     for (auto &i : from) {
@@ -1073,7 +1073,7 @@ void DBHelper::sanitizeTags(ProgressCB progress_cb)
         if (progress_cb && !progress_cb(prg)) return;
 
         if (qa.value(0).toString().isEmpty()) continue;
-        QStringList ls = qa.value(0).toString().split(',',QString::SkipEmptyParts);
+        QStringList ls = qa.value(0).toString().split(',',Qt::SkipEmptyParts);
         if (ls.isEmpty()) continue;
 
         bool mod = false;

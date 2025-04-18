@@ -63,7 +63,7 @@ QStringList MImageLoader::openDirByList(QString const &fileName)
     QString dat = ilist.readAll();
     ilist.close();
 
-    QStringList ldat = dat.split('\n',QString::SkipEmptyParts);
+    QStringList ldat = dat.split('\n',Qt::SkipEmptyParts);
     dat.clear();
     if (ldat.empty()) return lst;
 
