@@ -52,19 +52,20 @@ QString MImpExpModule::removeQuotes(QString const &in) const
 bool MImpExpModule::exportStats(ExportFormData const &s, QTextStream &f)
 {
     QSqlQuery q;
-    QSet<QString> a,b,c;
+    QStringList lst;
     if (s.loaded_only) {
         if (!foreign_list) return false;
-        for (auto &i : *foreign_list) a.insert(i.filename);
+        if (foreign_list->empty()) return true;
+        for (auto &&i : *foreign_list) lst.push_back(i.filename);
+        setProgress(lst.size());
+    } else
+        setProgress(DBHelper::getNumFiles());
+
+    q.prepare(DBF_EXPORT_RECORD);
+    if (!q.exec()) {
+        qDebug() << "ALERT: Unable to export records from DB!";
+        return false;
     }
-
-    // TODO: optimization: if loaded_only, no need to intersect - we'll skip non-existant records (q.next() will be false)
-    // if !loaded_only, then do "SELECT <fields in order> FROM stats" - that'll be effectively an equivalent of what we have here now
-    if (!q.exec("SELECT file FROM stats")) return false;
-    while (q.next()) b.insert(q.value(0).toString());
-
-    if (s.loaded_only) c = b.intersect(a);
-    else c = b;
 
     if (s.header) {
         if (s.filename) f << "File name" << s.separator;
@@ -79,24 +80,25 @@ bool MImpExpModule::exportStats(ExportFormData const &s, QTextStream &f)
         if (s.separator != '\n') f << '\n';
     }
 
-    setProgress(c.size());
-
-    for (auto &i : c) {
-        if (s.filename) f << i << s.separator;
-
-        q.clear();
-        q.prepare(DBF_EXPORT_RECORD "file = :fn");
-        q.bindValue(":fn",i);
-        if (q.exec() && q.next()) {
-            if (s.views)    f << q.value(0).toUInt() << s.separator;
-            if (s.rating)   f << q.value(1).toInt() << s.separator;
-            if (s.likes)    f << q.value(2).toInt() << s.separator;
-            if (s.tags)     f << "\"" << tagsLineConvert(q.value(3).toString(),false) << "\"" << s.separator;
-            if (s.tagids)   f << "\"" << q.value(3).toString() << "\"" << s.separator;
-            if (s.notes)    f << "\"" << (s.linear_notes? q.value(4).toString().replace('\n',' ') : q.value(4).toString()).trimmed() << "\"" << s.separator;
-            if (s.sha)      f << q.value(5).toByteArray().toHex() << s.separator;
-            if (s.length)   f << q.value(6).toUInt() << s.separator;
+    QString notes;
+    while (q.next()) {
+        if (s.loaded_only) {
+            if (!lst.contains(q.value(DBF_EXPORT_FIELD_FILE).toString())) continue;
         }
+        if (s.notes) {
+            notes = q.value(DBF_EXPORT_FIELD_NOTES).toString();
+            if (s.linear_notes) notes = notes.replace('\n',' ');
+        }
+
+        if (s.filename) f << q.value(DBF_EXPORT_FIELD_FILE).toString() << s.separator;
+        if (s.views)    f << q.value(DBF_EXPORT_FIELD_VIEWS).toUInt() << s.separator;
+        if (s.rating)   f << q.value(DBF_EXPORT_FIELD_RATING).toInt() << s.separator;
+        if (s.likes)    f << q.value(DBF_EXPORT_FIELD_LIKES).toInt() << s.separator;
+        if (s.tags)     f << "\"" << tagsLineConvert(q.value(DBF_EXPORT_FIELD_TAGS).toString(),false) << "\"" << s.separator;
+        if (s.tagids)   f << "\"" << q.value(DBF_EXPORT_FIELD_TAGS).toString() << "\"" << s.separator;
+        if (s.notes)    f << "\"" << notes.trimmed() << "\"" << s.separator;
+        if (s.sha)      f << q.value(DBF_EXPORT_FIELD_SHA).toByteArray().toHex() << s.separator;
+        if (s.length)   f << q.value(DBF_EXPORT_FIELD_LENGTH).toUInt() << s.separator;
 
         if (s.separator != '\n') f << '\n';
         if (!incProgress()) break;

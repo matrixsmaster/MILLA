@@ -88,6 +88,8 @@ public:
 
     QStringList doParametricSearch(SearchFormData flt, ProgressCB pcb);
 
+    static int getNumFiles();
+
     static QStringList getAllFiles();
 
     QString getFileBySHA(QByteArray const &sha);

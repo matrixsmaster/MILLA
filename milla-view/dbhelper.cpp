@@ -807,6 +807,13 @@ QStringList DBHelper::doParametricSearch(SearchFormData flt, ProgressCB pcb)
     return out;
 }
 
+int DBHelper::getNumFiles()
+{
+    QSqlQuery q;
+    if (!q.exec("SELECT COUNT(file) FROM stats") || !q.next()) return 0;
+    return q.value(0).toInt();
+}
+
 QStringList DBHelper::getAllFiles()
 {
     QSqlQuery q;

@@ -79,7 +79,7 @@
 
 #define DBF_LINKS "created UNSIGNED INT, left BLOB, right BLOB"
 
-#define DBF_EXPORT_RECORD "SELECT views, rating, likes, tags, notes, sha256, length FROM stats WHERE "
+#define DBF_EXPORT_RECORD "SELECT file, views, rating, likes, tags, notes, sha256, length FROM stats"
 
 #define DBF_IMPORT_SELECT "SELECT file, views, rating, likes, tags, notes, sha256, length FROM stats WHERE "
 
@@ -90,6 +90,18 @@
 #define DBF_EXTRA_EXCLUSION_LIST "global_exclusion"
 
 #define DBF_GET_METAINFO "SELECT COUNT(file) FROM stats UNION ALL SELECT COUNT(created) FROM links"
+
+enum dbf_export_fields_e {
+    DBF_EXPORT_FIELD_FILE = 0,
+    DBF_EXPORT_FIELD_VIEWS,
+    DBF_EXPORT_FIELD_RATING,
+    DBF_EXPORT_FIELD_LIKES,
+    DBF_EXPORT_FIELD_TAGS,
+    DBF_EXPORT_FIELD_NOTES,
+    DBF_EXPORT_FIELD_SHA,
+    DBF_EXPORT_FIELD_LENGTH,
+    DBF_EXPORT_FIELD_NUMFIELDS
+};
 
 #endif // DB_FORMAT_H
 
