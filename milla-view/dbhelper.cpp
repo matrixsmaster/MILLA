@@ -990,54 +990,57 @@ void DBHelper::sanitizeThumbs(ProgressCB progress_cb)
 
 void DBHelper::sanitizeLinks(ProgressCB progress_cb)
 {
-    QSqlQuery q,qa;
+    QSqlQuery qc,qa,qf;
     QSet<QByteArray> known_shas;
     QList<std::pair<QByteArray,QByteArray>> to_remove;
 
-    if (!q.exec("SELECT COUNT(created) FROM links") || !qa.exec("SELECT left, right FROM links")) {
+    // request number of links and the actual link data
+    if (!qc.exec("SELECT COUNT(created) FROM links") || !qa.exec("SELECT left, right FROM links")) {
         qDebug() << "[db] Unable to load links table";
         return;
     }
 
-    double prg = 0, dp = q.next()? 50.f / (double)(q.value(0).toInt()) : 0;
+    // prepare progress bar
+    double prg = 0, dp = qc.next()? 50.f / (double)(qc.value(0).toInt()) : 0;
 
+    // request all known file hashes
+    if (!qf.exec("SELECT sha256 FROM stats")) {
+        qDebug() << "[db] Unable to load file hash table";
+        return;
+    }
+    while (qf.next()) known_shas.insert(qf.value(0).toByteArray());
+
+    // check the links
     while (qa.next()) {
         prg += dp;
         if (progress_cb && !progress_cb(prg)) return;
 
-        if (qa.value(0).toByteArray() == qa.value(1).toByteArray())
+        QByteArray left = qa.value(0).toByteArray();
+        QByteArray right = qa.value(1).toByteArray();
+
+        if (left == right)
             qDebug() << "[Sanitizer] File linked to itself detected";
-
         else {
-
-            if (known_shas.contains(qa.value(0).toByteArray()) && known_shas.contains(qa.value(1).toByteArray()))
-                continue;
-            q.clear();
-            q.prepare("SELECT file FROM stats WHERE sha256 = :sha1 OR sha256 = :sha2");
-            q.bindValue(":sha1",qa.value(0).toByteArray());
-            q.bindValue(":sha2",qa.value(1).toByteArray());
-            if (q.exec() && q.next() && q.next()) { //there must be two consecutive records
-                known_shas.insert(qa.value(0).toByteArray());
-                known_shas.insert(qa.value(1).toByteArray());
-                continue;
-            }
-            qDebug() << "[Sanitizer] Lost file with sha " << qa.value(0).toByteArray().toHex();
+            if (known_shas.contains(left) && known_shas.contains(right)) continue;
+            qDebug() << "[Sanitizer] Lost link " << left.toHex() << " to " << right.toHex();
         }
 
-        to_remove.push_back(std::pair<QByteArray,QByteArray>(qa.value(0).toByteArray(),qa.value(1).toByteArray()));
+        to_remove.push_back(std::pair<QByteArray,QByteArray>(left,right));
     }
 
     qDebug() << "[Sanitizer] " << to_remove.size() << " records scheduled for removal";
 
+    // update progress to the second half
     prg = 50;
     dp = 50.f / (double)(to_remove.size());
 
+    // remove all dead links
     for (auto &i : to_remove) {
-        q.clear();
-        q.prepare("DELETE FROM links WHERE left = :sha1 AND right = :sha2");
-        q.bindValue(":sha1",i.first);;
-        q.bindValue(":sha2",i.second);;
-        if (!q.exec()) {
+        qc.clear();
+        qc.prepare("DELETE FROM links WHERE left = :sha1 AND right = :sha2");
+        qc.bindValue(":sha1",i.first);;
+        qc.bindValue(":sha2",i.second);;
+        if (!qc.exec()) {
             qDebug() << "[db] Failed to remove link record";
             break;
         }
