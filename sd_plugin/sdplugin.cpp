@@ -606,17 +606,19 @@ QString SDPlugin::ScanNextImageFn()
         return res;
     }
     auto lst = ex.capturedTexts();
-    if (lst.length() != 3) {
+    if (lst.length() < 2 || lst.length() > 3) {
         qDebug() << "[SD] ERROR: Incorrect number of captures: " << lst.length();
         return res;
     }
-    QString fmt = QString::asprintf("%%0%dd",lst.at(2).length());
+    QString fmt = QString::asprintf("%%0%dd",lst.back().length()); // last capture defines number of digits
     //qDebug() << "[SD] fmt = '" << fmt << "'";
 
     for (int i = SDPLUGIN_ASAVE_START; i < SDPLUGIN_ASAVE_MAX; i++) {
-        res = asav_dir + "/" + lst.at(1) + QString::asprintf(fmt.toStdString().c_str(),i) + "." + asav_fmt.toLower();
+        res = asav_dir + "/";
+        if (lst.length() == 3) res += lst.at(1); // if both parts have been captured, use the prefix
+        res += QString::asprintf(fmt.toStdString().c_str(),i) + "." + asav_fmt.toLower();
         res.replace("//","/");
-        //qDebug() << "[SD] testing " << res;
+        //qDebug() << "[SD] testing filename " << res;
         if (!QFile::exists(res)) return res;
     }
 

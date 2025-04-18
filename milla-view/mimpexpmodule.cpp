@@ -58,6 +58,8 @@ bool MImpExpModule::exportStats(ExportFormData const &s, QTextStream &f)
         for (auto &i : *foreign_list) a.insert(i.filename);
     }
 
+    // TODO: optimization: if loaded_only, no need to intersect - we'll skip non-existant records (q.next() will be false)
+    // if !loaded_only, then do "SELECT <fields in order> FROM stats" - that'll be effectively an equivalent of what we have here now
     if (!q.exec("SELECT file FROM stats")) return false;
     while (q.next()) b.insert(q.value(0).toString());
 

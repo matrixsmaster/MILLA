@@ -13,7 +13,7 @@
 #define SDPLUGIN_TILE_SIZE 32
 #define SDPLUGIN_ASAVE_START 1
 #define SDPLUGIN_ASAVE_MAX 500000
-#define SDPLUGIN_ASAVE_REGEX "([A-Za-z_-+. ]+).*([#]+)"
+#define SDPLUGIN_ASAVE_REGEX "([A-Za-z_-+.]*)([#]+)"
 
 typedef enum {
     SDP_ACT_GEN_ONLY = 0x01,
