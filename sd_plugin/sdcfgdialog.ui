@@ -47,6 +47,13 @@
            </property>
           </widget>
          </item>
+         <item>
+          <widget class="QCheckBox" name="showRT">
+           <property name="text">
+            <string>Show in realtime</string>
+           </property>
+          </widget>
+         </item>
         </layout>
        </item>
        <item>

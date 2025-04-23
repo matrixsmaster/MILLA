@@ -64,6 +64,7 @@ MViewer::MViewer(QWidget *parent) : QMainWindow(parent)
 
     //Callback function for progressbar for external processing facilities
     prog_callback = ([this] (double p) {
+        //std::lock_guard<std::mutex> lock(prog_mutex);
         if (p >= 0) progressBar->setValue(floor(p));
         QCoreApplication::processEvents();
         return !stop_flag;

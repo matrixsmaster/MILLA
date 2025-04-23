@@ -295,6 +295,7 @@ private:
     bool stop_flag = false;
     bool block_events = false;
     ProgressCB prog_callback;
+    //std::mutex prog_mutex;
     double scaleFactor = 1;
     MImageListRecord current_l, current_r;
     QRect selection, selection_scaled;

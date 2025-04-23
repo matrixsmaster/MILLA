@@ -15,6 +15,7 @@
 #define SDPLUGIN_ASAVE_START 1
 #define SDPLUGIN_ASAVE_MAX 500000
 #define SDPLUGIN_ASAVE_REGEX "([A-Za-z_-+.]*)([#]+)"
+#define SDPLUGIN_UI_UPDATE 50ms
 
 typedef enum {
     SDP_ACT_GEN_ONLY = 0x01,
@@ -109,6 +110,7 @@ private:
     QList<SDOutputRec> outputs;
     int delay = SDPLUGIN_DEF_DELAY;
     std::mutex out_mutex;
+    QImage inp_img_convert;
     std::future<sd_image_t*> split_exec;
 
     bool LoadConfig(QString preset);
@@ -118,6 +120,7 @@ private:
 
     bool RunStop(bool start);
     bool GenerateBatch(const QImage &in);
+    void AddImage(sd_image_t* in, bool scale);
     QPixmap Scaleup(const QImage &in);
     void Cleanup();
     void AutosaveImage(SDOutputRec &rec);

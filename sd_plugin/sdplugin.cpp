@@ -45,6 +45,7 @@ bool SDPlugin::LoadConfig(QString preset)
 
     CONFIG_LOAD_INT(dogen);
     CONFIG_LOAD_INT(useleft);
+    CONFIG_LOAD_INT(realtime);
     CONFIG_LOAD_STDSTR(model);
     CONFIG_LOAD_STDSTR(vaemodel);
     CONFIG_LOAD_STDSTR(cnmodel);
@@ -92,6 +93,7 @@ bool SDPlugin::SaveConfig(QString preset)
 
     CONFIG_SAVE_INT(dogen);
     CONFIG_SAVE_INT(useleft);
+    CONFIG_SAVE_INT(realtime);
     CONFIG_SAVE_STDSTR(model);
     CONFIG_SAVE_STDSTR(vaemodel);
     CONFIG_SAVE_STDSTR(cnmodel);
@@ -132,6 +134,7 @@ void SDPlugin::setConfigUI()
 {
     dialog->ui->doGen->setChecked(dogen);
     dialog->ui->useLeft->setChecked(useleft);
+    dialog->ui->showRT->setChecked(realtime);
     dialog->ui->modelFile->setText(QString::fromStdString(model));
     dialog->ui->vaeFile->setText(QString::fromStdString(vaemodel));
     dialog->ui->cnFile->setText(QString::fromStdString(cnmodel));
@@ -172,6 +175,7 @@ void SDPlugin::getConfigUI()
 {
     dogen = dialog->ui->doGen->isChecked();
     useleft = dialog->ui->useLeft->isChecked();
+    realtime = dialog->ui->showRT->isChecked();
     model = dialog->ui->modelFile->text().toStdString();
     vaemodel = dialog->ui->vaeFile->text().toStdString();
     cnmodel = dialog->ui->cnFile->text().toStdString();
@@ -231,7 +235,12 @@ bool SDPlugin::RunStop(bool start)
 {
     if (!start) {
         qDebug() << "[SD] Stop request received";
-        if (split_exec.valid()) split_exec.wait();
+        if (split_exec.valid()) {
+            split_exec.wait();
+            auto ptr = split_exec.get();
+            if (ptr) free(ptr);
+            split_exec = std::future<sd_image_t*>();
+        }
         if (!self_stop) Cleanup();
         self_stop = false;
         return true;
@@ -292,9 +301,6 @@ QVariant SDPlugin::action(QVariant in)
 
     QPixmap px;
     if (dogen) {
-        if (split_exec.valid()) {
-            // TODO
-        }
         out_mutex.lock();
         if (curout >= 0 && curout < outputs.count())
             px = outputs.at(curout).img;
@@ -393,6 +399,11 @@ void SDPlugin::dockCallback(QString preset, int mode)
     }
 }
 
+void SDPlugin::imageCallback(sd_image_t *img)
+{
+    AddImage(img,false); // temporarily we forbid upscaling while showing images in realtime due to VRAM considerations
+}
+
 static void log_helper(sd_log_level_t level, const char* text, void* /*data*/)
 {
     QString txt(text);
@@ -417,27 +428,13 @@ bool SDPlugin::GenerateBatch(const QImage &in)
     sd_set_log_callback(log_helper,nullptr);
     sd_set_progress_callback(progress_helper,this);
 
-    QImage tmpimg;
-    sd_image_t leftimg,maskimg;
-    vector<uint8_t> maskholder;
     if (useleft) {
         if (in.isNull()) {
             qDebug() << "[SD] ERROR: no left image given!";
             return false;
         }
-        qDebug() << "[SD] Resizing input image...";
-        tmpimg = in.scaled(QSize(SDPLUGIN_IMGSIZE,SDPLUGIN_IMGSIZE),Qt::KeepAspectRatioByExpanding);
-        tmpimg.convertTo(QImage::Format_RGB888);
-        leftimg.channel = tmpimg.depth() / 8;
-        leftimg.width = tmpimg.width();
-        leftimg.height = tmpimg.height();
-        leftimg.data = (uint8_t*)tmpimg.constBits(); // we ain't gonna change the data
-        maskholder.resize(SDPLUGIN_IMGSIZE*SDPLUGIN_IMGSIZE,255);
-        maskimg.width = SDPLUGIN_IMGSIZE;
-        maskimg.height = SDPLUGIN_IMGSIZE;
-        maskimg.channel = 1;
-        maskimg.data = maskholder.data();
-        qDebug() << "[SD] input and mask images are ready";
+        inp_img_convert = in.scaled(QSize(SDPLUGIN_IMGSIZE,SDPLUGIN_IMGSIZE),Qt::KeepAspectRatioByExpanding);
+        inp_img_convert.convertTo(QImage::Format_RGB888);
     }
 
     qDebug() << "[SD] Initializing context...";
@@ -455,17 +452,32 @@ bool SDPlugin::GenerateBatch(const QImage &in)
     // TODO: make this into async object, then check up on it during activate() (and extract images); destroy during stop()
     qDebug() << "[SD] Generating...";
     if (!seed) seed = rand();
-    sample_method_t smpl = (sample_method_t)sampler;
-    split_exec = async(launch::async,[&]() -> sd_image_t* {
+
+    split_exec = async(launch::async,[this]() -> sd_image_t* {
+        sample_method_t smpl = (sample_method_t)sampler;
         if (!useleft)
             return txt2img(sdcontext,prompt.c_str(),nprompt.c_str(),-1,cfg_scale,guidance,0.f,SDPLUGIN_IMGSIZE,SDPLUGIN_IMGSIZE,smpl,steps,seed,batch,NULL,0.9,style_ratio,false,"",nullptr,0,0,0,0);
-        else
-            return img2img(sdcontext,leftimg,maskimg,prompt.c_str(),nprompt.c_str(),-1,cfg_scale,guidance,0.f,SDPLUGIN_IMGSIZE,SDPLUGIN_IMGSIZE,smpl,steps,strength,seed,batch,NULL,0.9,style_ratio,false,"",nullptr,0,0,0,0);
+
+        sd_image_t leftimg,maskimg;
+        vector<uint8_t> maskholder;
+        qDebug() << "[SD] Resizing input image...";
+        leftimg.channel = inp_img_convert.depth() / 8;
+        leftimg.width = inp_img_convert.width();
+        leftimg.height = inp_img_convert.height();
+        leftimg.data = (uint8_t*)inp_img_convert.constBits(); // we ain't gonna change the data
+        maskholder.resize(SDPLUGIN_IMGSIZE*SDPLUGIN_IMGSIZE,255);
+        maskimg.width = SDPLUGIN_IMGSIZE;
+        maskimg.height = SDPLUGIN_IMGSIZE;
+        maskimg.channel = 1;
+        maskimg.data = maskholder.data();
+        qDebug() << "[SD] input and mask images are ready";
+
+        return img2img(sdcontext,leftimg,maskimg,prompt.c_str(),nprompt.c_str(),-1,cfg_scale,guidance,0.f,SDPLUGIN_IMGSIZE,SDPLUGIN_IMGSIZE,smpl,steps,strength,seed,batch,NULL,0.9,style_ratio,false,"",nullptr,0,0,0,0);
     });
 
     if (realtime) return true;
 
-    while (split_exec.wait_for(50ms) != future_status::ready) {
+    while (split_exec.wait_for(SDPLUGIN_UI_UPDATE) != future_status::ready) {
         if (progress_cb) progress_cb(-1); // use it as UI updater
     }
 
@@ -473,31 +485,36 @@ bool SDPlugin::GenerateBatch(const QImage &in)
     if (out) {
         qDebug() << "[SD] Generation has finished!";
         for (int i = 0; i < batch; i++) {
-            if (!out[i].data) continue;
-
-            QImage img(out[i].data,out[i].width,out[i].height,((out[i].channel == 4)? QImage::Format_ARGB32 : QImage::Format_RGB888));
-            img.bits(); // force copying
-            SDOutputRec rec;
-            if (doupsc) rec.img = Scaleup(img);
-            else rec.img  = QPixmap::fromImage(img);
-            rec.saved = false;
-            if (autosave == SDP_ASAV_ALL) AutosaveImage(rec);
-
-            out_mutex.lock();
-            outputs.push_back(rec);
-            out_mutex.unlock();
-
-            free(out[i].data);
-            out[i].data = NULL;
+            if (out[i].data) AddImage(out+i,true);
         }
         free(out);
 
     } else
         qDebug() << "[SD] ERROR: Generation failed!";
 
+    split_exec = std::future<sd_image_t*>();
     free_sd_ctx(sdcontext);
     sdcontext = nullptr;
     return out; // if it was OK, it'll evaluate to true
+}
+
+void SDPlugin::AddImage(sd_image_t* in, bool scale)
+{
+    QImage img(in->data,in->width,in->height,((in->channel == 4)? QImage::Format_ARGB32 : QImage::Format_RGB888));
+    img.bits(); // force copying
+
+    SDOutputRec rec;
+    if (doupsc && scale) rec.img = Scaleup(img);
+    else rec.img  = QPixmap::fromImage(img);
+    rec.saved = false;
+    if (autosave == SDP_ASAV_ALL) AutosaveImage(rec);
+
+    out_mutex.lock();
+    outputs.push_back(rec);
+    out_mutex.unlock();
+
+    free(in->data);
+    in->data = NULL;
 }
 
 bool SDPlugin::isContinous()
