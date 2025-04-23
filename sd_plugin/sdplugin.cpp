@@ -301,16 +301,31 @@ QVariant SDPlugin::action(QVariant in)
 
     QPixmap px;
     if (dogen) {
+        // first of all, update async progress
+        if (split_exec.valid()) {
+            if (split_exec.wait_for(1ms) == future_status::ready) { // test by waiting for a very small amount of time
+                if (config_cb) config_cb("long_processing",true); // stop progress bar
+                split_exec.get(); // invalidate the async object
+            } else {
+                if (config_cb && progress_once) config_cb("long_processing",false); // make sure the progress bar is active
+                progress_once = false;
+                last_progr_ret = progress_cb? progress_cb(last_progress) : true;
+            }
+        }
+
+        // show currently selected image
         out_mutex.lock();
         if (curout >= 0 && curout < outputs.count())
             px = outputs.at(curout).img;
         out_mutex.unlock();
 
     } else if (doupsc && in.canConvert<QPixmap>()) {
+        // this action doesn't require Start/Stop, as it's a one-shot conversion
         QImage img = in.value<QPixmap>().toImage();
         img.convertTo(QImage::Format_RGB888); // upscaler doesn't care about alpha
         px = Scaleup(img);
 
+        // stop ourselves (to remove active action flag from the UI)
         if (config_cb) {
             self_stop = true;
             config_cb("self_disable",QVariant());
@@ -373,8 +388,9 @@ bool SDPlugin::eventFilter(QObject *obj, QEvent *event)
 
 bool SDPlugin::progress(double val)
 {
-    if (progress_cb) return progress_cb(val);
-    return true;
+    // to make sure we're not updating values from one thread into UI thread, we need to defer the update
+    last_progress = val;
+    return last_progr_ret;
 }
 
 void SDPlugin::dockCallback(QString preset, int mode)
@@ -427,6 +443,8 @@ bool SDPlugin::GenerateBatch(const QImage &in)
 {
     sd_set_log_callback(log_helper,nullptr);
     sd_set_progress_callback(progress_helper,this);
+    last_progress = 0;
+    last_progr_ret = true;
 
     if (useleft) {
         if (in.isNull()) {
@@ -437,6 +455,8 @@ bool SDPlugin::GenerateBatch(const QImage &in)
         inp_img_convert.convertTo(QImage::Format_RGB888);
     }
 
+    // create new SD context
+    // TODO: make context disjointed so we can reuse it for faster generation
     qDebug() << "[SD] Initializing context...";
     string bmdl = t5model.empty()? model.c_str() : "";
     string dmdl = t5model.empty()? "" : model.c_str();
@@ -449,10 +469,10 @@ bool SDPlugin::GenerateBatch(const QImage &in)
     }
     if (realtime) set_imageready(sdcontext,imageshow_helper,this);
 
-    // TODO: make this into async object, then check up on it during activate() (and extract images); destroy during stop()
     qDebug() << "[SD] Generating...";
     if (!seed) seed = rand();
 
+    // detach the execution into a separate threaded object
     split_exec = async(launch::async,[this]() -> sd_image_t* {
         sample_method_t smpl = (sample_method_t)sampler;
         if (!useleft)
@@ -475,12 +495,17 @@ bool SDPlugin::GenerateBatch(const QImage &in)
         return img2img(sdcontext,leftimg,maskimg,prompt.c_str(),nprompt.c_str(),-1,cfg_scale,guidance,0.f,SDPLUGIN_IMGSIZE,SDPLUGIN_IMGSIZE,smpl,steps,strength,seed,batch,NULL,0.9,style_ratio,false,"",nullptr,0,0,0,0);
     });
 
-    if (realtime) return true;
-
-    while (split_exec.wait_for(SDPLUGIN_UI_UPDATE) != future_status::ready) {
-        if (progress_cb) progress_cb(-1); // use it as UI updater
+    // for realtime updates, we have to exit now and use action() for the rest of the process
+    if (realtime) {
+        progress_once = true; // make sure we'll reactivate the progress bar in action()
+        return true;
     }
 
+    // for bulk updates, we need to keep updating the async progress
+    while (split_exec.wait_for(SDPLUGIN_UI_UPDATE) != future_status::ready)
+        last_progr_ret = progress_cb? progress_cb(last_progress) : true;
+
+    // now we can push all decoded images into the output vector
     sd_image_t* out = split_exec.get();
     if (out) {
         qDebug() << "[SD] Generation has finished!";
@@ -492,6 +517,7 @@ bool SDPlugin::GenerateBatch(const QImage &in)
     } else
         qDebug() << "[SD] ERROR: Generation failed!";
 
+    // make sure split_exec is invalid, and free other resources
     split_exec = std::future<sd_image_t*>();
     free_sd_ctx(sdcontext);
     sdcontext = nullptr;
@@ -515,6 +541,8 @@ void SDPlugin::AddImage(sd_image_t* in, bool scale)
 
     free(in->data);
     in->data = NULL;
+
+    if (split_exec.valid()) curout = outputs.size() - 1;
 }
 
 bool SDPlugin::isContinous()

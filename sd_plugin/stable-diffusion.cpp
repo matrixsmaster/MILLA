@@ -1492,7 +1492,7 @@ sd_image_t* generate_image(sd_ctx_t* sd_ctx,
         LOG_INFO("sampling completed, taking %.2fs", (sampling_end - sampling_start) * 1.0f / 1000);
         final_latents.push_back(x_0);
 
-        if (!pretty_progress(b,batch_count,0)) break;
+        if (!pretty_progress(b+1,batch_count,0)) break;
 
         if (sd_ctx->img_cb) {
             struct ggml_tensor* img = sd_ctx->sd->decode_first_stage(work_ctx,x_0);

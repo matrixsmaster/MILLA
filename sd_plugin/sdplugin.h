@@ -106,12 +106,15 @@ private:
     bool asav_addnote = false;
     QString asav_dir, asav_fmt, asav_pat, asav_tags, asav_notes;
 
-    int curout = 0;
+    std::atomic<int> curout = 0;
     QList<SDOutputRec> outputs;
     int delay = SDPLUGIN_DEF_DELAY;
     std::mutex out_mutex;
     QImage inp_img_convert;
     std::future<sd_image_t*> split_exec;
+    std::atomic<double> last_progress = 0;
+    std::atomic<bool> last_progr_ret = true;
+    bool progress_once = false;
 
     bool LoadConfig(QString preset);
     bool SaveConfig(QString preset);
