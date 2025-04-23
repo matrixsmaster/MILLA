@@ -306,9 +306,15 @@ QVariant SDPlugin::action(QVariant in)
             if (split_exec.wait_for(1ms) == future_status::ready) { // test by waiting for a very small amount of time
                 if (config_cb) config_cb("long_processing",true); // stop progress bar
                 split_exec.get(); // invalidate the async object
+
             } else {
-                if (config_cb && progress_once) config_cb("long_processing",false); // make sure the progress bar is active
-                progress_once = false;
+                // make sure the progress bar is active
+                if (config_cb) {
+                    auto r = config_cb("is_long_processing",QVariant());
+                    if (r.canConvert<bool>() && !r.value<bool>())
+                        config_cb("long_processing",false);
+                }
+                // update actual progress bar
                 last_progr_ret = progress_cb? progress_cb(last_progress) : true;
             }
         }
@@ -496,10 +502,7 @@ bool SDPlugin::GenerateBatch(const QImage &in)
     });
 
     // for realtime updates, we have to exit now and use action() for the rest of the process
-    if (realtime) {
-        progress_once = true; // make sure we'll reactivate the progress bar in action()
-        return true;
-    }
+    if (realtime) return true;
 
     // for bulk updates, we need to keep updating the async progress
     while (split_exec.wait_for(SDPLUGIN_UI_UPDATE) != future_status::ready)

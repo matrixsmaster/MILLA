@@ -114,7 +114,6 @@ private:
     std::future<sd_image_t*> split_exec;
     std::atomic<double> last_progress = 0;
     std::atomic<bool> last_progr_ret = true;
-    bool progress_once = false;
 
     bool LoadConfig(QString preset);
     bool SaveConfig(QString preset);

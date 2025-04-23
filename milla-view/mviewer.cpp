@@ -267,6 +267,12 @@ void MViewer::prepareLongProcessing(bool finish)
     }
 }
 
+bool MViewer::isInLongProcessing()
+{
+    // for now it's jujst as simple as checking the Stop button being available
+    return stopButton->isEnabled();
+}
+
 void MViewer::on_pushButton_clicked()
 {
     if (ui->lineEdit->text().isEmpty() || ui->lineEdit->text().contains(',')) return;
@@ -419,9 +425,8 @@ void MViewer::showSelectedImage()
         qDebug() << "Opening file as a special file format: " << plugins.openFileFormat(current_l.filename);
 
     //check if some time-consuming process is underway, don't use the view timer
-    if (!stopButton->isEnabled()) {
+    if (!isInLongProcessing()) {
         progressBar->setValue(0);
-//        ui->statusBar->showMessage("");
         view_timer.start(MILLA_VIEW_TIMER);
     }
 }

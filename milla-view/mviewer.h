@@ -63,6 +63,8 @@ public:
 
     void prepareLongProcessing(bool finish = false);
 
+    bool isInLongProcessing();
+
     bool createStatRecord(QString const &fn, bool cache_global = false);
 
     void showGeneratedPicture(QPixmap const &in);

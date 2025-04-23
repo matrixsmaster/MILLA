@@ -379,6 +379,10 @@ QVariant MillaPluginLoader::pluginConfigCallback(MillaGenericPlugin* plug, QStri
         MViewer* wnd = dynamic_cast<MViewer*>(context.window);
         if (wnd) wnd->prepareLongProcessing(val.value<bool>());
 
+    } else if (key == "is_long_processing" && val.isNull()) {
+        MViewer* wnd = dynamic_cast<MViewer*>(context.window);
+        return QVariant(bool(wnd? wnd->isInLongProcessing() : false));
+
     } else if (key == "index_new_file" && val.canConvert<QString>()) {
         QString fn = val.toString();
         MViewer* wnd = dynamic_cast<MViewer*>(context.window);
