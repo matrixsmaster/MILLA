@@ -9,6 +9,8 @@
 
 #define CONFIG_LOAD_INTT(V,T) if (doc.object().contains("" TOSTRING(V) "")) V = (T)(doc.object().value("" TOSTRING(V) "").toInt());
 
+using namespace std;
+
 SDPlugin::SDPlugin() :
     QObject(),
     MillaGenericPlugin()
@@ -229,6 +231,7 @@ bool SDPlugin::RunStop(bool start)
 {
     if (!start) {
         qDebug() << "[SD] Stop request received";
+        if (split_exec.valid()) split_exec.wait();
         if (!self_stop) Cleanup();
         self_stop = false;
         return true;
@@ -289,6 +292,9 @@ QVariant SDPlugin::action(QVariant in)
 
     QPixmap px;
     if (dogen) {
+        if (split_exec.valid()) {
+            // TODO
+        }
         out_mutex.lock();
         if (curout >= 0 && curout < outputs.count())
             px = outputs.at(curout).img;
@@ -400,6 +406,12 @@ static bool progress_helper(int step, int steps, float /*time*/, void* data)
     return self->progress((float)step / (float)steps * 100.f);
 }
 
+static void imageshow_helper(sd_image_t* img, void* user)
+{
+    SDPlugin* self = reinterpret_cast<SDPlugin*>(user);
+    self->imageCallback(img);
+}
+
 bool SDPlugin::GenerateBatch(const QImage &in)
 {
     sd_set_log_callback(log_helper,nullptr);
@@ -407,7 +419,7 @@ bool SDPlugin::GenerateBatch(const QImage &in)
 
     QImage tmpimg;
     sd_image_t leftimg,maskimg;
-    std::vector<uint8_t> maskholder;
+    vector<uint8_t> maskholder;
     if (useleft) {
         if (in.isNull()) {
             qDebug() << "[SD] ERROR: no left image given!";
@@ -429,24 +441,35 @@ bool SDPlugin::GenerateBatch(const QImage &in)
     }
 
     qDebug() << "[SD] Initializing context...";
-    std::string bmdl = t5model.empty()? model.c_str() : "";
-    std::string dmdl = t5model.empty()? "" : model.c_str();
+    string bmdl = t5model.empty()? model.c_str() : "";
+    string dmdl = t5model.empty()? "" : model.c_str();
     bool vae_decode_only = !useleft;
-    sd_ctx_t* ctx = new_sd_ctx(bmdl.c_str(),clipmodel.c_str(),"",t5model.c_str(),dmdl.c_str(),vaemodel.c_str(),"",cnmodel.c_str(),loradir.c_str(),"","",vae_decode_only,false,true,get_num_physical_cores(),SD_TYPE_COUNT,STD_DEFAULT_RNG,DEFAULT,false,false,false,false);
-    if (!ctx) {
+    if (sdcontext) free_sd_ctx(sdcontext);
+    sdcontext = new_sd_ctx(bmdl.c_str(),clipmodel.c_str(),"",t5model.c_str(),dmdl.c_str(),vaemodel.c_str(),"",cnmodel.c_str(),loradir.c_str(),"","",vae_decode_only,false,true,get_num_physical_cores(),SD_TYPE_COUNT,STD_DEFAULT_RNG,DEFAULT,false,false,false,false);
+    if (!sdcontext) {
         qDebug() << "[SD] ERROR: Unable to create generator context!";
         return false;
     }
+    if (realtime) set_imageready(sdcontext,imageshow_helper,this);
 
+    // TODO: make this into async object, then check up on it during activate() (and extract images); destroy during stop()
     qDebug() << "[SD] Generating...";
-    if (!seed) seed = std::rand();
+    if (!seed) seed = rand();
     sample_method_t smpl = (sample_method_t)sampler;
-    sd_image_t* out;
-    if (!useleft)
-        out = txt2img(ctx,prompt.c_str(),nprompt.c_str(),-1,cfg_scale,guidance,0.f,SDPLUGIN_IMGSIZE,SDPLUGIN_IMGSIZE,smpl,steps,seed,batch,NULL,0.9,style_ratio,false,"",nullptr,0,0,0,0);
-    else
-        out = img2img(ctx,leftimg,maskimg,prompt.c_str(),nprompt.c_str(),-1,cfg_scale,guidance,0.f,SDPLUGIN_IMGSIZE,SDPLUGIN_IMGSIZE,smpl,steps,strength,seed,batch,NULL,0.9,style_ratio,false,"",nullptr,0,0,0,0);
+    split_exec = async(launch::async,[&]() -> sd_image_t* {
+        if (!useleft)
+            return txt2img(sdcontext,prompt.c_str(),nprompt.c_str(),-1,cfg_scale,guidance,0.f,SDPLUGIN_IMGSIZE,SDPLUGIN_IMGSIZE,smpl,steps,seed,batch,NULL,0.9,style_ratio,false,"",nullptr,0,0,0,0);
+        else
+            return img2img(sdcontext,leftimg,maskimg,prompt.c_str(),nprompt.c_str(),-1,cfg_scale,guidance,0.f,SDPLUGIN_IMGSIZE,SDPLUGIN_IMGSIZE,smpl,steps,strength,seed,batch,NULL,0.9,style_ratio,false,"",nullptr,0,0,0,0);
+    });
 
+    if (realtime) return true;
+
+    while (split_exec.wait_for(50ms) != future_status::ready) {
+        if (progress_cb) progress_cb(-1); // use it as UI updater
+    }
+
+    sd_image_t* out = split_exec.get();
     if (out) {
         qDebug() << "[SD] Generation has finished!";
         for (int i = 0; i < batch; i++) {
@@ -467,11 +490,13 @@ bool SDPlugin::GenerateBatch(const QImage &in)
             free(out[i].data);
             out[i].data = NULL;
         }
+        free(out);
+
     } else
         qDebug() << "[SD] ERROR: Generation failed!";
 
-    free(out);
-    free_sd_ctx(ctx);
+    free_sd_ctx(sdcontext);
+    sdcontext = nullptr;
     return out; // if it was OK, it'll evaluate to true
 }
 
@@ -539,6 +564,8 @@ QPixmap SDPlugin::Scaleup(const QImage &in)
 void SDPlugin::Cleanup()
 {
     out_mutex.lock();
+    if (sdcontext) free_sd_ctx(sdcontext);
+    sdcontext = nullptr;
     outputs.clear();
     if (upscaler) free_upscaler_ctx(upscaler);
     upscaler = nullptr;
@@ -631,7 +658,7 @@ QString SDPlugin::TextualizeConfig()
     QString r;
 
     if (dogen) {
-        std::string s;
+        string s;
         s += "Image generated with " + model + ", using encoder " + vaemodel;
         if (!cnmodel.empty()) s += ", with control net " + cnmodel;
         if (!clipmodel.empty()) s += ", with CLiP " + clipmodel;

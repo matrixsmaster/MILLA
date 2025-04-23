@@ -239,6 +239,10 @@ SD_API uint8_t* preprocess_canny(uint8_t* img,
                                  float strong,
                                  bool inverse);
 
+typedef void (*sd_imageready_cb_t)(sd_image_t* img, void* user);
+
+SD_API void set_imageready(sd_ctx_t *ctx, sd_imageready_cb_t fun, void* user);
+
 #ifdef __cplusplus
 }
 #endif

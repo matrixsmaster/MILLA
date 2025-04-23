@@ -4,6 +4,7 @@
 #include <QObject>
 #include <thread>
 #include <mutex>
+#include <future>
 #include "plugins.h"
 #include "sdcfgdialog.h"
 #include "stable-diffusion.h"
@@ -65,6 +66,7 @@ public:
 
     bool progress(double val);
     void dockCallback(QString preset, int mode);
+    void imageCallback(sd_image_t* img);
 
 protected:
     bool eventFilter(QObject *obj, QEvent *event);
@@ -73,6 +75,7 @@ private:
     PlugConfCB config_cb = nullptr;
     ProgressCB progress_cb = nullptr;
     SDCfgDialog* dialog = nullptr;
+    sd_ctx_t* sdcontext = nullptr;
 
     bool load_once = false;
     bool skip_gen = false; //FIXME: do we still need it, or the new abort-by-UI-Cancel is enough
@@ -83,6 +86,7 @@ private:
     bool dogen = false;
     bool doupsc = false;
     bool useleft = false;
+    bool realtime = false;
     std::string model, vaemodel, cnmodel, clipmodel, t5model, loradir, esrgan; // TODO: add controlnet image input
     std::string prompt, nprompt;
     float cfg_scale = 1;
@@ -105,6 +109,7 @@ private:
     QList<SDOutputRec> outputs;
     int delay = SDPLUGIN_DEF_DELAY;
     std::mutex out_mutex;
+    std::future<sd_image_t*> split_exec;
 
     bool LoadConfig(QString preset);
     bool SaveConfig(QString preset);

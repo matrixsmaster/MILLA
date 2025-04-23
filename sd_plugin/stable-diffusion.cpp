@@ -1105,7 +1105,15 @@ public:
 
 struct sd_ctx_t {
     StableDiffusionGGML* sd = NULL;
+    sd_imageready_cb_t img_cb = NULL;
+    void* userdata = NULL;
 };
+
+void set_imageready(sd_ctx_t* ctx, sd_imageready_cb_t fun, void* user)
+{
+    ctx->img_cb = fun;
+    ctx->userdata = user;
+}
 
 sd_ctx_t* new_sd_ctx(const char* model_path_c_str,
                      const char* clip_l_path_c_str,
@@ -1389,6 +1397,13 @@ sd_image_t* generate_image(sd_ctx_t* sd_ctx,
 
     // Sample
     std::vector<struct ggml_tensor*> final_latents;  // collect latents to decode
+    sd_image_t* result_images = (sd_image_t*)calloc(batch_count, sizeof(sd_image_t));
+    if (result_images == NULL) {
+        ggml_free(work_ctx);
+        return NULL;
+    }
+    memset(result_images,0,batch_count*sizeof(sd_image_t));
+
     int C = 4;
     if (sd_version_is_sd3(sd_ctx->sd->version)) {
         C = 16;
@@ -1399,6 +1414,7 @@ sd_image_t* generate_image(sd_ctx_t* sd_ctx,
     int H = height / 8;
     LOG_INFO("sampling using %s method", sampling_methods_str[sample_method]);
     ggml_tensor* noise_mask = nullptr;
+
     if (sd_version_is_inpaint(sd_ctx->sd->version)) {
         if (masked_image == NULL) {
             int64_t mask_channels = 1;
@@ -1477,48 +1493,58 @@ sd_image_t* generate_image(sd_ctx_t* sd_ctx,
         final_latents.push_back(x_0);
 
         if (!pretty_progress(b,batch_count,0)) break;
+
+        if (sd_ctx->img_cb) {
+            struct ggml_tensor* img = sd_ctx->sd->decode_first_stage(work_ctx,x_0);
+            if (!img) continue;
+            result_images[b].width   = width;
+            result_images[b].height  = height;
+            result_images[b].channel = 3;
+            result_images[b].data    = sd_tensor_to_image(img);
+            sd_ctx->img_cb(result_images+b,sd_ctx->userdata);
+        }
     }
 
     if (sd_ctx->sd->free_params_immediately) {
         sd_ctx->sd->diffusion_model->free_params_buffer();
     }
+
     int64_t t3 = ggml_time_ms();
     LOG_INFO("generating %" PRId64 " latent images completed, taking %.2fs", final_latents.size(), (t3 - t1) * 1.0f / 1000);
 
     // Decode to image
-    LOG_INFO("decoding %zu latents", final_latents.size());
     std::vector<struct ggml_tensor*> decoded_images;  // collect decoded images
-    for (size_t i = 0; i < final_latents.size(); i++) {
-        t1                      = ggml_time_ms();
-        struct ggml_tensor* img = sd_ctx->sd->decode_first_stage(work_ctx, final_latents[i] /* x_0 */);
-        // print_ggml_tensor(img);
-        if (img != NULL) {
-            decoded_images.push_back(img);
+    if (!sd_ctx->img_cb) {
+        LOG_INFO("decoding %zu latents", final_latents.size());
+        for (size_t i = 0; i < final_latents.size(); i++) {
+            t1                      = ggml_time_ms();
+            struct ggml_tensor* img = sd_ctx->sd->decode_first_stage(work_ctx, final_latents[i] /* x_0 */);
+            // print_ggml_tensor(img);
+            if (img != NULL) {
+                decoded_images.push_back(img);
+            }
+            int64_t t2 = ggml_time_ms();
+            LOG_INFO("latent %" PRId64 " decoded, taking %.2fs", i + 1, (t2 - t1) * 1.0f / 1000);
         }
-        int64_t t2 = ggml_time_ms();
-        LOG_INFO("latent %" PRId64 " decoded, taking %.2fs", i + 1, (t2 - t1) * 1.0f / 1000);
+
+        int64_t t4 = ggml_time_ms();
+        LOG_INFO("decode_first_stage completed, taking %.2fs", (t4 - t3) * 1.0f / 1000);
     }
 
-    int64_t t4 = ggml_time_ms();
-    LOG_INFO("decode_first_stage completed, taking %.2fs", (t4 - t3) * 1.0f / 1000);
     if (sd_ctx->sd->free_params_immediately && !sd_ctx->sd->use_tiny_autoencoder) {
         sd_ctx->sd->first_stage_model->free_params_buffer();
     }
-    sd_image_t* result_images = (sd_image_t*)calloc(batch_count, sizeof(sd_image_t));
-    if (result_images == NULL) {
-        ggml_free(work_ctx);
-        return NULL;
-    }
-    memset(result_images,0,batch_count*sizeof(sd_image_t));
 
-    for (size_t i = 0; i < decoded_images.size(); i++) {
-        result_images[i].width   = width;
-        result_images[i].height  = height;
-        result_images[i].channel = 3;
-        result_images[i].data    = sd_tensor_to_image(decoded_images[i]);
+    if (!sd_ctx->img_cb) {
+        for (size_t i = 0; i < decoded_images.size(); i++) {
+            result_images[i].width   = width;
+            result_images[i].height  = height;
+            result_images[i].channel = 3;
+            result_images[i].data    = sd_tensor_to_image(decoded_images[i]);
+        }
     }
+
     ggml_free(work_ctx);
-
     return result_images;
 }
 
