@@ -581,10 +581,12 @@ QPixmap SDPlugin::Scaleup(const QImage &in)
     QImage tmp;
     sd_image_t img;
     img.channel = in.depth() / 8;
-    img.width = in.width();
-    img.width += SDPLUGIN_TILE_SIZE - (img.width % SDPLUGIN_TILE_SIZE); // make sure it's divisible by smallest tile size
-    img.height = in.height();
-    img.height += SDPLUGIN_TILE_SIZE - (img.height % SDPLUGIN_TILE_SIZE);
+    if (in.width() < SDPLUGIN_TILE_SIZE) img.width = SDPLUGIN_TILE_SIZE;
+    else if (in.width() % SDPLUGIN_TILE_SIZE) img.width = (in.width() / SDPLUGIN_TILE_SIZE + 1) * SDPLUGIN_TILE_SIZE;
+    else img.width = in.width();
+    if (in.height() < SDPLUGIN_TILE_SIZE) img.height = SDPLUGIN_TILE_SIZE;
+    else if (in.height() % SDPLUGIN_TILE_SIZE) img.height = (in.height() / SDPLUGIN_TILE_SIZE + 1) * SDPLUGIN_TILE_SIZE;
+    else img.height = in.height();
     img.data = (uint8_t*)in.constBits(); // we ain't gonna change the data
 
     // pad the area if needed
