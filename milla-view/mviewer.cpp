@@ -1,4 +1,6 @@
-﻿#include "mviewer.h"
+﻿#include <QDrag>
+#include <QMimeData>
+#include "mviewer.h"
 #include "ui_mviewer.h"
 #include "searchform.h"
 #include "aboutbox.h"
@@ -1621,7 +1623,7 @@ bool MViewer::eventFilter(QObject *obj, QEvent *event)
         return QObject::eventFilter(obj,event);
     }
 
-    //check event source - is it from one of top labels?
+    // check event source - is it from one of top labels?
     if (obj == ui->label_3 || obj == ui->label_4) {
         if (event->type() != QEvent::MouseButtonPress) return QObject::eventFilter(obj,event);
         if (obj == ui->label_3 && current_l.valid)
@@ -1631,9 +1633,27 @@ bool MViewer::eventFilter(QObject *obj, QEvent *event)
         return true;
     }
 
-    //everything down here is related to left ScrollArea
+    // everything down here is related to left ScrollArea
     if (obj != ui->scrollArea) return QObject::eventFilter(obj,event);
 
+    // is it a drag-n-drop?
+    if (mev->modifiers() & Qt::ControlModifier) {
+        qDebug() << "Drag-n-drop started";
+        if (!current_l.valid) return true;
+        if (current_l.generated) return true; // FIXME: use the same workaround as with "Open with" action
+        QDrag* drag = new QDrag(this);
+        QMimeData* mime = new QMimeData;
+        QList<QUrl> urls;
+        urls << QUrl::fromLocalFile(current_l.filename);
+        mime->setUrls(urls);
+        drag->setMimeData(mime);
+        //drag->setPixmap(pixmap());
+        drag->exec(Qt::CopyAction);
+        qDebug() << "Drag-n-drop executed";
+        return true;
+    }
+
+    // do the selection stuff
     QRect aligned = QStyle::alignedRect(QApplication::layoutDirection(),QFlag(ui->label->alignment()),ui->label->pixmap()->size(),ui->label->rect());
     QRect inter = aligned.intersected(ui->label->rect());
     QPoint scrl_delta(0,0);
