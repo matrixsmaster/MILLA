@@ -31,7 +31,16 @@ typedef enum {
 
 struct SDOutputRec {
     QPixmap img;
-    bool saved;
+    bool saved = false;
+};
+
+struct SDGenTreeNode {
+    int batch = 0;
+    int steps = 0;
+    float strength = 1;
+    float scale = 1;
+    float style = 1;
+    float guidance = 1;
 };
 
 class SDPlugin : public QObject, public MillaGenericPlugin
@@ -88,6 +97,7 @@ private:
     bool doupsc = false;
     bool useleft = false;
     bool realtime = false;
+    bool usetrees = false;
     std::string model, vaemodel, cnmodel, clipmodel, t5model, loradir, esrgan; // TODO: add controlnet image input
     std::string prompt, nprompt;
     float cfg_scale = 1;
@@ -99,12 +109,14 @@ private:
     int seed = 0;
     int scale_fac = 4;
     int sampler = EULER_A;
+    QList<SDGenTreeNode> decision_tree;
     sdplug_autosave_t autosave = SDP_ASAV_NONE;
     bool asav_addb = false;
     bool asav_match = false;
     bool asav_addtag = false;
     bool asav_addnote = false;
     QString asav_dir, asav_fmt, asav_pat, asav_tags, asav_notes;
+    QKeySequence hk_saveone, hk_saveall, hk_nextstep;
 
     std::atomic<int> curout = 0;
     QList<SDOutputRec> outputs;

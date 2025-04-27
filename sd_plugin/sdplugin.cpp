@@ -8,6 +8,9 @@
 #include "ui_sdcfgdialog.h"
 
 #define CONFIG_LOAD_INTT(V,T) if (doc.object().contains("" TOSTRING(V) "")) V = (T)(doc.object().value("" TOSTRING(V) "").toInt());
+#define CONFIG_LOAD_STRN(V) (doc.object().contains("" TOSTRING(V) ""))? (doc.object().value("" TOSTRING(V) "").toString()) : ""
+#define CONFIG_LOAD_KEYSQ(V) V.fromString(CONFIG_LOAD_STRN(V));
+#define CONFIG_SAVE_KEYSQ(V) obj["" TOSTRING(V) ""] = V.toString();
 
 using namespace std;
 
@@ -46,6 +49,7 @@ bool SDPlugin::LoadConfig(QString preset)
     CONFIG_LOAD_INT(dogen);
     CONFIG_LOAD_INT(useleft);
     CONFIG_LOAD_INT(realtime);
+    CONFIG_LOAD_INT(usetrees);
     CONFIG_LOAD_STDSTR(model);
     CONFIG_LOAD_STDSTR(vaemodel);
     CONFIG_LOAD_STDSTR(cnmodel);
@@ -77,6 +81,10 @@ bool SDPlugin::LoadConfig(QString preset)
     CONFIG_LOAD_STR(asav_tags);
     CONFIG_LOAD_STR(asav_notes);
 
+    CONFIG_LOAD_KEYSQ(hk_saveone);
+    CONFIG_LOAD_KEYSQ(hk_saveall);
+    CONFIG_LOAD_KEYSQ(hk_nextstep);
+
     CONFIG_LOAD_DONE(preset);
     qDebug() << "[SD] Config loaded";
 
@@ -94,6 +102,7 @@ bool SDPlugin::SaveConfig(QString preset)
     CONFIG_SAVE_INT(dogen);
     CONFIG_SAVE_INT(useleft);
     CONFIG_SAVE_INT(realtime);
+    CONFIG_SAVE_INT(usetrees);
     CONFIG_SAVE_STDSTR(model);
     CONFIG_SAVE_STDSTR(vaemodel);
     CONFIG_SAVE_STDSTR(cnmodel);
@@ -125,6 +134,10 @@ bool SDPlugin::SaveConfig(QString preset)
     CONFIG_SAVE_STR(asav_tags);
     CONFIG_SAVE_STR(asav_notes);
 
+    CONFIG_SAVE_KEYSQ(hk_saveone);
+    CONFIG_SAVE_KEYSQ(hk_saveall);
+    CONFIG_SAVE_KEYSQ(hk_nextstep);
+
     CONFIG_SAVE_DONE(preset);
     qDebug() << "[SD] Config saved";
     return true;
@@ -135,6 +148,7 @@ void SDPlugin::setConfigUI()
     dialog->ui->doGen->setChecked(dogen);
     dialog->ui->useLeft->setChecked(useleft);
     dialog->ui->showRT->setChecked(realtime);
+    dialog->ui->useTrees->setChecked(usetrees);
     dialog->ui->modelFile->setText(QString::fromStdString(model));
     dialog->ui->vaeFile->setText(QString::fromStdString(vaemodel));
     dialog->ui->cnFile->setText(QString::fromStdString(cnmodel));
@@ -169,6 +183,10 @@ void SDPlugin::setConfigUI()
     dialog->ui->savAddTag->setChecked(asav_addtag);
     dialog->ui->savTags->setText(asav_tags);
     dialog->ui->savNotes->setPlainText(asav_notes);
+
+    dialog->ui->hkSaveOne->setKeySequence(hk_saveone);
+    dialog->ui->hkSaveAll->setKeySequence(hk_saveall);
+    dialog->ui->hkNextStep->setKeySequence(hk_nextstep);
 }
 
 void SDPlugin::getConfigUI()
@@ -176,6 +194,7 @@ void SDPlugin::getConfigUI()
     dogen = dialog->ui->doGen->isChecked();
     useleft = dialog->ui->useLeft->isChecked();
     realtime = dialog->ui->showRT->isChecked();
+    usetrees = dialog->ui->useTrees->isChecked();
     model = dialog->ui->modelFile->text().toStdString();
     vaemodel = dialog->ui->vaeFile->text().toStdString();
     cnmodel = dialog->ui->cnFile->text().toStdString();
@@ -209,6 +228,10 @@ void SDPlugin::getConfigUI()
     asav_addtag = dialog->ui->savAddTag->isChecked();
     asav_tags = dialog->ui->savTags->text();
     asav_notes = dialog->ui->savNotes->toPlainText();
+
+    hk_saveone = dialog->ui->hkSaveOne->keySequence();
+    hk_saveall = dialog->ui->hkSaveAll->keySequence();
+    hk_nextstep = dialog->ui->hkNextStep->keySequence();
 }
 
 bool SDPlugin::showUI(QDialog* dock)
@@ -715,8 +738,16 @@ QString SDPlugin::TextualizeConfig()
         if (!t5model.empty()) s += ", with T5XXL " + t5model;
         if (!loradir.empty()) s += ", using path " + loradir + " for LoRAs ";
         s += ".\n";
+
+        if (useleft && config_cb) {
+            auto mt = config_cb("get_left_meta",QVariant());
+            if (mt.isValid() && mt.value<MImageListRecord>().valid && !mt.value<MImageListRecord>().generated)
+                s += "Based on " + mt.value<MImageListRecord>().filename.toStdString();
+        }
+
         s += "Prompt used:\n" + prompt + "\n";
         if (!nprompt.empty()) s += "Negative prompt used:\n" + nprompt + "\n";
+
         r = QString::fromStdString(s);
         r += QString::asprintf("cfg_scale = %.2f; style_ratio = %.2f; guidance = %.2f; sampler = %d; steps = %d; seed = %d; batch = %d/%d",
                                cfg_scale,style_ratio,guidance,sampler,steps,seed,curout+1,batch);

@@ -21,7 +21,7 @@
    <item>
     <widget class="QTabWidget" name="tabWidget">
      <property name="currentIndex">
-      <number>1</number>
+      <number>4</number>
      </property>
      <widget class="QWidget" name="tabGen">
       <attribute name="title">
@@ -444,22 +444,17 @@
       </attribute>
       <layout class="QVBoxLayout" name="verticalLayout_7">
        <item>
-        <widget class="QCheckBox" name="checkBox">
+        <widget class="QCheckBox" name="useTrees">
          <property name="text">
           <string>Use decision tree generator</string>
          </property>
         </widget>
        </item>
        <item>
-        <widget class="QTableWidget" name="tableWidget">
+        <widget class="QTableWidget" name="treeList">
          <attribute name="horizontalHeaderDefaultSectionSize">
           <number>80</number>
          </attribute>
-         <column>
-          <property name="text">
-           <string>N</string>
-          </property>
-         </column>
          <column>
           <property name="text">
            <string>Batch</string>
@@ -770,7 +765,7 @@
         </widget>
        </item>
        <item row="0" column="1">
-        <widget class="QKeySequenceEdit" name="keySequenceEdit">
+        <widget class="QKeySequenceEdit" name="hkSaveOne">
          <property name="keySequence">
           <string>Space</string>
          </property>
@@ -784,7 +779,7 @@
         </widget>
        </item>
        <item row="1" column="1">
-        <widget class="QKeySequenceEdit" name="keySequenceEdit_2">
+        <widget class="QKeySequenceEdit" name="hkSaveAll">
          <property name="keySequence">
           <string>Ctrl+Space</string>
          </property>
@@ -798,7 +793,7 @@
         </widget>
        </item>
        <item row="2" column="1">
-        <widget class="QKeySequenceEdit" name="keySequenceEdit_3">
+        <widget class="QKeySequenceEdit" name="hkNextStep">
          <property name="keySequence">
           <string>Return</string>
          </property>

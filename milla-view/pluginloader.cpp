@@ -340,6 +340,11 @@ QVariant MillaPluginLoader::pluginConfigCallback(MillaGenericPlugin* plug, QStri
     if (key == "get_left_image" && val.isNull()) {
         return (context.current->valid)? context.current->picture : QPixmap();
 
+    } else if (key == "get_left_meta" && val.isNull()) {
+        QVariant r;
+        r.setValue(context.current? *context.current : MImageListRecord());
+        return r;
+
     } else if (key == "set_event_filter" && val.canConvert<QObjectPtr>()) {
         QObjectPtr ptr = val.value<QObjectPtr>();
         if (!(filters.count(plug) && filters.at(plug).first == context.area && filters.at(plug).second == ptr)) {
@@ -387,6 +392,7 @@ QVariant MillaPluginLoader::pluginConfigCallback(MillaGenericPlugin* plug, QStri
         QString fn = val.toString();
         MViewer* wnd = dynamic_cast<MViewer*>(context.window);
         if (!wnd) return QVariant();
+        // TODO: if the file is in the current dir, add its thumbnails and other loadimage() stuff
         return QVariant(wnd->createStatRecord(fn,true));
 
     } else if (key == "get_all_tags" && val.isNull()) {

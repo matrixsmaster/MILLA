@@ -57,3 +57,48 @@ void SDCfgDialog::on_pushButton_10_clicked()
     QString dr = QFileDialog::getExistingDirectory(this,"Select LoRA directory");
     if (!dr.isEmpty()) ui->loraDir->setText(dr);
 }
+
+void SDCfgDialog::on_pushButton_6_clicked()
+{
+    int n = ui->treeList->rowCount();
+    ui->treeList->insertRow(n);
+    for (int i = 0; i < ui->treeList->columnCount(); i++) {
+        QTableWidgetItem* old = nullptr;
+        if (n) old = ui->treeList->item(n-1,i);
+        QString v = old? old->text() : "1";
+        ui->treeList->setItem(n,i,new QTableWidgetItem(v));
+    }
+}
+
+void SDCfgDialog::on_pushButton_7_clicked()
+{
+    ui->treeList->removeRow(ui->treeList->currentRow());
+}
+
+void SDCfgDialog::on_pushButton_13_clicked()
+{
+    ui->treeList->clearContents();
+    ui->treeList->setRowCount(0);
+}
+
+void SDCfgDialog::on_pushButton_11_clicked()
+{
+    int n = ui->treeList->currentRow();
+    if (n < 1) return;
+    for (int i = 0; i < ui->treeList->columnCount(); i++) {
+        auto p = ui->treeList->takeItem(n-1,i);
+        ui->treeList->setItem(n-1,i,ui->treeList->takeItem(n,i));
+        ui->treeList->setItem(n,i,p);
+    }
+}
+
+void SDCfgDialog::on_pushButton_12_clicked()
+{
+    int n = ui->treeList->currentRow();
+    if (n < 0 || n >= ui->treeList->rowCount()-1) return;
+    for (int i = 0; i < ui->treeList->columnCount(); i++) {
+        auto p = ui->treeList->takeItem(n+1,i);
+        ui->treeList->setItem(n+1,i,ui->treeList->takeItem(n,i));
+        ui->treeList->setItem(n,i,p);
+    }
+}
