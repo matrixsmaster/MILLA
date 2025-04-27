@@ -88,6 +88,11 @@ bool SDPlugin::LoadConfig(QString preset)
     CONFIG_LOAD_DONE(preset);
     qDebug() << "[SD] Config loaded";
 
+    // make sure key bindings are in place (Do we need it??)
+    //if (hk_saveone.isEmpty()) hk_saveone = QKeySequence::fromString(SDPLUGIN_DEFKEY_SAVEONE);
+    //if (hk_saveall.isEmpty()) hk_saveall = QKeySequence::fromString(SDPLUGIN_DEFKEY_SAVEALL);
+    //if (hk_nextstep.isEmpty()) hk_nextstep = QKeySequence::fromString(SDPLUGIN_DEFKEY_NEXTSTEP);
+
     seed = 0; // always reset the seed (if UI is not shown, the last generated seed would stuck)
     load_once = true;
     return true;

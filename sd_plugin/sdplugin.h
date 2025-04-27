@@ -16,6 +16,9 @@
 #define SDPLUGIN_ASAVE_MAX 500000
 #define SDPLUGIN_ASAVE_REGEX "([A-Za-z_-+.]*)([#]+)"
 #define SDPLUGIN_UI_UPDATE 50ms
+#define SDPLUGIN_DEFKEY_SAVEONE "Space"
+#define SDPLUGIN_DEFKEY_SAVEALL "Ctrl+Space"
+#define SDPLUGIN_DEFKEY_NEXTSTEP "Shift+Return"
 
 typedef enum {
     SDP_ACT_GEN_ONLY = 0x01,

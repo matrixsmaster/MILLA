@@ -21,7 +21,7 @@
    <item>
     <widget class="QTabWidget" name="tabWidget">
      <property name="currentIndex">
-      <number>4</number>
+      <number>0</number>
      </property>
      <widget class="QWidget" name="tabGen">
       <attribute name="title">
@@ -439,6 +439,9 @@
       </layout>
      </widget>
      <widget class="QWidget" name="tabTrees">
+      <property name="enabled">
+       <bool>false</bool>
+      </property>
       <attribute name="title">
        <string>Trees</string>
       </attribute>

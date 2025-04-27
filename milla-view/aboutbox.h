@@ -38,7 +38,6 @@ private:
     QTimer timer;
     std::vector<std::pair<cv::Mat,float>> quads;
     QPoint quad_size;
-    std::set<int> visited;
 
     void prepareLogo();
 };

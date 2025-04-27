@@ -74,7 +74,7 @@ void AboutBox::prepareLogo()
     }
 
     //reset everything
-    visited.clear();
+    files = DBHelper::getAllFiles();
 }
 
 void AboutBox::showEvent(QShowEvent* ev)
@@ -91,15 +91,12 @@ void AboutBox::showEvent(QShowEvent* ev)
     ui->textBrowser->setText(strm.readAll());
     fl.close();
 
-    //get the list of all files and start the timer
-    files = DBHelper::getAllFiles();
+    //prepare the mutatable logo and start the timer
+    prepareLogo();
     if (!files.isEmpty()) {
         connect(&timer,&QTimer::timeout,this,[this] { this->Mosaic(); });
         timer.start(MILLA_ABOUT_MOSAIC_TIMER);
     }
-
-    //prepare the mutatable logo
-    prepareLogo();
 
     //ok, we're done
     ev->accept();
@@ -122,19 +119,17 @@ bool AboutBox::eventFilter(QObject *obj, QEvent *event)
 
 void AboutBox::Mosaic()
 {
-    if (int(visited.size()) >= files.size()) {
+    if (files.isEmpty()) {
         prepareLogo();
         return;
     }
 
-    int idx;
-    do {
-        idx = floor(double(random()) / double(RAND_MAX) * double(files.size()));
-    } while (int(visited.size()) < files.size() && visited.count(idx));
-    visited.insert(idx);
+    int idx = floor(double(random()) / double(RAND_MAX) * double(files.size()));
+    if (idx < 0 || idx >= files.size()) return;
 
     MImageListRecord rec;
     rec.filename = files.at(idx);
+    files.removeAt(idx);
     if (!DBHelper::getThumbnail(rec)) {
         //no thumbnail for this record, let's try again with a different file
         Mosaic(); //tail recursion

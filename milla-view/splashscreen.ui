@@ -565,7 +565,7 @@
     </font>
    </property>
    <property name="text">
-    <string>(C) Dmitry 'MatrixS_Master/sciloaf' Solovyev, 2018-2024. All rights reserved.</string>
+    <string>(C) Dmitry 'MatrixS_Master/sciloaf' Solovyev, 2018-2025. All rights reserved.</string>
    </property>
    <property name="textFormat">
     <enum>Qt::PlainText</enum>
@@ -654,7 +654,6 @@
    </property>
    <property name="font">
     <font>
-     <weight>75</weight>
      <bold>true</bold>
     </font>
    </property>
