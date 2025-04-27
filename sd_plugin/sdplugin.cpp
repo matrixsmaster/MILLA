@@ -9,7 +9,7 @@
 
 #define CONFIG_LOAD_INTT(V,T) if (doc.object().contains("" TOSTRING(V) "")) V = (T)(doc.object().value("" TOSTRING(V) "").toInt());
 #define CONFIG_LOAD_STRN(V) (doc.object().contains("" TOSTRING(V) ""))? (doc.object().value("" TOSTRING(V) "").toString()) : ""
-#define CONFIG_LOAD_KEYSQ(V) V.fromString(CONFIG_LOAD_STRN(V));
+#define CONFIG_LOAD_KEYSQ(V) V = V.fromString(CONFIG_LOAD_STRN(V));
 #define CONFIG_SAVE_KEYSQ(V) obj["" TOSTRING(V) ""] = V.toString();
 
 using namespace std;
@@ -383,27 +383,36 @@ bool SDPlugin::eventFilter(QObject *obj, QEvent *event)
     case QEvent::KeyPress:
         if (!outputs.empty()) {
             QKeyEvent* kev = static_cast<QKeyEvent*>(event);
+            QKeySequence seq(kev->modifiers() | kev->key());
+
+            // navigation
             out_mutex.lock();
             switch (kev->key()) {
-            case Qt::Key_Space:
-                if (autosave == SDP_ASAV_USER) {
-                    if (curout >= 0 && curout < outputs.size()) {
-                        qDebug() << "[SDPlugin] Saving image " << curout;
-                        AutosaveImage(outputs[curout]);
-                    } else
-                        qDebug() << "[SDPlugin] Invalid image selected: " << curout;
-                }
-                break;
-
             case Qt::Key_PageUp:
                 if (curout > 0) curout--;
                 break;
-
             case Qt::Key_PageDown:
                 if (curout < outputs.size()-1) curout++;
                 break;
+            case Qt::Key_Home:
+                curout = 0;
+                break;
+            case Qt::Key_End:
+                curout = outputs.empty()? 0 : outputs.size()-1;
+                break;
+            }
 
-            default: break;
+            // other hotkeys
+            if (seq == hk_saveone) {
+                if (autosave == SDP_ASAV_USER && curout >= 0 && curout < outputs.size()) {
+                    qDebug() << "[SDPlugin] Saving image " << curout;
+                    AutosaveImage(outputs[curout]);
+                }
+            } else if (seq == hk_saveall) {
+                if (autosave == SDP_ASAV_USER && !outputs.empty()) {
+                    qDebug() << "[SDPlugin] Saving all images by user's request";
+                    for (auto &&i : outputs) AutosaveImage(i);
+                }
             }
             out_mutex.unlock();
         }
