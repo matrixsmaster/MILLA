@@ -332,7 +332,7 @@ QVariant SDPlugin::action(QVariant in)
         // first of all, update async progress
         if (split_exec.valid()) {
             if (split_exec.wait_for(1ms) == future_status::ready) { // test by waiting for a very small amount of time
-                if (config_cb) config_cb("long_processing",true); // stop progress bar
+                if (config_cb) config_cb("long_processing_done",true); // stop progress bar
                 split_exec.get(); // invalidate the async object
 
             } else {
@@ -340,7 +340,7 @@ QVariant SDPlugin::action(QVariant in)
                 if (config_cb) {
                     auto r = config_cb("is_long_processing",QVariant());
                     if (r.canConvert<bool>() && !r.value<bool>())
-                        config_cb("long_processing",false);
+                        config_cb("long_processing_done",false);
                 }
                 // update actual progress bar
                 last_progr_ret = progress_cb? progress_cb(last_progress) : true;
@@ -354,16 +354,21 @@ QVariant SDPlugin::action(QVariant in)
         out_mutex.unlock();
 
     } else if (doupsc && in.canConvert<QPixmap>()) {
-        // this action doesn't require Start/Stop, as it's a one-shot conversion
+        // this action doesn't require Start/Stop, as it's a one-shot conversion, but we still need to worry about the progress bar's state
+        if (config_cb) config_cb("long_processing_done",false); // start processing, prepare Stop button
+        last_progr_ret = true;
+
+        // convert the input
         QImage img = in.value<QPixmap>().toImage();
         img.convertTo(QImage::Format_RGB888); // upscaler doesn't care about alpha
-        px = Scaleup(img);
+        px = Upscale(img);
 
         // stop ourselves (to remove active action flag from the UI)
         if (config_cb) {
             self_stop = true;
             config_cb("self_disable",QVariant());
         }
+        if (config_cb) config_cb("long_processing_done",true); // stop processing explicitly
     }
 
     if (px.isNull()) return QVariant();
@@ -570,7 +575,7 @@ void SDPlugin::AddImage(sd_image_t* in, bool scale)
     img.bits(); // force copying
 
     SDOutputRec rec;
-    if (doupsc && scale) rec.img = Scaleup(img);
+    if (doupsc && scale) rec.img = Upscale(img);
     else rec.img  = QPixmap::fromImage(img);
     rec.saved = false;
     if (autosave == SDP_ASAV_ALL) AutosaveImage(rec);
@@ -599,9 +604,9 @@ MillaPluginContentType SDPlugin::inputContent()
     return MILLA_CONTENT_NONE;
 }
 
-QPixmap SDPlugin::Scaleup(const QImage &in)
+QPixmap SDPlugin::Upscale(const QImage &in)
 {
-    qDebug() << "[SD] Scale up()";
+    qDebug() << "[SD] Upscale()";
     sd_set_log_callback(log_helper,nullptr);
     sd_set_progress_callback(progress_helper,this);
 
@@ -756,7 +761,7 @@ QString SDPlugin::TextualizeConfig()
         if (useleft && config_cb) {
             auto mt = config_cb("get_left_meta",QVariant());
             if (mt.isValid() && mt.value<MImageListRecord>().valid && !mt.value<MImageListRecord>().generated)
-                s += "Based on " + mt.value<MImageListRecord>().filename.toStdString();
+                s += "Based on " + mt.value<MImageListRecord>().filename.toStdString() + "\n";
         }
 
         s += "Prompt used:\n" + prompt + "\n";

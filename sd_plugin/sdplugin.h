@@ -138,7 +138,7 @@ private:
     bool RunStop(bool start);
     bool GenerateBatch(const QImage &in);
     void AddImage(sd_image_t* in, bool scale);
-    QPixmap Scaleup(const QImage &in);
+    QPixmap Upscale(const QImage &in);
     void Cleanup();
     void AutosaveImage(SDOutputRec &rec);
     QString ScanNextImageFn();

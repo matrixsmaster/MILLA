@@ -380,7 +380,7 @@ QVariant MillaPluginLoader::pluginConfigCallback(MillaGenericPlugin* plug, QStri
         if (wnd) wnd->showMessage(val.toString());
         return QVariant(bool(true));
 
-    } else if (key == "long_processing" && val.canConvert<bool>()) {
+    } else if (key == "long_processing_done" && val.canConvert<bool>()) {
         MViewer* wnd = dynamic_cast<MViewer*>(context.window);
         if (wnd) wnd->prepareLongProcessing(val.value<bool>());
 
