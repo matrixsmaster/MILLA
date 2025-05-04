@@ -439,9 +439,6 @@
       </layout>
      </widget>
      <widget class="QWidget" name="tabTrees">
-      <property name="enabled">
-       <bool>false</bool>
-      </property>
       <attribute name="title">
        <string>Trees</string>
       </attribute>

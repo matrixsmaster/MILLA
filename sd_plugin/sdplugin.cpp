@@ -1,8 +1,10 @@
+#include <cmath>
 #include <thread>
 #include <QDebug>
 #include <QFileInfo>
 #include <QJsonDocument>
 #include <QJsonObject>
+#include <QPainter>
 #include "sdplugin.h"
 #include "plugindock.h"
 #include "ui_sdcfgdialog.h"
@@ -297,6 +299,27 @@ bool SDPlugin::RunStop(bool start)
     return true;
 }
 
+void SDPlugin::CheckAsync()
+{
+    if (!split_exec.valid()) return;
+
+    // test by waiting for a very small amount of time
+    if (split_exec.wait_for(1ms) == future_status::ready) {
+        if (config_cb) config_cb("long_processing_done",true); // stop progress bar
+        split_exec.get(); // invalidate the async object
+
+    } else {
+        // make sure the progress bar is active
+        if (config_cb) {
+            auto r = config_cb("is_long_processing",QVariant());
+            if (r.canConvert<bool>() && !r.value<bool>())
+                config_cb("long_processing_done",false);
+        }
+        // update actual progress bar
+        last_progr_ret = progress_cb? progress_cb(last_progress) : true;
+    }
+}
+
 QVariant SDPlugin::getParam(QString key)
 {
     qDebug() << "[SD] requested parameter " << key;
@@ -330,28 +353,17 @@ QVariant SDPlugin::action(QVariant in)
     QPixmap px;
     if (dogen) {
         // first of all, update async progress
-        if (split_exec.valid()) {
-            if (split_exec.wait_for(1ms) == future_status::ready) { // test by waiting for a very small amount of time
-                if (config_cb) config_cb("long_processing_done",true); // stop progress bar
-                split_exec.get(); // invalidate the async object
+        CheckAsync();
 
-            } else {
-                // make sure the progress bar is active
-                if (config_cb) {
-                    auto r = config_cb("is_long_processing",QVariant());
-                    if (r.canConvert<bool>() && !r.value<bool>())
-                        config_cb("long_processing_done",false);
-                }
-                // update actual progress bar
-                last_progr_ret = progress_cb? progress_cb(last_progress) : true;
-            }
+        // how to present the data?
+        if (usetrees) px = ShowTreeState(in);
+        else {
+            // in normal mode, just show currently selected image
+            out_mutex.lock();
+            if (curout >= 0 && curout < outputs.count())
+                px = outputs.at(curout).img;
+            out_mutex.unlock();
         }
-
-        // show currently selected image
-        out_mutex.lock();
-        if (curout >= 0 && curout < outputs.count())
-            px = outputs.at(curout).img;
-        out_mutex.unlock();
 
     } else if (doupsc && in.canConvert<QPixmap>()) {
         // this action doesn't require Start/Stop, as it's a one-shot conversion, but we still need to worry about the progress bar's state
@@ -778,4 +790,44 @@ QString SDPlugin::TextualizeConfig()
     }
 
     return r;
+}
+
+QPixmap SDPlugin::ShowTreeState(QVariant sz)
+{
+    lock_guard<mutex> lock(out_mutex);
+
+    int w = SDPLUGIN_IMGSIZE, h = SDPLUGIN_IMGSIZE;
+    if (sz.canConvert<QSize>()) {
+        w = sz.value<QSize>().width();
+        h = sz.value<QSize>().height();
+    }
+
+    int xm = floor(sqrt(w*h*outputs.size()));
+    int nw = 1, nh = 1;
+    for (int s = xm; s > 0; s--) {
+        nw = w / s;
+        nh = h / s;
+        xm = s;
+        if (nw * nh >= outputs.size()) break;
+    }
+    //qDebug() << "[SD] xm = " << xm << "; nw = " << nw << "; nh = " << nh;
+
+    QImage img(w,h,QImage::Format_RGB888);
+    img.fill(QColor(0,0,0));
+    QPainter p(&img);
+    int cx = 0, cy = 0, ww = 0;
+    for (auto &i : outputs) {
+        QRectF rto(cx,cy,xm,xm);
+        QRectF rfr(0,0,SDPLUGIN_IMGSIZE,SDPLUGIN_IMGSIZE);
+        p.drawPixmap(rto,i.img,rfr);
+
+        if (++ww >= nw) {
+            ww = 0;
+            cx = 0;
+            cy += xm;
+        } else
+            cx += xm;
+    }
+
+    return QPixmap::fromImage(img);
 }

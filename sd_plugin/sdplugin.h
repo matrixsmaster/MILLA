@@ -136,6 +136,7 @@ private:
     void setConfigUI();
 
     bool RunStop(bool start);
+    void CheckAsync();
     bool GenerateBatch(const QImage &in);
     void AddImage(sd_image_t* in, bool scale);
     QPixmap Upscale(const QImage &in);
@@ -143,6 +144,7 @@ private:
     void AutosaveImage(SDOutputRec &rec);
     QString ScanNextImageFn();
     QString TextualizeConfig();
+    QPixmap ShowTreeState(QVariant sz);
 };
 
 #endif // SDPLUGIN_H
