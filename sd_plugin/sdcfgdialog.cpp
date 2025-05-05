@@ -1,4 +1,5 @@
 #include <QFileDialog>
+#include <QDebug>
 #include "sdcfgdialog.h"
 #include "ui_sdcfgdialog.h"
 
@@ -100,5 +101,47 @@ void SDCfgDialog::on_pushButton_12_clicked()
         auto p = ui->treeList->takeItem(n+1,i);
         ui->treeList->setItem(n+1,i,ui->treeList->takeItem(n,i));
         ui->treeList->setItem(n,i,p);
+    }
+}
+
+QStringList SDCfgDialog::getTreeTable()
+{
+    QStringList res;
+    for (int i = 0; i < ui->treeList->rowCount(); i++) {
+        QString acc;
+        for (int j = 0; j < ui->treeList->columnCount(); j++) {
+            QTableWidgetItem* itm = ui->treeList->item(i,j);
+            if (!itm) {
+                acc.clear();
+                break;
+            }
+            if (itm->text().indexOf(QRegExp("[^-+0-9.,]+")) >= 0) {
+                qDebug() << "[SDPlugin] ERROR: malformed table item '" << itm->text() << "'";
+                acc.clear();
+                break;
+            }
+            acc += itm->text() + ";";
+            acc.replace(',','.'); // dot is The Only proper decimal separator
+        }
+        if (!acc.isEmpty()) res.append(acc);
+    }
+    return res;
+}
+
+void SDCfgDialog::setTreeTable(const QStringList &lst)
+{
+    int n = 0;
+    for (auto &i : lst) {
+        QStringList sub = i.split(';',Qt::SkipEmptyParts);
+        if (sub.size() != ui->treeList->columnCount()) {
+            qDebug() << "[SDPlugin] ERROR: malformed table row '" << i << "'";
+            continue;
+        }
+        for (int j = 0; j < ui->treeList->columnCount(); j++) {
+            QTableWidgetItem* itm = ui->treeList->item(n,j);
+            if (itm) itm->setText(sub.at(j));
+            else ui->treeList->setItem(n,j,new QTableWidgetItem(sub.at(j)));
+        }
+        n++;
     }
 }

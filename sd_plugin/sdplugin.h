@@ -38,15 +38,6 @@ struct SDOutputRec {
     QRect rect;
 };
 
-struct SDGenTreeNode {
-    int batch = 0;
-    int steps = 0;
-    float strength = 1;
-    float scale = 1;
-    float style = 1;
-    float guidance = 1;
-};
-
 class SDPlugin : public QObject, public MillaGenericPlugin
 {
     Q_OBJECT
@@ -113,7 +104,7 @@ private:
     int seed = 0;
     int scale_fac = 4;
     int sampler = EULER_A;
-    QList<SDGenTreeNode> decision_tree;
+    QStringList decision_tree;
     sdplug_autosave_t autosave = SDP_ASAV_NONE;
     bool asav_addb = false;
     bool asav_match = false;

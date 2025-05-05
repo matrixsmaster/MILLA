@@ -2,6 +2,7 @@
 #define SDCFGDIALOG_H
 
 #include <QWidget>
+#include <QStringList>
 
 #define SDPLUGIN_MODEL_FILTER "All files (*.*)"
 
@@ -18,6 +19,9 @@ public:
     ~SDCfgDialog();
 
     Ui::SDCfgDialog *ui;
+
+    QStringList getTreeTable();
+    void setTreeTable(QStringList const & lst);
 
 private slots:
     void on_pushButton_clicked();

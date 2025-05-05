@@ -4,6 +4,7 @@
 #include <QFileInfo>
 #include <QJsonDocument>
 #include <QJsonObject>
+#include <QJsonArray>
 #include <QPainter>
 #include "sdplugin.h"
 #include "plugindock.h"
@@ -12,8 +13,18 @@
 #define CONFIG_LOAD_INTT(V,T) if (doc.object().contains("" TOSTRING(V) "")) V = (T)(doc.object().value("" TOSTRING(V) "").toInt());
 #define CONFIG_LOAD_KEYSQ(V) if (doc.object().contains("" TOSTRING(V) "")) V = V.fromString(doc.object().value("" TOSTRING(V) "").toString());
 #define CONFIG_SAVE_KEYSQ(V) obj["" TOSTRING(V) ""] = V.toString();
+#define CONFIG_LOAD_STRARR(V) if (doc.object().contains("" TOSTRING(V) "")) V = ArrToStringList(doc.object().value("" TOSTRING(V) "").toArray());
+#define CONFIG_SAVE_STRARR(V) obj["" TOSTRING(V) ""] = QJsonArray::fromStringList(V);
 
 using namespace std;
+
+static QStringList ArrToStringList(QJsonArray const & arr)
+{
+    // for whatever reason, Qt does have SL->JA conversion, but not JA->SL
+    QStringList r;
+    for (auto &&i : arr) r.push_back(i.toString());
+    return r;
+}
 
 SDPlugin::SDPlugin() :
     QObject(),
@@ -71,6 +82,8 @@ bool SDPlugin::LoadConfig(QString preset)
     CONFIG_LOAD_STDSTR(esrgan);
     CONFIG_LOAD_INT(scale_fac);
 
+    CONFIG_LOAD_STRARR(decision_tree);
+
     CONFIG_LOAD_INTT(autosave,sdplug_autosave_t);
     CONFIG_LOAD_INT(asav_addb);
     CONFIG_LOAD_INT(asav_match);
@@ -88,11 +101,6 @@ bool SDPlugin::LoadConfig(QString preset)
 
     CONFIG_LOAD_DONE(preset);
     qDebug() << "[SD] Config loaded";
-
-    // make sure key bindings are in place (Do we need it??)
-    //if (hk_saveone.isEmpty()) hk_saveone = QKeySequence::fromString(SDPLUGIN_DEFKEY_SAVEONE);
-    //if (hk_saveall.isEmpty()) hk_saveall = QKeySequence::fromString(SDPLUGIN_DEFKEY_SAVEALL);
-    //if (hk_nextstep.isEmpty()) hk_nextstep = QKeySequence::fromString(SDPLUGIN_DEFKEY_NEXTSTEP);
 
     seed = 0; // always reset the seed (if UI is not shown, the last generated seed would stuck)
     load_once = true;
@@ -128,6 +136,8 @@ bool SDPlugin::SaveConfig(QString preset)
     CONFIG_SAVE_INT(doupsc);
     CONFIG_SAVE_STDSTR(esrgan);
     CONFIG_SAVE_INT(scale_fac);
+
+    CONFIG_SAVE_STRARR(decision_tree);
 
     CONFIG_SAVE_INT(autosave);
     CONFIG_SAVE_INT(asav_addb);
@@ -175,6 +185,8 @@ void SDPlugin::setConfigUI()
     dialog->ui->upscModel->setText(QString::fromStdString(esrgan));
     dialog->ui->upscFactor->setValue(scale_fac);
 
+    dialog->setTreeTable(decision_tree);
+
     switch (autosave) {
     case SDP_ASAV_NONE: dialog->ui->savNone->setChecked(true); break;
     case SDP_ASAV_ALL: dialog->ui->savAll->setChecked(true); break;
@@ -221,6 +233,8 @@ void SDPlugin::getConfigUI()
     doupsc = dialog->ui->doUpsc->isChecked();
     esrgan = dialog->ui->upscModel->text().toStdString();
     scale_fac = dialog->ui->upscFactor->value();
+
+    decision_tree = dialog->getTreeTable();
 
     autosave = SDP_ASAV_NONE;
     if (dialog->ui->savAll->isChecked()) autosave = SDP_ASAV_ALL;
@@ -867,7 +881,12 @@ QPixmap SDPlugin::ShowTreeState(QVariant sz)
 
 void SDPlugin::StartTreeStep()
 {
+    if (skip_gen) return;
+
     // TODO
     useleft = false;
     RunStop(true);
+
+    //QString oldloc = setlocale(LC_ALL,"C"); // for stable numerical conversions, no "locale" BS
+    //setlocale(LC_ALL,oldloc.toStdString().c_str());
 }
