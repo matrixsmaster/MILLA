@@ -33,6 +33,8 @@
 #include "storyselector.h"
 #include "listeditor.h"
 
+#define MILLA_SHORT_TIMER_DELAY 2
+
 enum MVTabIndices {
     MVTAB_NOTES,
     MVTAB_RESULTS,

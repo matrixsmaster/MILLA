@@ -16,9 +16,8 @@
 #define SDPLUGIN_ASAVE_MAX 500000
 #define SDPLUGIN_ASAVE_REGEX "([A-Za-z_-+.]*)([#]+)"
 #define SDPLUGIN_UI_UPDATE 50ms
-#define SDPLUGIN_DEFKEY_SAVEONE "Space"
-#define SDPLUGIN_DEFKEY_SAVEALL "Ctrl+Space"
-#define SDPLUGIN_DEFKEY_NEXTSTEP "Shift+Return"
+#define SDPLUGIN_IMGBORDER_SZ 16
+#define SDPLUGIN_IMGBORDER_COL QColor(255,20,200)
 
 typedef enum {
     SDP_ACT_GEN_ONLY = 0x01,
@@ -35,6 +34,8 @@ typedef enum {
 struct SDOutputRec {
     QPixmap img;
     bool saved = false;
+    bool selected = false;
+    QRect rect;
 };
 
 struct SDGenTreeNode {
@@ -119,7 +120,9 @@ private:
     bool asav_addtag = false;
     bool asav_addnote = false;
     QString asav_dir, asav_fmt, asav_pat, asav_tags, asav_notes;
-    QKeySequence hk_saveone, hk_saveall, hk_nextstep;
+    QKeySequence hk_saveone = QString("Space");
+    QKeySequence hk_saveall = QString("Ctrl+Space");
+    QKeySequence hk_nextstep = QString("Shift+Return");
 
     std::atomic<int> curout = 0;
     QList<SDOutputRec> outputs;
@@ -145,6 +148,7 @@ private:
     QString ScanNextImageFn();
     QString TextualizeConfig();
     QPixmap ShowTreeState(QVariant sz);
+    void StartTreeStep();
 };
 
 #endif // SDPLUGIN_H

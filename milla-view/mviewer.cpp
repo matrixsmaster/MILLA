@@ -26,7 +26,7 @@ MViewer::MViewer(QWidget *parent) : QMainWindow(parent)
 
         //in case of failure, we can't proceed, so we use the view timer as auto-close event generator
         connect(&view_timer,&QTimer::timeout,this,[] { QApplication::exit(1); });
-        view_timer.start(2);
+        view_timer.start(MILLA_SHORT_TIMER_DELAY);
         block_events = true;
 
         //remove splash screen
@@ -1716,9 +1716,9 @@ bool MViewer::eventFilter(QObject *obj, QEvent *event)
 void MViewer::closeEvent(QCloseEvent* /*event*/)
 {
     connect(&view_timer,&QTimer::timeout,this,[] { QApplication::exit(0); });
-    view_timer.start(2);
     block_events = true;
     stop_flag = true;
+    view_timer.start(MILLA_SHORT_TIMER_DELAY);
 }
 
 QString MViewer::printInfo(QString const &title, MImageListRecord const &targ)

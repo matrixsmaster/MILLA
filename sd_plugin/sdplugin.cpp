@@ -10,8 +10,7 @@
 #include "ui_sdcfgdialog.h"
 
 #define CONFIG_LOAD_INTT(V,T) if (doc.object().contains("" TOSTRING(V) "")) V = (T)(doc.object().value("" TOSTRING(V) "").toInt());
-#define CONFIG_LOAD_STRN(V) (doc.object().contains("" TOSTRING(V) ""))? (doc.object().value("" TOSTRING(V) "").toString()) : ""
-#define CONFIG_LOAD_KEYSQ(V) V = V.fromString(CONFIG_LOAD_STRN(V));
+#define CONFIG_LOAD_KEYSQ(V) if (doc.object().contains("" TOSTRING(V) "")) V = V.fromString(doc.object().value("" TOSTRING(V) "").toString());
 #define CONFIG_SAVE_KEYSQ(V) obj["" TOSTRING(V) ""] = V.toString();
 
 using namespace std;
@@ -266,6 +265,7 @@ bool SDPlugin::RunStop(bool start)
     if (!start) {
         qDebug() << "[SD] Stop request received";
         if (split_exec.valid()) {
+            last_progr_ret = false; // force stop flag
             split_exec.wait();
             auto ptr = split_exec.get();
             if (ptr) free(ptr);
@@ -406,9 +406,9 @@ bool SDPlugin::eventFilter(QObject *obj, QEvent *event)
         if (!outputs.empty()) {
             QKeyEvent* kev = static_cast<QKeyEvent*>(event);
             QKeySequence seq(kev->modifiers() | kev->key());
+            lock_guard<mutex> lock(out_mutex);
 
             // navigation
-            out_mutex.lock();
             switch (kev->key()) {
             case Qt::Key_PageUp:
                 if (curout > 0) curout--;
@@ -435,8 +435,28 @@ bool SDPlugin::eventFilter(QObject *obj, QEvent *event)
                     qDebug() << "[SDPlugin] Saving all images by user's request";
                     for (auto &&i : outputs) AutosaveImage(i);
                 }
+            } else if (seq == hk_nextstep) {
+                qDebug() << "[SDPlugin] Preparing for the next treegen step...";
+                self_stop = true;
+                RunStop(false);
+                StartTreeStep();
+                qDebug() << "[SDPlugin] Started next treegen step";
             }
-            out_mutex.unlock();
+        }
+        break;
+
+    case QEvent::MouseButtonRelease:
+        if (!outputs.empty() && usetrees) {
+            QMouseEvent* mev = static_cast<QMouseEvent*>(event);
+            if (mev->button() != Qt::LeftButton) break;
+            lock_guard<mutex> lock(out_mutex);
+
+            for (auto &i : outputs) {
+                if (i.rect.contains(mev->pos())) {
+                    i.selected ^= true;
+                    break;
+                }
+            }
         }
         break;
 
@@ -815,12 +835,25 @@ QPixmap SDPlugin::ShowTreeState(QVariant sz)
     QImage img(w,h,QImage::Format_RGB888);
     img.fill(QColor(0,0,0));
     QPainter p(&img);
+    p.setBrush(Qt::NoBrush);
+    QPen pen;
+    pen.setColor(SDPLUGIN_IMGBORDER_COL);
+    pen.setWidth(SDPLUGIN_IMGBORDER_SZ);
+    pen.setCapStyle(Qt::SquareCap);
+    pen.setJoinStyle(Qt::MiterJoin);
+    p.setPen(pen);
+
     int cx = 0, cy = 0, ww = 0;
+    int bw = (xm > SDPLUGIN_IMGBORDER_SZ*2)? SDPLUGIN_IMGBORDER_SZ : 1;
+    QRectF rfr(0,0,SDPLUGIN_IMGSIZE,SDPLUGIN_IMGSIZE);
     for (auto &i : outputs) {
         QRectF rto(cx,cy,xm,xm);
-        QRectF rfr(0,0,SDPLUGIN_IMGSIZE,SDPLUGIN_IMGSIZE);
-        p.drawPixmap(rto,i.img,rfr);
 
+        if (i.selected) rto.adjust(bw,bw,-bw,-bw);
+        p.drawPixmap(rto,i.img,rfr);
+        if (i.selected) p.drawRect(rto.adjusted(-bw/2,-bw/2,bw/2,bw/2));
+
+        i.rect = rto.toRect();
         if (++ww >= nw) {
             ww = 0;
             cx = 0;
@@ -830,4 +863,11 @@ QPixmap SDPlugin::ShowTreeState(QVariant sz)
     }
 
     return QPixmap::fromImage(img);
+}
+
+void SDPlugin::StartTreeStep()
+{
+    // TODO
+    useleft = false;
+    RunStop(true);
 }
