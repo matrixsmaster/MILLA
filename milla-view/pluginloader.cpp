@@ -432,6 +432,6 @@ void MillaPluginLoader::stopAllPlugins()
 
 void MillaPluginLoader::finalizeAllPlugins()
 {
-    stopAllPlugins();
+    //stopAllPlugins();
     for (auto &i : plugins) i.second->finalize();
 }

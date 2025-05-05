@@ -49,7 +49,6 @@ bool SDPlugin::finalize()
 {
     qDebug() << "[SD] Finalizing...";
     self_stop = false;
-    RunStop(false);
     Cleanup();
     return true;
 }
@@ -281,18 +280,7 @@ bool SDPlugin::RunStop(bool start)
 {
     if (!start) {
         qDebug() << "[SD] Stop request received";
-        if (split_exec.valid()) {
-            last_progr_ret = false; // force stop flag
-            split_exec.wait();
-            auto ptr = split_exec.get();
-            if (ptr) free(ptr);
-            split_exec = std::future<sd_image_t*>();
-        }
-        if (async_tree.valid()) {
-            last_progr_ret = false;
-            async_tree.get();
-            // in theory, get() both wait()s and invalidates the object - we'll see about that
-        }
+        StopAsyncs();
         if (!self_stop) Cleanup();
         self_stop = false;
         if (config_cb) config_cb("long_processing_done",true); // stop processing
@@ -343,6 +331,23 @@ bool SDPlugin::CheckAsync()
     // update actual progress bar
     last_progr_ret = progress_cb? progress_cb(last_progress) : true;
     return true;
+}
+
+void SDPlugin::StopAsyncs()
+{
+    if (split_exec.valid()) {
+        last_progr_ret = false; // force stop flag
+        split_exec.wait();
+        auto ptr = split_exec.get();
+        if (ptr) free(ptr);
+        split_exec = std::future<sd_image_t*>();
+    }
+
+    if (async_tree.valid()) {
+        last_progr_ret = false;
+        async_tree.get();
+        // in theory, get() both wait()s and invalidates the object - we'll see about that
+    }
 }
 
 QVariant SDPlugin::getParam(QString key)
@@ -713,12 +718,16 @@ QPixmap SDPlugin::Upscale(const QImage &in)
 
 void SDPlugin::Cleanup()
 {
+    StopAsyncs();
     out_mutex.lock();
+
     if (sdcontext) free_sd_ctx(sdcontext);
     sdcontext = nullptr;
     outputs.clear();
+
     if (upscaler) free_upscaler_ctx(upscaler);
     upscaler = nullptr;
+
     out_mutex.unlock();
     qDebug() << "[SD] Cleanup complete";
 }
@@ -918,9 +927,8 @@ void SDPlugin::StartTreeStep()
     cfg_scale = atof(lst.at(3).toStdString().c_str());
     style_ratio = atof(lst.at(4).toStdString().c_str());
     guidance = atof(lst.at(5).toStdString().c_str());
-    setlocale(LC_ALL,oldloc.toStdString().c_str()); // return locale
 
-    seed = 0;
+    setlocale(LC_ALL,oldloc.toStdString().c_str()); // return locale
     treestep++;
 
     async_tree = async(launch::async,[this]() -> void {
@@ -942,8 +950,9 @@ void SDPlugin::StartTreeStep()
         out_mutex.unlock();
 
         for (auto &i : prev) {
-            Cleanup(); // TODO: assess the neccessity of doing that (seems like keeping the context leads to segfaults in build_graph() or compute_graph() on re-use)
             if (!last_progr_ret) break;
+            seed = 0; // reset seed to prevent identical batches
+            useleft = true; // now we're using img2img
             if (!GenerateBatch(i.img.toImage())) {
                 qDebug() << "[SDPlugin] Error starting batch generation";
                 return;

@@ -133,6 +133,7 @@ private:
 
     bool RunStop(bool start);
     bool CheckAsync();
+    void StopAsyncs();
     bool GenerateBatch(const QImage &in);
     void AddImage(sd_image_t* in, bool scale);
     QPixmap Upscale(const QImage &in);
