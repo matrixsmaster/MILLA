@@ -31,7 +31,7 @@ MillaPluginLoader::MillaPluginLoader() : QObject()
 
 MillaPluginLoader::~MillaPluginLoader()
 {
-    for (auto &i : plugins) i.second->finalize();
+    finalizeAllPlugins();
     //unloads will be called automatically
     qDebug() << "[PLUGINS] Unloaded";
 }
@@ -428,4 +428,10 @@ void MillaPluginLoader::stopAllPlugins()
         //if (!i.second->isContinous()) continue;
         stopPlugin(i.second,nullptr);
     }
+}
+
+void MillaPluginLoader::finalizeAllPlugins()
+{
+    stopAllPlugins();
+    for (auto &i : plugins) i.second->finalize();
 }

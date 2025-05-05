@@ -567,8 +567,8 @@ bool SDPlugin::GenerateBatch(const QImage &in)
     string bmdl = t5model.empty()? model.c_str() : "";
     string dmdl = t5model.empty()? "" : model.c_str();
     bool vae_decode_only = !useleft;
-    if (!sdcontext)
-        sdcontext = new_sd_ctx(bmdl.c_str(),clipmodel.c_str(),"",t5model.c_str(),dmdl.c_str(),vaemodel.c_str(),"",cnmodel.c_str(),loradir.c_str(),"","",vae_decode_only,false,true,get_num_physical_cores(),SD_TYPE_COUNT,STD_DEFAULT_RNG,DEFAULT,false,false,false,false);
+    if (sdcontext) free_sd_ctx(sdcontext);
+    sdcontext = new_sd_ctx(bmdl.c_str(),clipmodel.c_str(),"",t5model.c_str(),dmdl.c_str(),vaemodel.c_str(),"",cnmodel.c_str(),loradir.c_str(),"","",vae_decode_only,false,true,get_num_physical_cores(),SD_TYPE_COUNT,STD_DEFAULT_RNG,DEFAULT,false,false,false,false);
     if (!sdcontext) {
         qDebug() << "[SD] ERROR: Unable to create generator context!";
         return false;
@@ -620,8 +620,10 @@ bool SDPlugin::GenerateBatch(const QImage &in)
     } else
         qDebug() << "[SD] ERROR: Generation failed!";
 
-    // make sure split_exec is invalid
+    // make sure split_exec is invalid, and free other resources
     split_exec = std::future<sd_image_t*>();
+    free_sd_ctx(sdcontext);
+    sdcontext = nullptr;
     return out; // if it was OK, it'll evaluate to true
 }
 
@@ -712,8 +714,8 @@ QPixmap SDPlugin::Upscale(const QImage &in)
 void SDPlugin::Cleanup()
 {
     out_mutex.lock();
-    //if (sdcontext) free_sd_ctx(sdcontext);
-    //sdcontext = nullptr;
+    if (sdcontext) free_sd_ctx(sdcontext);
+    sdcontext = nullptr;
     outputs.clear();
     if (upscaler) free_upscaler_ctx(upscaler);
     upscaler = nullptr;
@@ -940,11 +942,13 @@ void SDPlugin::StartTreeStep()
         out_mutex.unlock();
 
         for (auto &i : prev) {
+            Cleanup(); // TODO: assess the neccessity of doing that (seems like keeping the context leads to segfaults in build_graph() or compute_graph() on re-use)
             if (!last_progr_ret) break;
             if (!GenerateBatch(i.img.toImage())) {
                 qDebug() << "[SDPlugin] Error starting batch generation";
                 return;
             }
+            if (realtime && split_exec.valid()) split_exec.get();
         }
     });
 }

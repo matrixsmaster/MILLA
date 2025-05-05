@@ -1718,6 +1718,7 @@ void MViewer::closeEvent(QCloseEvent* /*event*/)
     connect(&view_timer,&QTimer::timeout,this,[] { QApplication::exit(0); });
     block_events = true;
     stop_flag = true;
+    plugins.finalizeAllPlugins();
     view_timer.start(MILLA_SHORT_TIMER_DELAY);
 }
 

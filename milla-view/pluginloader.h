@@ -37,9 +37,9 @@ public:
     MillaPluginLoader();
     virtual ~MillaPluginLoader();
 
-    void setViewerContext(MillaPluginContext const &ctx) { context = ctx; }
+    void setViewerContext(MillaPluginContext const &ctx)    { context = ctx; }
 
-    void setForceUI(bool f) { forceUI = f; }
+    void setForceUI(bool f)                                 { forceUI = f; }
 
     void addPluginsToMenu(QMenu &m, ProgressCB pcb);
 
@@ -54,6 +54,8 @@ public:
     void repeatLastPlugin();
 
     void stopAllPlugins();
+
+    void finalizeAllPlugins();
 
 private:
     MillaPluginContext context;
