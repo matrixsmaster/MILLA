@@ -48,6 +48,8 @@ bool SDPlugin::init()
 bool SDPlugin::finalize()
 {
     qDebug() << "[SD] Finalizing...";
+    self_stop = false;
+    RunStop(false);
     Cleanup();
     return true;
 }
@@ -271,6 +273,7 @@ bool SDPlugin::showUI(QDialog* dock)
     //TODO: validate autosave pattern against SDPLUGIN_ASAVE_REGEX, maybe?
     SaveConfig(MILLA_PLUG_DEF_PRESET);
 
+    treestep = 0;
     return true;
 }
 
@@ -285,8 +288,14 @@ bool SDPlugin::RunStop(bool start)
             if (ptr) free(ptr);
             split_exec = std::future<sd_image_t*>();
         }
+        if (async_tree.valid()) {
+            last_progr_ret = false;
+            async_tree.get();
+            // in theory, get() both wait()s and invalidates the object - we'll see about that
+        }
         if (!self_stop) Cleanup();
         self_stop = false;
+        if (config_cb) config_cb("long_processing_done",true); // stop processing
         return true;
     }
 
@@ -313,25 +322,27 @@ bool SDPlugin::RunStop(bool start)
     return true;
 }
 
-void SDPlugin::CheckAsync()
+bool SDPlugin::CheckAsync()
 {
-    if (!split_exec.valid()) return;
+    if (!split_exec.valid()) return false;
 
     // test by waiting for a very small amount of time
     if (split_exec.wait_for(1ms) == future_status::ready) {
         if (config_cb) config_cb("long_processing_done",true); // stop progress bar
         split_exec.get(); // invalidate the async object
-
-    } else {
-        // make sure the progress bar is active
-        if (config_cb) {
-            auto r = config_cb("is_long_processing",QVariant());
-            if (r.canConvert<bool>() && !r.value<bool>())
-                config_cb("long_processing_done",false);
-        }
-        // update actual progress bar
-        last_progr_ret = progress_cb? progress_cb(last_progress) : true;
+        return false;
     }
+
+    // make sure the progress bar is active
+    if (config_cb) {
+        auto r = config_cb("is_long_processing",QVariant());
+        if (r.canConvert<bool>() && !r.value<bool>())
+            config_cb("long_processing_done",false);
+    }
+
+    // update actual progress bar
+    last_progr_ret = progress_cb? progress_cb(last_progress) : true;
+    return true;
 }
 
 QVariant SDPlugin::getParam(QString key)
@@ -352,6 +363,7 @@ bool SDPlugin::setParam(QString key, QVariant val)
     qDebug() << "[SD] parameter " << key << " sent";
     if (key == "process_started") {
         if (!val.canConvert(QMetaType::Bool)) return false;
+        treestep = 0;
         return RunStop(val.toBool());
 
     } else if (key == "apply_preset" && val.canConvert<QString>()) {
@@ -555,8 +567,8 @@ bool SDPlugin::GenerateBatch(const QImage &in)
     string bmdl = t5model.empty()? model.c_str() : "";
     string dmdl = t5model.empty()? "" : model.c_str();
     bool vae_decode_only = !useleft;
-    if (sdcontext) free_sd_ctx(sdcontext);
-    sdcontext = new_sd_ctx(bmdl.c_str(),clipmodel.c_str(),"",t5model.c_str(),dmdl.c_str(),vaemodel.c_str(),"",cnmodel.c_str(),loradir.c_str(),"","",vae_decode_only,false,true,get_num_physical_cores(),SD_TYPE_COUNT,STD_DEFAULT_RNG,DEFAULT,false,false,false,false);
+    if (!sdcontext)
+        sdcontext = new_sd_ctx(bmdl.c_str(),clipmodel.c_str(),"",t5model.c_str(),dmdl.c_str(),vaemodel.c_str(),"",cnmodel.c_str(),loradir.c_str(),"","",vae_decode_only,false,true,get_num_physical_cores(),SD_TYPE_COUNT,STD_DEFAULT_RNG,DEFAULT,false,false,false,false);
     if (!sdcontext) {
         qDebug() << "[SD] ERROR: Unable to create generator context!";
         return false;
@@ -608,10 +620,8 @@ bool SDPlugin::GenerateBatch(const QImage &in)
     } else
         qDebug() << "[SD] ERROR: Generation failed!";
 
-    // make sure split_exec is invalid, and free other resources
+    // make sure split_exec is invalid
     split_exec = std::future<sd_image_t*>();
-    free_sd_ctx(sdcontext);
-    sdcontext = nullptr;
     return out; // if it was OK, it'll evaluate to true
 }
 
@@ -702,8 +712,8 @@ QPixmap SDPlugin::Upscale(const QImage &in)
 void SDPlugin::Cleanup()
 {
     out_mutex.lock();
-    if (sdcontext) free_sd_ctx(sdcontext);
-    sdcontext = nullptr;
+    //if (sdcontext) free_sd_ctx(sdcontext);
+    //sdcontext = nullptr;
     outputs.clear();
     if (upscaler) free_upscaler_ctx(upscaler);
     upscaler = nullptr;
@@ -882,11 +892,59 @@ QPixmap SDPlugin::ShowTreeState(QVariant sz)
 void SDPlugin::StartTreeStep()
 {
     if (skip_gen) return;
+    if (treestep >= decision_tree.size()) {
+        if (config_cb) config_cb("show_message","Decision tree has reached its top");
+        return;
+    }
 
-    // TODO
-    useleft = false;
-    RunStop(true);
+    // take the values for the next step
+    QString ln = decision_tree.at(treestep);
+    if (ln.isEmpty()) {
+        qDebug() << "[SDPlugin] ERROR: Empty decision tree step at " << treestep;
+        return;
+    }
+    QStringList lst = ln.split(';',Qt::SkipEmptyParts);
+    if (lst.size() != 6) {
+        qDebug() << "[SDPlugin] ERROR: Wrong number of values in tree row " << ln;
+        return;
+    }
 
-    //QString oldloc = setlocale(LC_ALL,"C"); // for stable numerical conversions, no "locale" BS
-    //setlocale(LC_ALL,oldloc.toStdString().c_str());
+    QString oldloc = setlocale(LC_ALL,"C"); // for stable numerical conversions, no "locale" BS
+    batch = atoi(lst.at(0).toStdString().c_str());
+    steps = atoi(lst.at(1).toStdString().c_str());
+    strength = atof(lst.at(2).toStdString().c_str());
+    cfg_scale = atof(lst.at(3).toStdString().c_str());
+    style_ratio = atof(lst.at(4).toStdString().c_str());
+    guidance = atof(lst.at(5).toStdString().c_str());
+    setlocale(LC_ALL,oldloc.toStdString().c_str()); // return locale
+
+    seed = 0;
+    treestep++;
+
+    async_tree = async(launch::async,[this]() -> void {
+        QList<SDOutputRec> prev;
+        out_mutex.lock();
+        for (auto &i : outputs) {
+            if (i.selected) prev.append(i);
+        }
+        out_mutex.unlock();
+
+        if (prev.empty()) {
+            if (config_cb) config_cb("show_message","No images were selected for the next step");
+            return;
+        }
+
+        out_mutex.lock();
+        outputs.clear();
+        curout = 0;
+        out_mutex.unlock();
+
+        for (auto &i : prev) {
+            if (!last_progr_ret) break;
+            if (!GenerateBatch(i.img.toImage())) {
+                qDebug() << "[SDPlugin] Error starting batch generation";
+                return;
+            }
+        }
+    });
 }

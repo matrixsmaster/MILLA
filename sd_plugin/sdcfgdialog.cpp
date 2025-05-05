@@ -130,6 +130,7 @@ QStringList SDCfgDialog::getTreeTable()
 
 void SDCfgDialog::setTreeTable(const QStringList &lst)
 {
+    ui->treeList->clearContents();
     int n = 0;
     for (auto &i : lst) {
         QStringList sub = i.split(';',Qt::SkipEmptyParts);
@@ -137,6 +138,7 @@ void SDCfgDialog::setTreeTable(const QStringList &lst)
             qDebug() << "[SDPlugin] ERROR: malformed table row '" << i << "'";
             continue;
         }
+        ui->treeList->setRowCount(n+1);
         for (int j = 0; j < ui->treeList->columnCount(); j++) {
             QTableWidgetItem* itm = ui->treeList->item(n,j);
             if (itm) itm->setText(sub.at(j));

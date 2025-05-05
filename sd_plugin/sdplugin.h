@@ -123,6 +123,8 @@ private:
     std::future<sd_image_t*> split_exec;
     std::atomic<double> last_progress = 0;
     std::atomic<bool> last_progr_ret = true;
+    int treestep = 0;
+    std::future<void> async_tree;
 
     bool LoadConfig(QString preset);
     bool SaveConfig(QString preset);
@@ -130,7 +132,7 @@ private:
     void setConfigUI();
 
     bool RunStop(bool start);
-    void CheckAsync();
+    bool CheckAsync();
     bool GenerateBatch(const QImage &in);
     void AddImage(sd_image_t* in, bool scale);
     QPixmap Upscale(const QImage &in);
