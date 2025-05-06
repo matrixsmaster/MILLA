@@ -456,16 +456,21 @@ bool SDPlugin::eventFilter(QObject *obj, QEvent *event)
             }
 
             // other hotkeys
-            if (seq == hk_saveone) {
-                if (autosave == SDP_ASAV_USER && curout >= 0 && curout < outputs.size()) {
+            if (seq == hk_saveone && autosave == SDP_ASAV_USER && !outputs.empty()) {
+                if (!usetrees && curout >= 0 && curout < outputs.size()) {
                     qDebug() << "[SDPlugin] Saving image " << curout;
                     AutosaveImage(outputs[curout]);
+                } else if (usetrees) {
+                    qDebug() << "[SDPlugin] Saving all selected images";
+                    for (auto &&i : outputs) {
+                        if (i.selected) AutosaveImage(i);
+                    }
                 }
-            } else if (seq == hk_saveall) {
-                if (autosave == SDP_ASAV_USER && !outputs.empty()) {
-                    qDebug() << "[SDPlugin] Saving all images by user's request";
-                    for (auto &&i : outputs) AutosaveImage(i);
-                }
+
+            } else if (seq == hk_saveall && autosave == SDP_ASAV_USER && !outputs.empty()) {
+                qDebug() << "[SDPlugin] Saving all images by user's request";
+                for (auto &&i : outputs) AutosaveImage(i);
+
             } else if (seq == hk_nextstep) {
                 qDebug() << "[SDPlugin] Preparing for the next treegen step...";
                 self_stop = true;
