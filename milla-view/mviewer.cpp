@@ -439,7 +439,7 @@ void MViewer::scaleImage(const MImageListRecord &rec, QScrollArea* scrl, QLabel*
 
     scaleFactor *= factor;
     if (scaleFactor <= FLT_EPSILON) scaleFactor = 1;
-    //qDebug() << "Scale factor =" << scaleFactor;
+    qDebug() << "Scale factor =" << scaleFactor;
 
     scrl->setWidgetResizable(false);
     lbl->setPixmap(QPixmap());
@@ -1685,11 +1685,10 @@ bool MViewer::eventFilter(QObject *obj, QEvent *event)
                 ui->label->setPixmap(selection_bak);
 
             } else {
-                float scale = (current_l.picture.size().width() > current_l.picture.size().height())?
-                            (double(current_l.picture.size().width()) / double(ui->scrollArea->widget()->rect().width())) :
-                            (double(current_l.picture.size().height()) / double(ui->scrollArea->widget()->rect().height()));
-                selection_scaled = QRect(selection.topLeft()*scale,selection.size()*scale);
-
+                double sx = double(current_l.picture.size().width()) / double(ui->label->pixmap()->width());
+                double sy = double(current_l.picture.size().height()) / double(ui->label->pixmap()->height());
+                selection_scaled.setTopLeft(QPoint(selection.left()*sx,selection.top()*sy));
+                selection_scaled.setSize(QSize(selection.width()*sx,selection.height()*sy));
                 selection_fsm++;
             }
         }
