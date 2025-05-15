@@ -348,9 +348,6 @@
      <property name="text">
       <string>Loaded only</string>
      </property>
-     <property name="checked">
-      <bool>true</bool>
-     </property>
     </widget>
    </item>
    <item row="8" column="3">

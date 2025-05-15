@@ -1637,7 +1637,7 @@ bool MViewer::eventFilter(QObject *obj, QEvent *event)
     if (obj != ui->scrollArea) return QObject::eventFilter(obj,event);
 
     // is it a drag-n-drop?
-    if (mev->modifiers() & Qt::ControlModifier) {
+    if ((event->type() == QEvent::MouseButtonPress) && (mev->modifiers() & Qt::ControlModifier)) {
         qDebug() << "Drag-n-drop started";
         if (!current_l.valid) return true;
         if (current_l.generated) return true; // FIXME: use the same workaround as with "Open with" action

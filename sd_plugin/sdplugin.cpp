@@ -935,6 +935,7 @@ void SDPlugin::StartTreeStep()
 
     setlocale(LC_ALL,oldloc.toStdString().c_str()); // return locale
     treestep++;
+    last_progr_ret = true;
 
     async_tree = async(launch::async,[this]() -> void {
         QList<SDOutputRec> prev;
