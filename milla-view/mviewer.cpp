@@ -1166,8 +1166,10 @@ void MViewer::on_actionSanitize_DB_triggered()
     //step 0. remove unreachable files
     prepareLongProcessing();
     ui->statusBar->showMessage("Checking files...");
-    db.sanitizeFiles(prog_callback);
+    bool ok = db.sanitizeFiles(prog_callback);
     prepareLongProcessing(true);
+    if (!ok) return;
+    // TODO: update all other sanitization steps to return success flag
 
     //step 1. check all thumbnails
     prepareLongProcessing();

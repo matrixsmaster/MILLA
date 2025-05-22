@@ -74,6 +74,8 @@ public:
 
     static bool updateFileNotes(QString const &fn, QString &notes);
 
+    static unsigned getFileLength(QString const &fn);
+
     bool createLinkBetweenImages(QByteArray const &left, QByteArray const &right, bool force = false, uint stamp = 0);
 
     bool removeLinkBetweenImages(QByteArray const &left, QByteArray const &right, bool force = false);
@@ -92,13 +94,15 @@ public:
 
     static QStringList getAllFiles();
 
-    QString getFileBySHA(QByteArray const &sha);
+    QString getFileBySHA(QByteArray const &sha, bool force_lookup = false);
 
-    QByteArray getSHAbyFile(QString const &fn);
+    QByteArray getSHAbyFile(QString const &fn, bool force_lookup = false);
 
     bool removeFile(QString const &fn);
 
-    void sanitizeFiles(ProgressCB progress_cb);
+    bool mergeFileRecords(QString fn_from, QString fn_to);
+
+    bool sanitizeFiles(ProgressCB progress_cb);
 
     void sanitizeThumbs(ProgressCB progress_cb);
 

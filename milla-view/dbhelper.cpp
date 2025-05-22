@@ -504,6 +504,17 @@ bool DBHelper::updateFileNotes(QString const &fn, QString &notes)
     return ok;
 }
 
+unsigned DBHelper::getFileLength(const QString &fn)
+{
+    if (fn.isEmpty()) return 0;
+
+    QSqlQuery q;
+    q.prepare("SELECT length FROM stats WHERE file = :fn");
+    q.bindValue(":fn",fn);
+    if (q.exec() && q.next()) return q.value(0).toUInt();
+    else return 0;
+}
+
 bool DBHelper::createLinkBetweenImages(QByteArray const &left, QByteArray const &right, bool force, uint stamp)
 {
     QSqlQuery q;
@@ -825,9 +836,9 @@ QStringList DBHelper::getAllFiles()
     return out;
 }
 
-QString DBHelper::getFileBySHA(QByteArray const &sha)
+QString DBHelper::getFileBySHA(QByteArray const &sha, bool force_lookup)
 {
-    if (!cache) {
+    if (!cache || force_lookup) {
         QSqlQuery q;
         q.prepare("SELECT file FROM stats WHERE sha256 = :sha");
         q.bindValue(":sha",sha);
@@ -840,9 +851,9 @@ QString DBHelper::getFileBySHA(QByteArray const &sha)
     return cache->getFilenameBySHA(sha);
 }
 
-QByteArray DBHelper::getSHAbyFile(QString const &fn)
+QByteArray DBHelper::getSHAbyFile(QString const &fn, bool force_lookup)
 {
-    if (!cache) {
+    if (!cache || force_lookup) {
         QSqlQuery q;
         q.prepare("SELECT sha256 FROM stats WHERE file = :fn");
         q.bindValue(":fn",fn);
@@ -878,7 +889,46 @@ bool DBHelper::removeFile(QString const &fn)
     return (ok1 || ok2);
 }
 
-void DBHelper::sanitizeFiles(ProgressCB progress_cb)
+bool DBHelper::mergeFileRecords(QString fn_from, QString fn_to)
+{
+    QSqlQuery qf,qt,qn;
+
+    qf.prepare(DBF_IMPORT_SELECT "file = :fn");
+    qf.bindValue(":fn",fn_from);
+    if (!qf.exec() || !qf.next()) {
+        qDebug() << "[db] ERROR: Unable to get record for " << fn_from;
+        return false;
+    }
+
+    qt.prepare(DBF_IMPORT_SELECT "file = :fn");
+    qt.bindValue(":fn",fn_to);
+    if (!qt.exec() || !qt.next()) {
+        qDebug() << "[db] ERROR: Unable to get record for " << fn_to;
+        return false;
+    }
+
+    qn.prepare(DBF_MERGE_UPDATE "file = :fn");
+    qn.bindValue(":fn",fn_to); // value 0
+
+    // qDebug() << "[db] DEBUG: 1: " << qf.value(1).toUInt() << " ; " << qt.value(1).toUInt();
+    // qDebug() << "[db] DEBUG: 2: " << qf.value(2).toInt() << " ; " << qt.value(2).toInt();
+    // qDebug() << "[db] DEBUG: 3: " << qf.value(3).toInt() << " ; " << qt.value(3).toInt();
+    // qDebug() << "[db] DEBUG: 4: " << qf.value(4).toString() << " ; " << qt.value(4).toString();
+    // qDebug() << "[db] DEBUG: 5: " << qf.value(5).toString() << " ; " << qt.value(5).toString();
+
+    qn.bindValue(":v",qf.value(1).toUInt() + qt.value(1).toUInt()); // sum of views
+    qn.bindValue(":r",std::max(qf.value(2).toInt(),qt.value(2).toInt())); // max of ratings
+    qn.bindValue(":l",qf.value(3).toInt() + qt.value(3).toInt()); // sum of likes
+
+    qn.bindValue(":t",qt.value(4).toString().isEmpty()? qf.value(4).toString() : qt.value(4).toString()); // if no tags at target, copy them from source
+    qn.bindValue(":n",qt.value(5).toString().isEmpty()? qf.value(5).toString() : qt.value(5).toString()); // if no notes at target, copy them from source
+
+    bool ok = qn.exec();
+    qDebug() << "[db] Merging file " << fn_from << " into " << fn_to << ": " << ok;
+    return ok;
+}
+
+bool DBHelper::sanitizeFiles(ProgressCB progress_cb)
 {
     QSqlQuery q;
 
@@ -898,19 +948,62 @@ void DBHelper::sanitizeFiles(ProgressCB progress_cb)
     //let's walk through all of them
     for (auto &i : all) {
         prg += dp;
-        if (progress_cb && !progress_cb(prg)) return;
+        if (progress_cb && !progress_cb(prg)) return false;
 
         QFileInfo fi(i);
-        if (!fi.exists()) removeFile(i); //if a dead file is detected, remove it
+        if (fi.exists()) {
+            if (fi.canonicalFilePath() != i && getFileLength(fi.canonicalFilePath())) {
+                // file exists in two places - symlink and real location, both indexed
+                qDebug() << "[db] Found symlinked file: " << i;
+                if (!mergeFileRecords(i,fi.canonicalFilePath())) {
+                    qDebug() << "[db] ERROR: Unable to merge " << i << " into " << fi.canonicalFilePath();
+                    return false;
+                }
+                removeFile(i);
+            }
+            continue;
+        }
+
+        // first check if the file was moved and already re-indexed
+        q.clear();
+        q.prepare("SELECT file FROM stats WHERE (sha256 = :sha) AND (length = :len)");
+        q.bindValue(":sha",getSHAbyFile(i,true));
+        q.bindValue(":len",getFileLength(i));
+        if (!q.exec() || !q.next()) {
+            // this shouldn't happen! but if it did, let's remove it (might have been a thumb-only record)
+            qDebug() << "[db] ERROR: Unknown file: " << i;
+            removeFile(i);
+            continue;
+        }
+
+        // let's try to look where was it moved
+        QString nxt;
+        do nxt = q.value(0).toString();
+        while (q.next() && (nxt.isEmpty() || nxt == i));
+
+        // if the file is totally dead, remove it
+        if (nxt.isEmpty() || nxt == i) {
+            qDebug() << "[db] Dead file: " << i;
+            removeFile(i);
+            continue;
+        }
+
+        // but if another record does exist, let's merge'em
+        if (!mergeFileRecords(i,nxt)) {
+            qDebug() << "[db] ERROR: Unable to merge " << i << " into " << nxt;
+            return false;
+        }
+        qDebug() << "[db] Moved file: " << i;
+        removeFile(i);
     }
 
     //let's also remove all records about zero-length files and files without checksum
     q.clear();
     if (!q.exec("SELECT COUNT(file) FROM stats WHERE (length < 1) OR (sha256 IS NULL)") || !q.next()) {
         qDebug() << "[db] ALERT: error while searching for empty records";
-        return;
+        return false;
     }
-    if (!q.value(0).toUInt()) return; //nothing to do
+    if (!q.value(0).toUInt()) return true; //nothing to do
 
     //update progress variables
     prg = 50;
@@ -918,13 +1011,15 @@ void DBHelper::sanitizeFiles(ProgressCB progress_cb)
 
     //get actual list of empty entries
     q.clear();
-    if (!q.exec("SELECT file FROM stats WHERE (length < 1) OR (sha256 IS NULL)")) return;
+    if (!q.exec("SELECT file FROM stats WHERE (length < 1) OR (sha256 IS NULL)")) return false;
     while (q.next()) {
         prg += dp;
-        if (progress_cb && !progress_cb(prg)) return;
+        if (progress_cb && !progress_cb(prg)) return false;
 
         removeFile(q.value(0).toString());
     }
+
+    return true;
 }
 
 void DBHelper::sanitizeThumbs(ProgressCB progress_cb)

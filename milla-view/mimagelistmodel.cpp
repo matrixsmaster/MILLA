@@ -27,7 +27,10 @@ QVariant MImageListModel::data(const QModelIndex &index, int role) const
                 return images.value(index.row()).fnshort;
 
         case LargePixmapRole:
-            return images.value(index.row()).picture;
+            if (images.value(index.row()).loaded)
+                return images.value(index.row()).picture;
+            else
+                return images.value(index.row()).thumb;
 
         case FullPathRole:
             return images.value(index.row()).filename;

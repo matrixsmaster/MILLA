@@ -14,7 +14,7 @@ void MDirectoryModel::update()
     beginInsertRows(QModelIndex(),images.size(),images.size());
     images.clear();
     for (auto &i : lst) {
-        MImageListRecord rec = loader->loadFull(DBHelper::getDirLastFile(i));
+        MImageListRecord rec = loader->loadFull(DBHelper::getDirLastFile(i),true);
         rec.fnshort = i;
         images.push_back(rec);
     }
