@@ -291,7 +291,7 @@ bool SDPlugin::RunStop(bool start)
 
     qDebug() << "[SD] Run request received";
     outputs.clear();
-    curout = 0;
+    curout = usetrees? -1:0;
 
     QImage srcimg;
     if (useleft) {
@@ -387,7 +387,7 @@ QVariant SDPlugin::action(QVariant in)
         CheckAsync();
 
         // how to present the data?
-        if (usetrees) px = ShowTreeState(in);
+        if (usetrees && curout < 0) px = ShowTreeState(in);
         else {
             // in normal mode, just show currently selected image
             out_mutex.lock();
@@ -422,7 +422,7 @@ bool SDPlugin::eventFilter(QObject *obj, QEvent *event)
 {
     switch (event->type()) {
     case QEvent::Wheel:
-        if (!outputs.empty()) {
+        if (!outputs.empty() && !usetrees) {
             QWheelEvent* wev = static_cast<QWheelEvent*>(event);
             if (wev->angleDelta().y() > 0) {
                 if (++curout >= outputs.size()) curout = 0;
@@ -481,17 +481,34 @@ bool SDPlugin::eventFilter(QObject *obj, QEvent *event)
         }
         break;
 
+    case QEvent::MouseButtonPress:
     case QEvent::MouseButtonRelease:
         if (!outputs.empty() && usetrees) {
             QMouseEvent* mev = static_cast<QMouseEvent*>(event);
-            if (mev->button() != Qt::LeftButton) break;
             lock_guard<mutex> lock(out_mutex);
 
+            SDOutputRec* cs = nullptr;
+            int csn = 0;
             for (auto &i : outputs) {
                 if (i.rect.contains(mev->pos())) {
-                    i.selected ^= true;
+                    cs = &i;
                     break;
                 }
+                ++csn;
+            }
+
+            switch (mev->button()) {
+            case Qt::LeftButton:
+                if (cs && event->type() == QEvent::MouseButtonRelease) cs->selected ^= true;
+                curout = -1;
+                break;
+
+            case Qt::RightButton:
+                if (cs && event->type() == QEvent::MouseButtonPress) curout = csn;
+                else curout = -1;
+                break;
+
+            default: break;
             }
         }
         break;
@@ -655,7 +672,7 @@ void SDPlugin::AddImage(sd_image_t* in, bool scale)
     free(in->data);
     in->data = NULL;
 
-    if (split_exec.valid()) curout = outputs.size() - 1;
+    if (split_exec.valid() && !usetrees) curout = outputs.size() - 1;
 }
 
 bool SDPlugin::isContinous()
