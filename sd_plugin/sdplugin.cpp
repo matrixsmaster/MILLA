@@ -10,6 +10,9 @@
 #include "plugindock.h"
 #include "ui_sdcfgdialog.h"
 
+// FIXME: DEBUG ONLY!!
+#define MDEBUGPNT do { fprintf(stderr,"\t\t\tDEBUG POINT [%s] %s(): %i\n",__FILE__,__FUNCTION__,__LINE__); fflush(stderr); } while(0)
+
 #define CONFIG_LOAD_INTT(V,T) if (doc.object().contains("" TOSTRING(V) "")) V = (T)(doc.object().value("" TOSTRING(V) "").toInt());
 #define CONFIG_LOAD_KEYSQ(V) if (doc.object().contains("" TOSTRING(V) "")) V = V.fromString(doc.object().value("" TOSTRING(V) "").toString());
 #define CONFIG_SAVE_KEYSQ(V) obj["" TOSTRING(V) ""] = V.toString();
@@ -278,6 +281,7 @@ bool SDPlugin::showUI(QDialog* dock)
 
 bool SDPlugin::RunStop(bool start)
 {
+    MDEBUGPNT;
     if (!start) {
         qDebug() << "[SD] Stop request received";
         StopAsyncs();
@@ -316,8 +320,12 @@ bool SDPlugin::CheckAsync()
 
     // test by waiting for a very small amount of time
     if (split_exec.wait_for(1ms) == future_status::ready) {
+        //MDEBUGPNT;
+        if (!async_tree.valid()) {
+            MDEBUGPNT;
+            split_exec.get(); // invalidate the async object only if there's no other async processing controlling it
+        }
         if (config_cb) config_cb("long_processing_done",true); // stop progress bar
-        split_exec.get(); // invalidate the async object
         return false;
     }
 
@@ -337,16 +345,17 @@ void SDPlugin::StopAsyncs()
 {
     if (split_exec.valid()) {
         last_progr_ret = false; // force stop flag
-        split_exec.wait();
+        //split_exec.wait();
+        MDEBUGPNT;
         auto ptr = split_exec.get();
         if (ptr) free(ptr);
         split_exec = std::future<sd_image_t*>();
     }
 
     if (async_tree.valid()) {
+        MDEBUGPNT;
+        async_tree.get(); // in theory, get() both wait()s and invalidates the object - we'll see about that
         last_progr_ret = false;
-        async_tree.get();
-        // in theory, get() both wait()s and invalidates the object - we'll see about that
     }
 }
 
@@ -383,12 +392,14 @@ QVariant SDPlugin::action(QVariant in)
 
     QPixmap px;
     if (dogen) {
+        //MDEBUGPNT;
         // first of all, update async progress
         CheckAsync();
 
         // how to present the data?
         if (usetrees && curout < 0) px = ShowTreeState(in);
         else {
+            //MDEBUGPNT;
             // in normal mode, just show currently selected image
             out_mutex.lock();
             if (curout >= 0 && curout < outputs.count())
@@ -574,6 +585,7 @@ static void imageshow_helper(sd_image_t* img, void* user)
 
 bool SDPlugin::GenerateBatch(const QImage &in)
 {
+    MDEBUGPNT;
     sd_set_log_callback(log_helper,nullptr);
     sd_set_progress_callback(progress_helper,this);
     last_progress = 0;
@@ -636,6 +648,7 @@ bool SDPlugin::GenerateBatch(const QImage &in)
         last_progr_ret = progress_cb? progress_cb(last_progress) : true;
 
     // now we can push all decoded images into the output vector
+    MDEBUGPNT;
     sd_image_t* out = split_exec.get();
     if (out) {
         qDebug() << "[SD] Generation has finished!";
@@ -980,7 +993,9 @@ void SDPlugin::StartTreeStep()
                 qDebug() << "[SDPlugin] Error starting batch generation";
                 return;
             }
+            MDEBUGPNT;
             if (realtime && split_exec.valid()) split_exec.get();
         }
     });
+    qDebug() << "[SDPlugin] Tree step " << treestep << " launched";
 }

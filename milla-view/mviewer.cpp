@@ -439,7 +439,7 @@ void MViewer::scaleImage(const MImageListRecord &rec, QScrollArea* scrl, QLabel*
 
     scaleFactor *= factor;
     if (scaleFactor <= FLT_EPSILON) scaleFactor = 1;
-    qDebug() << "Scale factor =" << scaleFactor;
+    //qDebug() << "Scale factor =" << scaleFactor;
 
     scrl->setWidgetResizable(false);
     lbl->setPixmap(QPixmap());
