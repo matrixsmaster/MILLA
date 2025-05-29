@@ -982,7 +982,7 @@ void SDPlugin::StartTreeStep()
 
         out_mutex.lock();
         outputs.clear();
-        curout = 0;
+        curout = realtime? -1:0;
         out_mutex.unlock();
 
         for (auto &i : prev) {
