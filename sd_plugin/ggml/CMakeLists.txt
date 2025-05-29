@@ -212,6 +212,9 @@ set(THREADS_PREFER_PTHREAD_FLAG ON)
 
 find_package(Threads REQUIRED)
 
+# see https://github.com/ggerganov/ggml/pull/682
+add_definitions(-DGGML_MAX_NAME=128)
+
 #
 # build the library
 #
