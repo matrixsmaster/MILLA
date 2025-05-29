@@ -145,8 +145,6 @@ void MillaPluginLoader::pluginAction(QString name, QAction* sender, bool skip_ui
     if (!plugins.count(name) || !sender || !context.valid()) return;
 
     MillaGenericPlugin* plug = plugins.at(name);
-    if (!context.current->valid && plug->inputContent() == MILLA_CONTENT_IMAGE) return; //don't waste our time
-
     MViewer* wnd = dynamic_cast<MViewer*>(context.window);
     if (!wnd) return;
 
@@ -171,6 +169,9 @@ void MillaPluginLoader::pluginAction(QString name, QAction* sender, bool skip_ui
             return;
         }
     }
+
+    //don't waste our time in case the plugin wants a source image and we don't have one
+    if (!context.current->valid && plug->inputContent() == MILLA_CONTENT_IMAGE) return;
 
     //prepare processing
     wnd->prepareLongProcessing();
