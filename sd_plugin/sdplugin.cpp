@@ -851,7 +851,7 @@ QString SDPlugin::TextualizeConfig()
 {
     QString r;
 
-    if (dogen) {
+    if (dogen && (!usetrees || !treestep)) {
         string s;
         s += "Image generated with " + model + ", using encoder " + vaemodel;
         if (!cnmodel.empty()) s += ", with control net " + cnmodel;
@@ -862,8 +862,11 @@ QString SDPlugin::TextualizeConfig()
 
         if (useleft && config_cb) {
             auto mt = config_cb("get_left_meta",QVariant());
-            if (mt.isValid() && mt.value<MImageListRecord>().valid && !mt.value<MImageListRecord>().generated)
-                s += "Based on " + mt.value<MImageListRecord>().filename.toStdString() + "\n";
+            if (mt.isValid() && mt.value<MImageListRecord>().valid) {
+                s += "Based on ";
+                s += mt.value<MImageListRecord>().generated? "generated image" : mt.value<MImageListRecord>().filename.toStdString();
+                s += "\n";
+            }
         }
 
         s += "Prompt used:\n" + prompt + "\n";
@@ -872,12 +875,20 @@ QString SDPlugin::TextualizeConfig()
         r = QString::fromStdString(s);
         r += QString::asprintf("cfg_scale = %.2f; style_ratio = %.2f; guidance = %.2f; sampler = %d; steps = %d; seed = %d; batch = %d/%d",
                                cfg_scale,style_ratio,guidance,sampler,steps,seed,curout+1,batch);
+
+        if (usetrees && !treestep) r += "\nDecision tree:\n" + decision_tree.join('\n');
+
+    } else if (dogen && usetrees && treestep) {
+        r = "Generated as step " + QString::asprintf("%d",treestep) + " of decision tree-based generation.\n";
+        r += treestart_desc;
     }
 
     if (doupsc) {
         r += "Image upscaled using " + QString::fromStdString(esrgan);
         r += QString::asprintf(" with scale factor of %d.",scale_fac);
     }
+
+    if (dogen && usetrees && !treestep) treestart_desc = r;
 
     return r;
 }

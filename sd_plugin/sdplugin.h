@@ -125,6 +125,7 @@ private:
     std::atomic<bool> last_progr_ret = true;
     int treestep = 0;
     std::future<void> async_tree;
+    QString treestart_desc;
 
     bool LoadConfig(QString preset);
     bool SaveConfig(QString preset);

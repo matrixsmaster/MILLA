@@ -271,7 +271,7 @@ void MViewer::prepareLongProcessing(bool finish)
 
 bool MViewer::isInLongProcessing()
 {
-    // for now it's jujst as simple as checking the Stop button being available
+    // for now it's just as simple as checking the Stop button being available
     return stopButton->isEnabled();
 }
 
