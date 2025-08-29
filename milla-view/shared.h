@@ -10,7 +10,7 @@
 #include <functional>
 
 
-#define MILLA_VERSION           "0.8.5dbg"
+#define MILLA_VERSION           "0.8.6dbg"
 #define MILLA_CLI_BANNER        "MILLA:  Qt5-based, AI-enhanced image viewer ver."
 #define MILLA_CLI_COPYRIGHT     "(C) Dmitry 'MatrixS_Master' Solovyev, 2018-2025. All rights reserved."
 #define MILLA_CONFIG_PATH       "/.milla/"
@@ -62,6 +62,8 @@ struct MImageListRecord {
     bool thumbOK = false;
     bool generated = false;
     bool valid = false;
+
+    bool operator == (MImageListRecord const & _other) const { return filename == _other.filename; }
 };
 
 Q_DECLARE_METATYPE(MImageListRecord)

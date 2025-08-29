@@ -58,6 +58,7 @@ void PluginDock::on_delPreset_clicked()
 
 void PluginDock::on_presetName_currentIndexChanged(int index)
 {
+    (void) index;
     if (!control_cb) return;
     control_cb(ui->presetName->currentText(),MILLA_PLUGINCB_APPLY);
 }

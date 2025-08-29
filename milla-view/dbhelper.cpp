@@ -718,88 +718,90 @@ QStringList DBHelper::doParametricSearch(SearchFormData flt, ProgressCB pcb)
     double liked;
     std::multimap<uint,QString> tmap;
     std::set<QString> tlst;
+    QStringList out;
+    MImageListRecord r;
     double prg = 0, dp = 100.f / static_cast<double>(searchlist.size());
 
-    while (!searchlist.empty()) {
-        MImageListRecord r = searchlist.front();
-        searchlist.pop_front();
+    //                   0       1      2      3      4       5         6      7      8      9       10
+    if (!q.exec("SELECT file, rating, likes, views, faces, grayscale, sizex, sizey, ntags, notes, lastview FROM stats")) {
+        qDebug() << "Unable to request the whole list";
+        return out;
+    }
+
+    while (q.next() && (!searchlist.empty())) {
+        r.filename = q.value(0).toString();
+        auto idx = searchlist.indexOf(r);
+        if (idx < 0) continue;
+        r = searchlist.at(idx);
+        searchlist.removeAt(idx);
 
         prg += dp;
         if (pcb && !pcb(prg)) break;
 
-        q.clear();
-        q.prepare("SELECT rating, likes, views, faces, grayscale, sizex, sizey, ntags, notes, lastview FROM stats WHERE file = :fn");
-        q.bindValue(":fn",r.filename);
-        if (q.exec() && q.next()) {
+        if (flt.rating > q.value(1).toInt()) continue;
+        if (flt.kudos > q.value(2).toInt()) continue;
+        if (flt.tags > q.value(8).toInt()) continue;
+        if (q.value(3).toUInt() < flt.minviews || q.value(3).toUInt() >= flt.maxviews) continue;
+        if (q.value(4).toInt() < flt.minface || q.value(4).toInt() >= flt.maxface) continue;
+        if (flt.colors > -1 && flt.colors != (q.value(5).toInt() > 0)) continue;
+        if ((flt.minmtime && flt.maxmtime) && (r.filechanged < flt.minmtime || r.filechanged > flt.maxmtime)) continue;
+        if ((flt.minstime && flt.maxstime) && (q.value(10).toUInt() < flt.minstime || q.value(10).toUInt() > flt.maxstime)) continue;
+        if (flt.wo_tags && q.value(8).toInt()) continue;
+        if (flt.w_notes && q.value(9).toString().isEmpty()) continue;
+        if (!flt.text_notes.isEmpty() && !q.value(9).toString().contains(flt.text_notes,Qt::CaseInsensitive)) continue;
 
-            if (flt.rating > q.value(0).toInt()) continue;
-            if (flt.kudos > q.value(1).toInt()) continue;
-            if (flt.tags > q.value(7).toInt()) continue;
-            if (q.value(2).toUInt() < flt.minviews || q.value(2).toUInt() >= flt.maxviews) continue;
-            if (q.value(3).toInt() < flt.minface || q.value(3).toInt() >= flt.maxface) continue;
-            if (flt.colors > -1 && flt.colors != (q.value(4).toInt()>0)) continue;
-            if ((flt.minmtime && flt.maxmtime) && (r.filechanged < flt.minmtime || r.filechanged > flt.maxmtime)) continue;
-            if ((flt.minstime && flt.maxstime) && (q.value(9).toUInt() < flt.minstime || q.value(9).toUInt() > flt.maxstime)) continue;
-            if (flt.wo_tags && q.value(7).toInt()) continue;
-            if (flt.w_notes && q.value(8).toString().isEmpty()) continue;
-            if (!flt.text_notes.isEmpty() && !q.value(8).toString().contains(flt.text_notes,Qt::CaseInsensitive)) continue;
+        liked = (q.value(2).toInt())? static_cast<double>(q.value(2).toInt()) / static_cast<double>(q.value(3).toInt()) * 100.f : 0;
+        if (flt.liked > 0 && flt.liked > liked) continue;
 
-            liked = (q.value(1).toInt())? static_cast<double>(q.value(1).toInt()) / static_cast<double>(q.value(2).toInt()) * 100.f : 0;
-            if (flt.liked > 0 && flt.liked > liked) continue;
+        if (flt.orient >= 0) {
+            if (flt.orient && q.value(6).toInt() <= q.value(7).toInt()) //landscape
+                continue;
+            else if (!flt.orient && q.value(6).toInt() > q.value(7).toInt()) //portrait
+                continue;
+        }
 
-            if (flt.orient >= 0) {
-                if (flt.orient && q.value(5).toInt() <= q.value(6).toInt()) //landscape
-                    continue;
-                else if (!flt.orient && q.value(5).toInt() > q.value(6).toInt()) //portrait
-                    continue;
+        area = q.value(6).toUInt() * q.value(7).toUInt();
+        if (area < flt.minsize || area > flt.maxsize) continue;
+
+        if (!flt.text_fn.isEmpty() || !flt.text_path.isEmpty()) {
+            QFileInfo fi(r.filename);
+            if (!flt.text_fn.isEmpty() && !fi.baseName().contains(flt.text_fn,Qt::CaseInsensitive)) continue;
+            if (!flt.text_path.isEmpty() && !fi.path().contains(flt.text_path,Qt::CaseInsensitive)) continue;
+            qDebug() << fi.baseName() << fi.filePath();
+        }
+
+        if (!flt.tags_inc.isEmpty() || !flt.tags_exc.isEmpty()) {
+            QString stags = getFileTagsString(r.filename);
+            qDebug() << stags;
+            if (!flt.tags_inc.isEmpty()) {
+                if (!stags.contains(flt.tags_inc,Qt::CaseInsensitive)) continue;
             }
-
-            area = q.value(5).toUInt() * q.value(6).toUInt();
-            if (area < flt.minsize || area > flt.maxsize) continue;
-
-            if (!flt.text_fn.isEmpty() || !flt.text_path.isEmpty()) {
-                QFileInfo fi(r.filename);
-                if (!flt.text_fn.isEmpty() && !fi.baseName().contains(flt.text_fn,Qt::CaseInsensitive)) continue;
-                if (!flt.text_path.isEmpty() && !fi.path().contains(flt.text_path,Qt::CaseInsensitive)) continue;
-                qDebug() << fi.baseName() << fi.filePath();
+            if (!flt.tags_exc.isEmpty()) {
+                if (stags.contains(flt.tags_exc,Qt::CaseInsensitive)) continue;
             }
+        }
 
-            if (!flt.tags_inc.isEmpty() || !flt.tags_exc.isEmpty()) {
-                QString stags = getFileTagsString(r.filename);
-                qDebug() << stags;
-                if (!flt.tags_inc.isEmpty()) {
-                    if (!stags.contains(flt.tags_inc,Qt::CaseInsensitive)) continue;
-                }
-                if (!flt.tags_exc.isEmpty()) {
-                    if (stags.contains(flt.tags_exc,Qt::CaseInsensitive)) continue;
-                }
-            }
-
-            if (flt.similar > 0) {
-                MImageExtras _ex = getExtrasFromDB(r.filename);
-                if (_ex.valid && MMatcher::OneTimeMatcher(flt.similar_to,_ex.hist) < flt.similar)
-                    continue;
+        if (flt.similar > 0) {
+            MImageExtras _ex = getExtrasFromDB(r.filename);
+            if (_ex.valid && MMatcher::OneTimeMatcher(flt.similar_to,_ex.hist) < flt.similar)
+                continue;
 #ifdef QT_DEBUG
-                 qDebug() << "File " << r.filename << " have " << MMatcher::OneTimeMatcher(flt.similar_to,_ex.hist) << "% similarity";
+            qDebug() << "File " << r.filename << " have " << MMatcher::OneTimeMatcher(flt.similar_to,_ex.hist) << "% similarity";
 #endif
-            }
+        }
 
-            switch (flt.sort) {
-            case SRFRM_RATING: tmap.insert(std::pair<uint,QString>(q.value(0).toInt(), r.filename)); break;
-            case SRFRM_KUDOS: tmap.insert(std::pair<uint,QString>(q.value(1).toInt(), r.filename)); break;
-            case SRFRM_VIEWS: tmap.insert(std::pair<uint,QString>(q.value(2).toUInt(), r.filename)); break;
-            case SRFRM_DATE: tmap.insert(std::pair<uint,QString>(r.filechanged, r.filename)); break;
-            case SRFRM_FACES: tmap.insert(std::pair<uint,QString>(q.value(3).toInt(), r.filename)); break;
-            case SRFRM_LASTSEEN: tmap.insert(std::pair<uint,QString>(q.value(9).toUInt(), r.filename)); break;
-            default: tlst.insert(r.filename);
-            }
-
+        switch (flt.sort) {
+        case SRFRM_RATING: tmap.insert(std::pair<uint,QString>(q.value(1).toInt(), r.filename)); break;
+        case SRFRM_KUDOS: tmap.insert(std::pair<uint,QString>(q.value(2).toInt(), r.filename)); break;
+        case SRFRM_VIEWS: tmap.insert(std::pair<uint,QString>(q.value(3).toUInt(), r.filename)); break;
+        case SRFRM_DATE: tmap.insert(std::pair<uint,QString>(r.filechanged, r.filename)); break;
+        case SRFRM_FACES: tmap.insert(std::pair<uint,QString>(q.value(4).toInt(), r.filename)); break;
+        case SRFRM_LASTSEEN: tmap.insert(std::pair<uint,QString>(q.value(10).toUInt(), r.filename)); break;
+        default: tlst.insert(r.filename);
         }
 
         if (tlst.size() + tmap.size() >= flt.maxresults) break;
     }
-
-    QStringList out;
 
     qDebug() << "[search] Start of list";
     if (flt.sort == SRFRM_NAME) {
