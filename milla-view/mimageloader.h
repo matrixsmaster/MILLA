@@ -8,6 +8,8 @@
 #include <QDirIterator>
 #include <QFileInfo>
 #include <QMessageBox>
+#include <QJsonArray>
+#include <QJsonDocument>
 #include "shared.h"
 #include "pluginloader.h"
 
@@ -31,6 +33,7 @@ public:
 
     QPixmap load(QString const &filename);
     MImageListRecord loadFull(QString const &filename, bool fast = false);
+    QList<MImageListRecord> loadBulk(QStringList lst);
 
 private:
     MillaPluginLoader* plugins;

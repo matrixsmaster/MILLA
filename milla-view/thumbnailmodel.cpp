@@ -4,6 +4,7 @@
 ThumbnailModel::ThumbnailModel(QStringList files, ProgressCB loading_cb, MImageLoader *imgLoader, QObject *parent)
     : MImageListModel(imgLoader,parent)
 {
+#if 0
     double prg = 0, dp = 100.f / (double)(files.size());
 
     for (auto &i : files) {
@@ -19,6 +20,9 @@ ThumbnailModel::ThumbnailModel(QStringList files, ProgressCB loading_cb, MImageL
             }
         }
     }
+#else
+    images = loader->loadBulk(files);
+#endif
 }
 
 ThumbnailModel::~ThumbnailModel()

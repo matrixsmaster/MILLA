@@ -179,3 +179,54 @@ MImageListRecord MImageLoader::loadFull(QString const &filename, bool fast)
 
     return r;
 }
+
+QList<MImageListRecord> MImageLoader::loadBulk(QStringList lst)
+{
+    QList<MImageListRecord> r;
+    QSqlQuery q;
+    q.prepare("SELECT t.file, t.mtime, t.thumb FROM thumbs t JOIN json_each(?) AS j ON t.file = j.value");
+
+    QJsonArray arr;
+    for (auto &i : lst) arr += QJsonValue(i);
+    QString json = QJsonDocument(arr).toJson(QJsonDocument::Compact);
+    q.addBindValue(json);
+
+    if (!q.exec()) return r;
+
+    while (q.next()) {
+        MImageListRecord c;
+        c.filename = q.value(0).toString();
+        c.valid = true;
+        c.touched = q.value(1).toUInt(); // FIXME: shortcut to avoid loading another table
+
+        QFileInfo fi(c.filename);
+        c.fnshort = fi.fileName();
+        c.filechanged = fi.lastModified().toTime_t();
+
+        if (q.value(2).canConvert(QVariant::ByteArray)) {
+            c.thumb.loadFromData(q.value(2).toByteArray());
+            c.thumbOK = true;
+            c.filechanged = q.value(1).toUInt();
+        }
+
+        r.push_back(c);
+        lst.removeOne(c.filename);
+    }
+
+    for (auto &i : lst) {
+        MImageListRecord c;
+        c.filename = i;
+        c.valid = true;
+
+        QFileInfo fi(i);
+        c.fnshort = fi.fileName();
+        c.filechanged = fi.lastModified().toTime_t();
+        c.thumb = QPixmap(MILLA_THUMBNAIL_SIZE,MILLA_THUMBNAIL_SIZE);
+        c.thumb.fill(Qt::black);
+        c.thumbOK = true;
+
+        r.push_back(c);
+    }
+
+    return r;
+}
